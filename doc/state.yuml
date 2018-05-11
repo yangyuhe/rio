@@ -1,0 +1,14 @@
+// {type:state}
+
+
+(start)->(parse dom)->(virtual tree)[model]->(reconstruct start)->(reconstruct over)->(component render)
+(reconstruct start)[for/if]->(clone vnode)->(child reconstruct)->(reconstruct start)
+(reconstruct start)[normal]->(child reconstruct)
+
+(component render)[isElement]->(directive bind)->(child component render)->(component render)
+(component render)[isText]->(directive bind)->(render over)
+(component render)[custom]->(parse dom)
+(component render)[slot]->(template render)->(component render)
+(render over)[user action]->(event callback)->(data change)[apply]->(broadcast data change)->(directive callback)
+(directive callback)[for/if]->(adjust vnode)->(reconstruct start)->(component render)
+(directive callback)[normal]->(adjust dom)->(render over)->(end)

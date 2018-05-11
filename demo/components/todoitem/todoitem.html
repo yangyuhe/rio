@@ -1,0 +1,31 @@
+<div class="todoitem">
+    <div [if]="!isedit">
+        <h4>标题：{{todo.title}}</h4>
+        <h6>详情：{{todo.des}}</h6>
+        <h6>是否设置时间:{{todo.settime?'是':'否'}}</h6>
+        <h6 [if]="todo.settime">时间：{{todo.time}}</h6>
+        <h6>类型：{{todo.type=='1'?'便签':'通知'}}</h6>
+        <button (click)="delete()">delete</button>
+        <button (click)="edit()">edit</button>
+        
+    </div>
+    <div [if]="isedit">
+        <div>详情：<input type="text" [model]="des"></div>
+        <div>是否设置时间:<input type="checkbox" value="true" [model]="settime"/></div>
+        <div [if]="settime.length>0">时间：
+            <select name="" id="" [model]="time">
+                <option value="" selected style="display: none">请选择</option>
+                <option value="2015">2015年</option>
+                <option value="2016">2016年</option>
+                <option value="2017">2017年</option>
+            </select>
+        </div>
+        <div>类型：
+            <input type="radio" value="1" [model]="type">便签
+            <input type="radio" value="2" [model]="type">通知
+        </div>
+        <button (click)="confirm()">confirm</button>
+        <button (click)="test()">test</button>
+        
+    </div>
+</div>

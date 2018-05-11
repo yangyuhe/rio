@@ -1,0 +1,53 @@
+Rio.component("todolist",{
+    templateUrl:"./components/todolist/todolist.html",
+    styleUrl:"./components/todolist/todolist.css",
+    data:{
+        todos:[{
+            title:"吃饭",
+            des:"早上7:20用餐",
+            id:1,
+            settime:true,
+            time:"2016",
+            type:1
+        },{
+            title:"撒尿",
+            des:"晚上7:20撒尿",
+            id:2,
+            settime:true,
+            time:"2015",
+            type:1
+        }],
+        count:2,
+        showadd:false
+    },
+    methods:{
+        add:function(){
+            this.showadd=!this.showadd
+        },
+        delete:function(todo){
+            let index=this.todos.indexOf(todo)
+            if(index!=-1){
+                this.todos.splice(index,1)
+            }
+        },
+        onadd:function(data){
+            this.count++
+            this.todos.push({
+                title:data.title,
+                des:data.des,
+                id:this.data.count,
+                settime:data.settime,
+                time:data.time,
+                type:data.type
+            })
+        },
+        modify:function(id,newtodo){
+            let todo=this.todos.find(todo=>todo.id==id)
+            if(todo!=null){
+                Object.keys(newtodo).forEach(key=>{
+                    todo[key]=newtodo[key]
+                })
+            }
+        }
+    }
+})

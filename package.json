@@ -1,0 +1,24 @@
+{
+  "name": "rio",
+  "version": "0.0.1",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "571536582@qq.com",
+  "license": "ISC",
+  "devDependencies": {
+    "browserify": "^16.2.0",
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.1",
+    "gulp-rename": "^1.2.2",
+    "gulp-typescript": "^4.0.2",
+    "gulp-uglify": "^3.0.0",
+    "serve": "^6.5.6",
+    "tsify": "^4.0.0",
+    "typescript": "^2.8.1",
+    "vinyl-source-stream": "^2.0.0"
+  },
+  "dependencies": {}
+}

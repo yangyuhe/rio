@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>feature</title>
+    <script src="../dist/rio.js"></script>
+    <script>
+        Rio.component("app",{
+            data:{
+                levels:[{
+                    name:"app",
+                    id:1
+                },{
+                    name:"module",
+                    id:2
+                }]
+            },
+            methods:{
+                change:function(){
+                    this.data.levels[0].name="helei"
+                }
+            },
+            template:`
+            <div>
+                <todo [for]="l in levels" [level]="l"></todo>
+                <button (click)="change()">change</button>
+            </div>
+            `
+        })
+        Rio.component("todo",{
+            template:`
+            <h1>{{level.name}}</h1>
+            `,
+            props:["level"]
+        })
+    </script>
+</head>
+<body>
+    <app></app>
+</body>
+</html>

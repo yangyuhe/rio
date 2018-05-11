@@ -1,0 +1,5 @@
+<div class="todolist">
+    <button (click)="add()">add</button>
+    <addtodo (add)="onadd($event)" [if]="showadd"></addtodo>
+    <todoitem (modify)="modify($event)" [for]="toda in todos" (delete)="delete(toda)" [todo]="toda"></todoitem>
+</div>
