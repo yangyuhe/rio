@@ -1,20 +1,16 @@
 import { VNode } from "../vnode/vnode"
-export function ModelWatch(exp: string, vnode: VNode) {
+export function DirModel(exp: string, vnode: VNode) {
     let inputtype=vnode.Vdom.GetAttr("type")
     let input=vnode.Vdom.NodeName.toLowerCase()
     if(input=="input" && inputtype=="checkbox"){
-        vnode.mvvm.$watchExp(vnode,exp, (newvalue) => {
+        vnode.mvvm.$watchExpOrFunc(vnode,exp, (newvalue) => {
             setValue(vnode, newvalue)
         },true);
     }else{
-        vnode.mvvm.$watchExp(vnode,exp, (newvalue) => {
+        vnode.mvvm.$watchExpOrFunc(vnode,exp, (newvalue) => {
             setValue(vnode, newvalue)
         });
     }
-}
-export function ModelSet(exp: string, vnode: VNode) {
-    let initValue = vnode.mvvm.GetExpValue(exp)
-    setValue(vnode, initValue)
     vnode.Dom.addEventListener("input", (event: any) => {
         //select控件
         if (vnode.NodeName.toLowerCase() == "select") {
@@ -45,6 +41,7 @@ export function ModelSet(exp: string, vnode: VNode) {
         }
     })
 }
+
 function setValue(vnode: VNode, newvalue: any) {
     //select控件
     if (vnode.NodeName.toLowerCase() == "select") {

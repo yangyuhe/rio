@@ -18,11 +18,9 @@ export function Start(){
         let mountmvvm=new MVVM(root.option)
         let custnode=new CustomNode(domtree,null,null,mountmvvm)
         custnode.ParseTemplate()
-        mountmvvm.FenceNode=custnode
+        mountmvvm.$FenceNode=custnode
         custnode.AttachDom()
-        mountmvvm.Reconstruct()
         let content=mountmvvm.Render()
-        mountmvvm.StartWatch()
         root.dom.parentElement.replaceChild(content,root.dom)
     })
 }
@@ -82,7 +80,7 @@ function preTreatment(option:MVVMComponentOption){
     }
     if(option.style!=null){
         let css=option.style.replace(/(?!\s)([^\{\}]+)(?=\{[^\{\}]*\})/g,function(str){
-            return "["+option.$id+"]"+str
+            return str+"["+option.$id+"]"
         })
         var style = document.createElement('style');
         style.type = 'text/css';

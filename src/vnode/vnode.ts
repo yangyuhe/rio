@@ -1,6 +1,6 @@
 import { REG_IN, REG_OUT, REG_STR, REG_ATTR, REG_TEST_OUTPUT, REG_TEST_INPUT, REG_MULTI, VNodeStatus } from './../const';
 import { REG_SINGLE } from "../const";
-import { DirectiveSet, DirectiveWatch } from "../directive/dir-handler";
+import { DirectiveBind } from "../directive/dir-handler";
 import { MVVM } from '../mvvm/mvvm';
 import { NewVNode, VDom } from '../vdom/vdom';
 import { LogError } from '../util';
@@ -19,7 +19,7 @@ export class VNode {
     protected ins_pure:{[name:string]:any}={}
     protected ins_exp:{[name:string]:string}={}
     protected outs:{[name:string]:string}={}
-    private status:VNodeStatus=VNodeStatus.ACTIVE
+    protected status:VNodeStatus=VNodeStatus.ACTIVE
 
     constructor(public Vdom:VDom,public mvvm: MVVM,public Parent:VNode) {
     }
@@ -31,7 +31,7 @@ export class VNode {
             if(attr=="for" || attr=="if")
                 return
             if(!this.testInput(attr)){
-                LogError("input "+attr+" not exist on "+this.NodeName)
+                LogError("prop "+attr+" not exist on "+this.NodeName)
                 return
             }
             if(REG_STR.test(value))
@@ -42,7 +42,7 @@ export class VNode {
         }
         if(REG_OUT.test(name)){
             if(!this.testOutput(RegExp.$1)){
-                LogError("output "+RegExp.$1+" not exist on "+this.NodeName)
+                LogError("event "+RegExp.$1+" not exist on "+this.NodeName)
                 return
             }
             this.outs[RegExp.$1]=value
@@ -73,22 +73,30 @@ export class VNode {
                 dom.setAttribute(prop.name, prop.value)
             })
             this.Dom = dom 
+            let children:VNode[]=[]
             this.Children.forEach(child => {
                 if(!child.IsCopy)
-                    child.Render()
+                    children.push(child)
+            })
+            children.forEach(child => {
+                child.Render()
             })
             //todo 设置属性
-            DirectiveSet(this)
+            DirectiveBind(this)
         }
         if (this.NodeType == 3) {
             this.Dom = document.createTextNode(this.NodeValue)
             
             if (REG_SINGLE.test(this.NodeValue)) {
-                this.Dom.textContent=this.mvvm.GetExpValue(RegExp.$1)
+                this.mvvm.$watchExpOrFunc(this,RegExp.$1,(newvalue, oldvalue)=>{
+                    this.Dom.textContent = newvalue
+                })
             }else{
                 if(REG_MULTI.test(this.NodeValue)){
                     let res=this.multiBindParse(this.NodeValue)
-                    this.Dom.textContent=this.mvvm.GetExpValue(res)     
+                    this.mvvm.$watchExpOrFunc(this,res,(newvalue, oldvalue)=>{
+                        this.Dom.textContent = newvalue
+                    })
                 }else{
                     this.Dom.textContent=this.NodeValue
                 }
@@ -98,40 +106,23 @@ export class VNode {
             this.Parent.Dom.appendChild(this.Dom)
     }
     private multiBindParse(nodevalue:string):string{
-        let res=""
-        let values=nodevalue.match(/\{\{(.*?)\}\}/g)
-        let start=0
-        let end=0
-        for(let i=0;i<values.length;i++){
-            end=nodevalue.indexOf(values[i])
-            res+="\""+nodevalue.substring(start,end)+"\"+("+values[i].substring(2,values[i].length-2)+")"
-            start=end+values[i].length
-        }
-        return res
-    }
-    StartWatch(){
-        if (this.NodeType == 1) {
-            this.Children.forEach(child => {
-                if(!child.IsCopy)
-                    child.StartWatch()
-            })
-            DirectiveWatch(this)
-            return
-        }
-        if (this.NodeType == 3) {
-            if (REG_SINGLE.test(this.NodeValue)) {
-                this.mvvm.$watchExp(this,RegExp.$1,(newvalue, oldvalue)=>{
-                    this.Dom.textContent = newvalue
-                })
-            }else{
-                if(REG_MULTI.test(this.NodeValue)){
-                    let res=this.multiBindParse(this.NodeValue)
-                    this.mvvm.$watchExp(this,res,(newvalue, oldvalue)=>{
-                        this.Dom.textContent = newvalue
-                    })
-                }
+        let reg=/\{\{([^\{\}]*)\}\}/g
+        let res=reg.exec(nodevalue)
+        let exp=""
+        let lastindex=0
+        while(res){
+            if(res.index!=lastindex){
+                exp+="\'"+nodevalue.substring(lastindex,res.index)+"\'+"
             }
+            lastindex=res.index+res[0].length
+            exp+="("+RegExp.$1+")+"
+            res=reg.exec(nodevalue)
         }
+        if(exp.lastIndexOf("+")==exp.length-1){
+            exp=exp.substring(0,exp.length-1)
+        }
+
+        return exp
     }
     Update(){
         //todo 更新属性
@@ -212,7 +203,7 @@ export class VNode {
                 continue
             }
         }
-        if (ruler.j < allvnodes.length) {
+        while (ruler.j < allvnodes.length) {
             opers.push({
                 type: "add",
                 beforeNode: null,
@@ -241,22 +232,17 @@ export class VNode {
         }
     }
     RemoveChildren(nodes:VNode[]){
-        nodes.forEach(node=>node.onremove())
         this.Children=this.Children.filter(child=>{
             return nodes.indexOf(child)==-1
         })
     }
-    protected onremove(){}
-    /**根据当前model值渲染虚拟dom结构 */
-    Reconstruct() {
-        let children: VNode[] = []
-        this.Children.forEach(child => {
-            children.push(child)
-        })
-        children.forEach(child => {
-            child.Reconstruct()
+    OnRemoved(){
+        this.Children.forEach(child=>{
+            if(!child.IsCopy)
+                child.OnRemoved()
         })
     }
+    
     
     /**解析基本信息 */
     protected basicSet(){
@@ -287,7 +273,10 @@ export class VNode {
     }
     SetStatus(status:VNodeStatus){
         this.status=status
-        this.Children.forEach(child=>child.SetStatus(status))
+        this.Children.forEach(child=>{
+            if(!child.IsCopy)
+                child.SetStatus(status)
+        })
     }
     GetStatus(){
         return this.status

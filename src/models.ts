@@ -6,15 +6,20 @@ export interface MVVMComponentOption{
     templateUrl?:string,
     data?:Object,
     methods?:{[name:string]:Function},
-    props?:string[],
+    props?:Prop[],
     events?:string[],
     style?:string,
     styleUrl?:string,
     $namespace?:string,
     $id?:string,
-    $domtree?:VDom
+    $domtree?:VDom,
+    computed?:{[name:string]:()=>any}
 }
-
+export interface Prop{
+    name:string
+    required:boolean
+    type?:"array"|"object"|"number"|"string"|"boolean"
+}
 export interface OnDataChange {
     (newvalue:any,oldvalue:any):void
 }

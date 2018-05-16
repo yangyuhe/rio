@@ -1,12 +1,12 @@
 import { VNode } from "../vnode/vnode";
-import { ModelWatch, ModelSet } from "./model";
+import { DirModel } from "./model";
 import { OnClick } from "./onclick";
-export function DirectiveSet(vnode: VNode) {
+export function DirectiveBind(vnode: VNode) {
     let inputs=vnode.GetInput()
     for(let name in inputs){
         switch(name){
             case "model":
-            ModelSet(inputs[name],vnode)
+            DirModel(inputs[name],vnode)
             break;
         }
     }
@@ -20,14 +20,4 @@ export function DirectiveSet(vnode: VNode) {
         }
     }
     
-}
-export function DirectiveWatch(vnode: VNode){
-    let inputs=vnode.GetInput()
-    for(let name in inputs){
-        switch(name){
-            case "model":
-            ModelWatch(inputs[name],vnode)
-            break;
-        }
-    }
 }

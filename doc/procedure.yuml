@@ -1,2 +1,0 @@
-// {type:state}
-(mvvm initialize)->(attach dom)->(reconstruct)->(render)

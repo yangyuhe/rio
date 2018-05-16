@@ -13,11 +13,7 @@ export class TemplateNode extends VNode{
             child.Render()
         })
     }
-    StartWatch(){
-        this.Children.forEach(child=>{
-            child.StartWatch()
-        })
-    }
+    
     Update(){
         let children: VNode[] = []
         this.Children.forEach(child => {

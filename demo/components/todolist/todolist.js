@@ -8,7 +8,7 @@ Rio.component("todolist",{
             id:1,
             settime:true,
             time:"2016",
-            type:1
+            type:2
         },{
             title:"撒尿",
             des:"晚上7:20撒尿",
@@ -35,7 +35,7 @@ Rio.component("todolist",{
             this.todos.push({
                 title:data.title,
                 des:data.des,
-                id:this.data.count,
+                id:this.count,
                 settime:data.settime,
                 time:data.time,
                 type:data.type
@@ -48,6 +48,14 @@ Rio.component("todolist",{
                     todo[key]=newtodo[key]
                 })
             }
+        },
+        sort:function(){
+            this.todos.sort(function(a,b){
+                return a.type-b.type
+            })
+        },
+        test:function(){
+            this.todos[this.todos.length-1].title="hello"
         }
     }
 })

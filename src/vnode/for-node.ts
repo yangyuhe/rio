@@ -16,11 +16,11 @@ export class ForNode extends VNode{
     }
     private newCopyNode(n:number){
         let itemexp=this.ForExp.itemExp
-        let mvvm=new MVVM({props:[itemexp]})
+        let mvvm=new MVVM({props:[{name:itemexp,required:true}]})
         mvvm.SetHirented(true)
 
         let fencenode=new CustomNode(this.Vdom,this.mvvm,null,mvvm)
-        mvvm.FenceNode=fencenode        
+        mvvm.$FenceNode=fencenode        
         fencenode.IsCopy=true
         fencenode.AddIns(itemexp,this.ForExp.arrayExp+"["+n+"]")
         return fencenode
@@ -34,14 +34,12 @@ export class ForNode extends VNode{
                 
                 let vnode=NewVNodeNoFor(this.Vdom,custnode.SurroundMvvm,null)
                 vnode.AttachDom()
-                custnode.SurroundMvvm.TreeRoot=vnode
+                custnode.SurroundMvvm.$TreeRoot=vnode
                 custnodes.push(custnode)
             }
             custnodes.forEach(custnode=>{
                 this.dynamicVNodes.push(custnode)                    
-                custnode.Reconstruct()
                 custnode.Render()
-                custnode.StartWatch()
             })
             this.Parent.AddChildren(this,custnodes,oldcount)
             this.Parent.Refresh()
@@ -51,35 +49,13 @@ export class ForNode extends VNode{
             let moved=this.dynamicVNodes.splice(newcount)
             moved.forEach(vnode=>vnode.SetStatus(VNodeStatus.DEPRECATED))
             this.Parent.RemoveChildren(moved)
+            moved.forEach(item=>{
+                item.OnRemoved()
+            })
             this.Parent.Refresh()
         }
     }
     
-    Reconstruct(){
-        let items=this.mvvm.GetExpValue(this.ForExp.arrayExp)
-        this.dynamicVNodes=[]
-        if(toString.call(items) === "[object Array]"){
-            let copynodes:CustomNode[]=[]
-            for(let i=0;i<items.length;i++){       
-                let copynode=this.newCopyNode(i)
-
-                let vnode=NewVNodeNoFor(this.Vdom,copynode.SurroundMvvm,null)
-                vnode.AttachDom()
-                copynode.SurroundMvvm.TreeRoot=vnode
-                copynodes.push(copynode)
-            }
-            copynodes.forEach(copynode=>{
-                this.dynamicVNodes.push(copynode)                    
-                copynode.Reconstruct()
-            })
-            this.Parent.AddChildren(this,copynodes,0)
-        }
-        
-    }
-    StartWatch(){
-        this.mvvm.$watchExp(this,this.ForExp.arrayExp+".length",this.reImplementForExp.bind(this))
-        this.dynamicVNodes.forEach(node=>node.StartWatch())
-    }
     Update(){
         let items=this.mvvm.GetExpValue(this.ForExp.arrayExp)
         if(toString.call(items) === "[object Array]"){
@@ -88,10 +64,13 @@ export class ForNode extends VNode{
     }
     AttachDom() {}
     Render(){
-        this.dynamicVNodes.forEach(node=>{
-            node.Render()
-            if(node.Dom!=null)
-                this.Parent.Dom.appendChild(node.Dom)
-        })
+        this.mvvm.$watchExpOrFunc(this,this.ForExp.arrayExp+".length",this.reImplementForExp.bind(this))
+    }
+    OnRemoved(){
+        this.dynamicVNodes.forEach(vnode=>vnode.OnRemoved())
+    }
+    SetStatus(status:VNodeStatus){
+        this.status=status
+        this.dynamicVNodes.forEach(vnode=>vnode.SetStatus(status))
     }
 }

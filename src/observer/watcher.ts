@@ -7,13 +7,15 @@ import { VNodeStatus } from '../const';
 export class Watcher{
     private value:any
     private deepRecord:any[]=[]
-    constructor(private vnode:VNode,public Exp:string,private cb:OnDataChange,private observer:Observe,private deep?:boolean){
+
+    constructor(private vnode:VNode,public ExpOrFunc:string|Function,private cb:OnDataChange,private observer:Observe,private deep?:boolean){
         this.value=this.observer.GetValue(this)
         if(this.deep && toString.call(this.value)=="[object Array]"){
             for(let i=0;i<this.value.length;i++){
                 this.deepRecord[i]=this.value[i]
             }
         }
+        this.cb(this.value,undefined)
     }
     GetVNode(){
         return this.vnode

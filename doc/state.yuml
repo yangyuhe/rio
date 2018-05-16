@@ -6,9 +6,9 @@
 (reconstruct start)[normal]->(child reconstruct)
 
 (component render)[isElement]->(directive bind)->(child component render)->(component render)
-(component render)[isText]->(directive bind)->(render over)
+(component render)[isText]->(directive bind)->(render over)->(start watch)->(end)
 (component render)[custom]->(parse dom)
 (component render)[slot]->(template render)->(component render)
-(render over)[user action]->(event callback)->(data change)[apply]->(broadcast data change)->(directive callback)
-(directive callback)[for/if]->(adjust vnode)->(reconstruct start)->(component render)
-(directive callback)[normal]->(adjust dom)->(render over)->(end)
+(start watch)[user action]->(event callback)->(data change)->(directive callback)
+(directive callback)[for/if]->(adjust vnode)->(parse dom)
+(directive callback)[normal]->(adjust dom)->(end)

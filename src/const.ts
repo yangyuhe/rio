@@ -2,8 +2,8 @@ export const DIR_MODEL = "model"
 export const DIR_EVENT_CLICK = "click"
 
 /**花括号数据绑定表达式 */
-export const REG_SINGLE = /^\{\{(.*)\}\}$/
-export const REG_MULTI = /\{\{(.*)\}\}/
+export const REG_SINGLE = /^\{\{([^\{\}]*)\}\}$/
+export const REG_MULTI = /\{\{(.*?)\}\}/
 /**事件监听响应函数 */
 export const REG_EVENT=/^(\w+)\((.*)\)$/
 /**字符串 */

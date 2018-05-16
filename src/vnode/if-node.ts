@@ -12,30 +12,18 @@ export class IfNode extends VNode {
     
     AttachDom() {}
     Render(){
-        if(this.dynamicVNode!=null){
-            this.dynamicVNode.Render()
-            if(this.Parent!=null){
-                this.Parent.Dom.appendChild(this.dynamicVNode.Dom)
-            }else{
-                this.Dom=this.dynamicVNode.Dom
-            }
-        }
+        this.mvvm.$watchExpOrFunc(this,this.ifExp, newvalue=>this.reImpletement(newvalue))
     }
     Update(){
         let attached = this.mvvm.GetExpValue(this.ifExp)
         this.reImpletement(attached)
     }
-    StartWatch(){
-        this.mvvm.$watchExp(this,this.ifExp, newvalue=>this.reImpletement(newvalue))
-        if(this.dynamicVNode!=null)
-            this.dynamicVNode.StartWatch()
-    }
+
     private reImpletement(newvalue:boolean){
         if (newvalue) {
             if(this.dynamicVNode==null){
                 this.instance()
                 this.dynamicVNode.Render()
-                this.dynamicVNode.StartWatch()
             }else{
                 this.dynamicVNode.Update()
             }
@@ -44,8 +32,8 @@ export class IfNode extends VNode {
                 this.Parent.Refresh()
             }
             else{
-                this.mvvm.FenceNode.Dom=this.dynamicVNode.Dom
-                this.mvvm.FenceNode.Parent.Refresh()           
+                this.mvvm.$FenceNode.Dom=this.dynamicVNode.Dom
+                this.mvvm.$FenceNode.Parent.Refresh()           
             }
             this.dynamicVNode.SetStatus(VNodeStatus.ACTIVE)
             
@@ -56,25 +44,26 @@ export class IfNode extends VNode {
                     this.Parent.Refresh()
                 }
                 else{                
-                    this.mvvm.FenceNode.Dom=null
-                    this.mvvm.FenceNode.Parent.Refresh()
+                    this.mvvm.$FenceNode.Dom=null
+                    this.mvvm.$FenceNode.Parent.Refresh()
                 }
                 this.dynamicVNode.SetStatus(VNodeStatus.INACTIVE)
             }
         }
     }
-    Reconstruct() {
-        let attached = this.mvvm.GetExpValue(this.ifExp)
-        if (attached){
-            this.instance()
-            if(this.Parent!=null)
-                this.Parent.AddChildren(this, [this.dynamicVNode],0)
-        }
-    }
+
     private instance(){
         this.dynamicVNode=NewVNodeNoForNoIf(this.Vdom,this.mvvm,null)
         this.dynamicVNode.IsCopy=true
         this.dynamicVNode.AttachDom()
-        this.dynamicVNode.Reconstruct()
+    }
+    OnRemoved(){
+        if(this.dynamicVNode!=null)
+            this.dynamicVNode.OnRemoved()
+    }
+    SetStatus(status:VNodeStatus){
+        this.status=status
+        if(this.dynamicVNode!=null)
+            this.dynamicVNode.SetStatus(status)
     }
 }

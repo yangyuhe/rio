@@ -15,6 +15,11 @@ export function AddWatcher(watcher:Watcher){
     }
 }
 export function RevokeWatcher(){
-    queue.forEach(watcher=>watcher.Update())
+    let temp:Watcher[]=[]
+    queue.forEach(q=>temp.push(q))
     queue=[]
+    temp.forEach(watcher=>watcher.Update())
+    if(queue.length>0){
+        RevokeWatcher()
+    }
 }

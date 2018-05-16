@@ -4,6 +4,7 @@ import { GetNS } from "../util";
 import { NewVNode, VDom } from "../vdom/vdom";
 import { TemplateNode } from "./template-node";
 import { VNode } from "./vnode";
+import { VNodeStatus } from "../const";
 
 export class CustomNode extends VNode{
     
@@ -61,17 +62,17 @@ export class CustomNode extends VNode{
         let domtree=this.SurroundMvvm.GetDomTree()
         let ns=GetNS(domtree.NodeName)
 
-        if(IsComponentRegistered(ns.value,ns.namespace||this.SurroundMvvm.Namespace)){
-            let option=GetComponent(ns.value,ns.namespace||this.SurroundMvvm.Namespace)
+        if(IsComponentRegistered(ns.value,ns.namespace||this.SurroundMvvm.$Namespace)){
+            let option=GetComponent(ns.value,ns.namespace||this.SurroundMvvm.$Namespace)
             let selfmvvm=new MVVM(option)
             let child= new CustomNode(domtree,this.SurroundMvvm,null,selfmvvm)
-            this.SurroundMvvm.TreeRoot=child
-            selfmvvm.FenceNode=this
+            this.SurroundMvvm.$TreeRoot=child
+            selfmvvm.$FenceNode=this
             child.ParseTemplate()            
         }else{
-            this.SurroundMvvm.TreeRoot=new VNode(domtree,this.SurroundMvvm,null)
+            this.SurroundMvvm.$TreeRoot=new VNode(domtree,this.SurroundMvvm,null)
         }
-        this.SurroundMvvm.TreeRoot.AttachDom()
+        this.SurroundMvvm.$TreeRoot.AttachDom()
         
     }
     GetInValue(prop:string){
@@ -87,28 +88,30 @@ export class CustomNode extends VNode{
     GetOut(prop:string){
         return this.outs[prop]
     }
-    Reconstruct() {
-        this.SurroundMvvm.Reconstruct()
-    }
+    
     
     Refresh() {
-        this.SurroundMvvm.TreeRoot.Refresh()
-    }
-    StartWatch(){
-        this.SurroundMvvm.StartWatch()
+        this.SurroundMvvm.$TreeRoot.Refresh()
     }
     Update(){
-        this.SurroundMvvm.TreeRoot.Update()
+        this.SurroundMvvm.$TreeRoot.Update()
     }
     protected testOutput(name:string):boolean{
-        if(this.SurroundMvvm.Outs.indexOf(name)==-1)
+        if(this.SurroundMvvm.$Outs.indexOf(name)==-1)
             return false
         return true
     }
     protected testInput(name:string):boolean{
-        if(this.SurroundMvvm.Ins.indexOf(name)==-1)
-            return false
-        return true
+        return this.SurroundMvvm.$Ins.some(prop=>{
+            return prop.name==name
+        })
+    }
+    OnRemoved(){
+        this.SurroundMvvm.$ondestroy()
+    }
+    SetStatus(status:VNodeStatus){
+        this.status=status
+        this.SurroundMvvm.$TreeRoot.SetStatus(status)
     }
 
 }

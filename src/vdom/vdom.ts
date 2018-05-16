@@ -25,6 +25,9 @@ export function TraverseDom(dom:Node):VDom{
         return
     let root=new VDom()
     root.NodeValue=dom.nodeValue
+    if(root.NodeValue!=null){
+        root.NodeValue=root.NodeValue.replace(/\s+/g,"")
+    }
     root.NodeName=dom.nodeName
     root.NodeType=dom.nodeType
     if(dom.nodeType==1){
@@ -59,7 +62,7 @@ export function NewVNode(dom:VDom,mvvm:MVVM,parent:VNode):VNode{
         let selfmvvm=new MVVM(option)
         let CustomNode=require("../vnode/custom-node").CustomNode
         let cust= new CustomNode(dom,mvvm,parent,selfmvvm)
-        selfmvvm.FenceNode=cust
+        selfmvvm.$FenceNode=cust
         cust.ParseTemplate()
         return cust
     }
@@ -82,7 +85,7 @@ export function NewVNodeNoFor(dom:VDom,mvvm:MVVM,parent:VNode):VNode{
         let surroundmvvm=new MVVM(option)
         let CustomNode=require("../vnode/custom-node").CustomNode
         let cust= new CustomNode(dom,mvvm,parent,surroundmvvm)
-        surroundmvvm.FenceNode=cust
+        surroundmvvm.$FenceNode=cust
         cust.ParseTemplate()
         return cust
     }
@@ -100,7 +103,7 @@ export function NewVNodeNoForNoIf(dom:VDom,mvvm:MVVM,parent:VNode):VNode{
         let selfmvvm=new MVVM(option)
         let CustomNode=require("../vnode/custom-node").CustomNode
         let cust= new CustomNode(dom,mvvm,parent,selfmvvm)
-        selfmvvm.FenceNode=cust
+        selfmvvm.$FenceNode=cust
         cust.ParseTemplate()
         return cust
     }

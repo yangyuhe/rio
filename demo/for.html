@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="../dist/rio.js"></script>
+    <script>
+        Rio.component("app",{
+            data:{
+                numbers:[5,1,2,3,4]
+            },
+            template:`
+            <ul>
+                <li [for]="n in numbers">{{n}}</li>
+                <button (click)="delete()">delete</button>
+                <button (click)="sort()">sort</button>
+            </ul>
+            `,
+            methods:{
+                delete:function(){
+                    this.numbers.shift()
+                },
+                sort:function(){
+                    this.numbers.sort()
+                }
+            }
+        })
+    </script>
+</head>
+<body>
+    <app></app>
+</body>
+</html>

@@ -1,7 +1,11 @@
 Rio.component("todoitem",{
     templateUrl:"./components/todoitem/todoitem.html",
     styleUrl:"./components/todoitem/todoitem.css",
-    props:["todo"],
+    props:[{
+        name:"todo",
+        type:"object",
+        required:true
+    }],
     events:["delete","modify"],
     data:{
         isedit:false,

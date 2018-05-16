@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="../dist/rio.js"></script>
+    <script>
+        Rio.component("app",{
+            template:`
+            <div>
+                <menus [menus]="realmenus"></menus>
+                <menus [menus]="realmenus"></menus>
+                <menus [menus]="realmenus"></menus>
+                <button (click)="change()">change</button>
+            </div>
+            `,
+            data:{
+                name:"hexiang",
+                menus:[{
+                    name:"工资",
+                    url:"/salary"
+                },{
+                    name:"福利",
+                    url:"/warefare"
+                },{
+                    name:"社保",
+                    url:"/social"
+                },
+                {
+                    name:"员工",
+                    url:"/social"
+                },
+                {
+                    name:"产品",
+                    url:"/social"
+                }]
+            },
+            computed:{
+                realmenus:function(){
+                    console.log("realmenus")
+                    return this.menus.map(item=>{
+                        return {name:"<"+item.name+">",url:item.url}
+                    })
+                }
+            },
+            methods:{
+                change:function(){
+                    this.menus[2].name="公积金"
+                },
+                methodmenus:function(){
+                    console.log("methodmenus")
+                    return this.menus.map(item=>{
+                        return {name:"<"+item.name+">",url:item.url}
+                    })
+                }
+            }
+        })
+        Rio.component("menus",{
+            template:`
+            <div class="menus">
+                <menu [for]="menu in menus" [menu]="menu"></menu>
+            </div>
+            `,
+            style:`
+            .menus{
+                padding:10px;
+                background:blue
+            }
+            `,
+            props:[{
+                name:'menus',
+                required:true,
+                type:"array"
+            }]
+        })
+        Rio.component("menu",{
+            template:`
+            <a class="menu" href="{{menu.url}}">{{menu.name}}</a>
+            `,
+            style:`
+            .menu{
+                background:yellow;
+                padding:5px;
+            }
+            `,
+            props:[{
+                name:'menu',
+                required:true,
+                type:"object"
+            }]
+        })
+    </script>
+</head>
+<body>
+    <app></app>
+</body>
+</html>
