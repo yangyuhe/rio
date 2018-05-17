@@ -1,5 +1,6 @@
 export const DIR_MODEL = "model"
 export const DIR_EVENT_CLICK = "click"
+export const PRE="r-"
 
 /**花括号数据绑定表达式 */
 export const REG_SINGLE = /^\{\{([^\{\}]*)\}\}$/
@@ -17,8 +18,7 @@ export const REG_OUT=/^\((\w+)\)$/
 /**正常属性 */
 export const REG_ATTR=/^[A-z_]\w*$/
 
-/**测试输入项 */
-export const REG_TEST_INPUT=/^((model))$/
+
 /**测试输出项 */
 export const REG_TEST_OUTPUT=/^((click))$/
 

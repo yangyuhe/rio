@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="../dist/rio.js"></script>
+    <script>
+        Rio.directive("highlight",{
+            data:{
+                
+            },
+            props:[{
+                name:"color",
+                type:"string",
+                required:true
+            }],
+            methods:{
+                $init:function(){
+                    var that=this
+                    this.$watch("color",function(newval){
+                        that.$element.style.color=newval
+                    })
+                }
+            }
+            
+        })
+        Rio.component("app",{
+            data:{
+                color:"yellow"
+            },
+            methods:{
+                change:function(color){
+                    this.color=color
+                }
+            },
+            template:`
+            <div highlight [color]="color">
+                <span>hello</span>
+                <button r-click="change('yellow')">yellow</button>
+                <button r-click="change('red')">red</button>
+                <button r-click="change('blue')">blue</button>
+            </div>
+            `
+        })
+    </script>
+</head>
+<body>
+    <app></app>
+    <div highlight color="blue">hello</div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 import { VDom } from './vdom/vdom';
 
-export interface MVVMComponentOption{
+export interface ComponentOption{
     $name?:string,
     template?:string,
     templateUrl?:string,
@@ -15,6 +15,7 @@ export interface MVVMComponentOption{
     $domtree?:VDom,
     computed?:{[name:string]:()=>any}
 }
+
 export interface Prop{
     name:string
     required:boolean
@@ -33,5 +34,12 @@ export interface RetureValue{
     exp:string,
     data:any
 }
-
+export interface DirectiveOption{
+    $name:string
+    $namespace:string
+    data?:Object
+    methods?:{[name:string]:Function}
+    props?:Prop[]
+    events?:string[]
+}
 

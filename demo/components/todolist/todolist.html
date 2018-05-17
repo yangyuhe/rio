@@ -1,8 +1,8 @@
 <div class="todolist">
-    <button (click)="add()">add</button>
-    <button (click)="sort()">sort</button>
-    <button (click)="test()">test</button>
-    <addtodo (add)="onadd($event)" [if]="showadd"></addtodo>
+    <button r-click="add()">add</button>
+    <button r-click="sort()">sort</button>
+    <button r-click="test()">test</button>
+    <addtodo (add)="onadd($event)" r-if="showadd"></addtodo>
     
-    <todoitem (modify)="modify($event)" [for]="toda in todos" (delete)="delete(toda)" [todo]="toda"></todoitem>
+    <todoitem (modify)="modify($event)" r-for="toda in todos" (delete)="delete(toda)" [todo]="toda"></todoitem>
 </div>

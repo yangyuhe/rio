@@ -1,17 +1,17 @@
 <div>
-    <input [model]="title" type="text" placeholder="请在此填入标题">
+    <input r-model="title" type="text" placeholder="请在此填入标题">
     <br>
-    <input [model]="des" type="text" placeholder="请在此填入内容">
+    <input r-model="des" type="text" placeholder="请在此填入内容">
     <br>
-    <input [model]="settime" type="checkbox" value="true">是否设置时间提醒
+    <input r-model="settime" type="checkbox" value="true">是否设置时间提醒
     <br>
-    <select [if]="settime.length>0" [model]="time">
+    <select r-if="settime.length>0" r-model="time">
         <option value="" style="display: none" selected>请选择</option>
         <option value="2016">2016年</option>
         <option value="2017">2017年</option>
         <option value="2018">2018年</option>
     </select>
-    <input type="radio" value="1" [model]="type">便签
-    <input type="radio" value="2" [model]="type">通知
-    <button (click)="confirm()">confirm</button>
+    <input type="radio" value="1" r-model="type">便签
+    <input type="radio" value="2" r-model="type">通知
+    <button r-click="confirm()">confirm</button>
 </div>

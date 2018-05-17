@@ -26,9 +26,9 @@
             template:`
                 <div>
                     <h1>my app</h1>
-                    <button (click)="add()">新增</button>
-                    <button (click)="delete()">减少</button>
-                    <toolbar [name]="toolbar" [for]="toolbar in toolbars"></toolbar>
+                    <button r-click="add()">新增</button>
+                    <button r-click="delete()">减少</button>
+                    <toolbar [name]="toolbar" r-for="toolbar in toolbars"></toolbar>
                 </div>
             `
         })

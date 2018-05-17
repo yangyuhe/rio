@@ -13,7 +13,7 @@
                 <menus [menus]="realmenus"></menus>
                 <menus [menus]="realmenus"></menus>
                 <menus [menus]="realmenus"></menus>
-                <button (click)="change()">change</button>
+                <button r-click="change()">change</button>
             </div>
             `,
             data:{
@@ -60,7 +60,7 @@
         Rio.component("menus",{
             template:`
             <div class="menus">
-                <menu [for]="menu in menus" [menu]="menu"></menu>
+                <menu r-for="menu in menus" [menu]="menu"></menu>
             </div>
             `,
             style:`

@@ -1,31 +1,36 @@
 import { RegisterComponent, Start } from "./manager/components-manager";
-import { MVVMComponentOption } from "./models";
-import { RegisterValue } from "./manager/value-manager";
+import { ComponentOption, DirectiveOption } from "./models";
+import { RegisterDirective } from "./manager/directive-manager";
 (<any>window).Rio={
-    component:function(name:string,option:MVVMComponentOption){
+    component:function(name:string,option:ComponentOption,namespace:string){
         option.$name=name
-        RegisterComponent(option,"default")
+        if(namespace!=null)
+            option.$namespace=namespace
+        else
+            option.$namespace="default"
+        RegisterComponent(option)
         return this
     },
-    value:function(value:{[name:string]:any}){
-        RegisterValue(value,"default")
+    directive:function(name:string,option:DirectiveOption,namespace:string){
+        option.$name=name
+        if(namespace!=null)
+            option.$namespace=namespace
+        else
+            option.$namespace="default"
+        RegisterDirective(option)
         return this
     },
     namespace:function(namespace:string){
-        let nc=function(name:string,options:MVVMComponentOption){
-            options.$name=name
-            RegisterComponent(options,namespace)
-            return wrap
+        return {
+            component:function(name:string,option:ComponentOption){
+                (<any>window).Rio.component(name,option,namespace)
+                return this
+            },
+            directive:function(name:string,option:DirectiveOption){
+                (<any>window).Rio.directive(name,option,namespace)
+                return this
+            }
         }
-        let nv=function(value:any){
-            RegisterValue(value,namespace)
-            return wrap
-        }
-        let wrap={
-            component:nc,
-            value:nv
-        }
-        return wrap
     }
 }
 document.addEventListener("DOMContentLoaded",function(){

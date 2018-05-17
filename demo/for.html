@@ -13,9 +13,9 @@
             },
             template:`
             <ul>
-                <li [for]="n in numbers">{{n}}</li>
-                <button (click)="delete()">delete</button>
-                <button (click)="sort()">sort</button>
+                <li r-for="n in numbers">{{n}}</li>
+                <button r-click="delete()">delete</button>
+                <button r-click="sort()">sort</button>
             </ul>
             `,
             methods:{

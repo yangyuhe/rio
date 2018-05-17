@@ -1,12 +1,12 @@
 import { VDom } from './../vdom/vdom';
-import { MVVMComponentOption } from "../models";
+import { ComponentOption } from "../models";
 import { MVVM } from "../mvvm/mvvm";
 import { CustomNode } from "../vnode/custom-node";
 import { TraverseDom } from "../vdom/vdom";
-import { GetNS, HttpGet, LogError } from "../util";
+import { GetNS, HttpGet, LogError, IsStringEmpty } from "../util";
 
-let roots:{option:MVVMComponentOption,dom:Node}[]=[]
-let namespaces:{[namespace:string]:{[component:string]:MVVMComponentOption}}={
+let roots:{option:ComponentOption,dom:Node}[]=[]
+let namespaces:{[namespace:string]:{[component:string]:ComponentOption}}={
     "default":{
     }
 }
@@ -36,15 +36,21 @@ function firstRender(dom:HTMLElement){
         }
     }
 }
-export function RegisterComponent(option:MVVMComponentOption,namespace:string){
-    option.$namespace=namespace.toLowerCase()
-    
-    if(namespaces[namespace]==null)
-        namespaces[namespace]={}
-    let components=namespaces[namespace]
+export function RegisterComponent(option:ComponentOption){
+    checkOption(option)
+    option.data=option.data||{}
+    option.events=option.events||[]
+    option.methods=option.methods||{}
+    option.props=option.props||[]
+    option.$name=option.$name||""
+    option.computed=option.computed||{}
+    if(namespaces[option.$namespace]==null)
+        namespaces[option.$namespace]={}
+    let components=namespaces[option.$namespace]
     components[option.$name]=option
 }
-export function GetComponent(name:string,namespace:string):MVVMComponentOption{
+
+export function GetComponent(name:string,namespace:string):ComponentOption{
     name=name.toLowerCase()
     namespace=namespace.toLowerCase()
     let option=namespaces[namespace] && namespaces[namespace][name]
@@ -60,7 +66,7 @@ export function IsComponentRegistered(name:string,namespace:string){
     else
         return false
 }
-function preTreatment(option:MVVMComponentOption){
+function preTreatment(option:ComponentOption){
     //唯一标识
     option.$id=option.$namespace+"_"+option.$name
     //模版
@@ -96,4 +102,12 @@ function addAttr(dom:VDom,attr:string){
             addAttr(child,attr)
         })
     }
+}
+function checkOption(option:ComponentOption){
+    if(IsStringEmpty(option.$name))
+        throw new Error("component name should not be null")
+    if(IsStringEmpty(option.template) && IsStringEmpty(option.templateUrl))
+        throw new Error("component template should not be null")
+    if(namespaces[option.$namespace] && namespaces[option.$namespace][option.$name])
+        throw new Error("component "+option.$name +" has already exist")
 }

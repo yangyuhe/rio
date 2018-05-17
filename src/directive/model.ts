@@ -3,11 +3,11 @@ export function DirModel(exp: string, vnode: VNode) {
     let inputtype=vnode.Vdom.GetAttr("type")
     let input=vnode.Vdom.NodeName.toLowerCase()
     if(input=="input" && inputtype=="checkbox"){
-        vnode.mvvm.$watchExpOrFunc(vnode,exp, (newvalue) => {
+        vnode.mvvm.$watch(vnode,exp, (newvalue) => {
             setValue(vnode, newvalue)
         },true);
     }else{
-        vnode.mvvm.$watchExpOrFunc(vnode,exp, (newvalue) => {
+        vnode.mvvm.$watch(vnode,exp, (newvalue) => {
             setValue(vnode, newvalue)
         });
     }

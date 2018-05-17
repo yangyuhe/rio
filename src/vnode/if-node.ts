@@ -1,6 +1,6 @@
 import { MVVM } from "../mvvm/mvvm";
 import { VNode } from "./vnode";
-import { VDom, NewVNodeNoForNoIf } from "../vdom/vdom";
+import { VDom, NewVNode, Priority } from "../vdom/vdom";
 import { VNodeStatus } from "../const";
 
 export class IfNode extends VNode {
@@ -12,7 +12,7 @@ export class IfNode extends VNode {
     
     AttachDom() {}
     Render(){
-        this.mvvm.$watchExpOrFunc(this,this.ifExp, newvalue=>this.reImpletement(newvalue))
+        this.mvvm.$watch(this,this.ifExp, newvalue=>this.reImpletement(newvalue))
     }
     Update(){
         let attached = this.mvvm.GetExpValue(this.ifExp)
@@ -53,7 +53,7 @@ export class IfNode extends VNode {
     }
 
     private instance(){
-        this.dynamicVNode=NewVNodeNoForNoIf(this.Vdom,this.mvvm,null)
+        this.dynamicVNode=NewVNode(this.Vdom,this.mvvm,null,Priority.NORMAL)
         this.dynamicVNode.IsCopy=true
         this.dynamicVNode.AttachDom()
     }

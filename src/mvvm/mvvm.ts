@@ -1,4 +1,4 @@
-import { MVVMComponentOption, Prop } from "../models";
+import { ComponentOption, Prop } from "../models";
 import { CustomNode } from "../vnode/custom-node";
 import { VNode } from "../vnode/vnode";
 import { OnDataChange } from './../models';
@@ -22,14 +22,11 @@ export class MVVM {
     private $name:string=""
     private hirented=false    
 
-    constructor(option:MVVMComponentOption){
-        if(option.data!=null)
-            this.$data=JSON.parse(JSON.stringify(option.data))
-        else
-            this.$data={}
-        this.$methods=option.methods  ||{}
-        this.$name=option.$name||""
-        this.$computed=option.computed||{}
+    constructor(option:ComponentOption){
+        this.$data=JSON.parse(JSON.stringify(option.data))
+        this.$methods=option.methods
+        this.$name=option.$name
+        this.$computed=option.computed
 
         this.$template=option.template
         this.$Namespace=option.$namespace
@@ -39,8 +36,8 @@ export class MVVM {
         if(option.methods && option.methods.$init){
             option.methods.$init.call(this)
         }
-        this.$Ins=option.props || []
-        this.$Outs=option.events || []
+        this.$Ins=option.props
+        this.$Outs=option.events
 
         this.$observe=new Observe(this)
         this.$observe.ReactiveData(this.$data)
@@ -89,28 +86,30 @@ export class MVVM {
         this.proxyComputed()
         if(this.hirented){
             Object.keys(this.$FenceNode.mvvm.$data).forEach(key=>{
-                this.$FenceNode.mvvm.$watchExpOrFunc(this.$FenceNode,key,(newvalue:any,oldvalue:any)=>{
+                this.$FenceNode.mvvm.$watch(this.$FenceNode,key,(newvalue:any,oldvalue:any)=>{
                     (this as any)[key]=newvalue
                 })
                 this.$observe.ReactiveKey(this,key,true)                                   
             })
             Object.keys(this.$FenceNode.mvvm.$computed).forEach(key=>{
-                this.$FenceNode.mvvm.$watchExpOrFunc(this.$FenceNode,key,(newvalue:any,oldvalue:any)=>{
+                this.$FenceNode.mvvm.$watch(this.$FenceNode,key,(newvalue:any,oldvalue:any)=>{
                     (this as any)[key]=newvalue
                 })
                 this.$observe.ReactiveKey(this,key,true)      
             })
         }
         this.$Ins.forEach(prop=>{
-            if(this.$FenceNode.GetIn(prop.name)==null && prop.required){
+            let inName=this.$FenceNode.GetIn(prop.name)
+            if(inName==null && prop.required){
                 throw new Error("component \'"+this.$name+"\' need prop \'"+prop.name)
             }
-            let inName=this.$FenceNode.GetIn(prop.name)
-            this.$FenceNode.mvvm.$watchExpOrFunc(this.$FenceNode,inName,(newvalue:any,oldvalue:any)=>{
-                this.$checkProp(prop,newvalue);
-                (this as any)[prop.name]=newvalue
-            });
-            this.$observe.ReactiveKey(this,prop.name,true)
+            if(inName!=null){
+                this.$FenceNode.mvvm.$watch(this.$FenceNode,inName,(newvalue:any,oldvalue:any)=>{
+                    this.$checkProp(prop,newvalue);
+                    (this as any)[prop.name]=newvalue
+                });
+                this.$observe.ReactiveKey(this,prop.name,true)
+            }
         })
         
         this.$TreeRoot.Render()
@@ -150,7 +149,7 @@ export class MVVM {
             RevokeEvent(method,data,this.$FenceNode.mvvm)
         }
     };
-    public $watchExpOrFunc(vnode:VNode,exp:string|Function,listener:OnDataChange,arraydeep?:boolean){
+    public $watch(vnode:VNode,exp:string|Function,listener:OnDataChange,arraydeep?:boolean){
         this.$observe.AddWatcher(vnode,exp,listener,arraydeep)
     }
     

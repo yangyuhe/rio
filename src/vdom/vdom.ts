@@ -2,6 +2,8 @@ import { VNode } from "../vnode/vnode";
 import { IsComponentRegistered, GetComponent } from "../manager/components-manager";
 import { MVVM } from "../mvvm/mvvm";
 import { GetNS } from "../util";
+import { PRE } from "../const";
+import { VinallaNode } from "../vnode/vinalla-node";
 declare let require:(module:string)=>any
 export class VDom{
     NodeValue: string
@@ -42,19 +44,24 @@ export function TraverseDom(dom:Node):VDom{
     }
     return root
 }
-export function NewVNode(dom:VDom,mvvm:MVVM,parent:VNode):VNode{
+export enum Priority{
+    NORMAL,
+    IF,
+    FOR
+}
+export function NewVNode(dom:VDom,mvvm:MVVM,parent:VNode,priority:Priority=Priority.FOR):VNode{
     if(dom.NodeName.toLowerCase()=="slot"){
         let SlotNode=require("../vnode/slot-node").SlotNode
         return new SlotNode(dom,mvvm,parent,dom.GetAttr("name"))
     }
 
-    if(dom.GetAttr("[for]")!=null){
+    if(priority>=Priority.FOR && dom.GetAttr(PRE+"for")!=null){
         let ForNode=require("../vnode/for-node").ForNode
-        return new ForNode(dom,mvvm,parent,dom.GetAttr("[for]"))
+        return new ForNode(dom,mvvm,parent,dom.GetAttr(PRE+"for"))
     }
-    if(dom.GetAttr("[if]")!=null){
+    if(priority>=Priority.IF && dom.GetAttr(PRE+"if")!=null){
         let IfNode=require("../vnode/if-node").IfNode
-        return new IfNode(dom,mvvm,parent,dom.GetAttr("[if]"))              
+        return new IfNode(dom,mvvm,parent,dom.GetAttr(PRE+"if"))              
     }
     let ns=GetNS(dom.NodeName)
     if(IsComponentRegistered(ns.value,ns.namespace||"default")){
@@ -67,46 +74,5 @@ export function NewVNode(dom:VDom,mvvm:MVVM,parent:VNode):VNode{
         return cust
     }
         
-    return new VNode(dom,mvvm,parent)
-}
-export function NewVNodeNoFor(dom:VDom,mvvm:MVVM,parent:VNode):VNode{
-    if(dom.NodeName.toLowerCase()=="slot"){
-        let SlotNode=require("../vnode/slot-node").SlotNode
-        return new SlotNode(dom,mvvm,parent,dom.GetAttr("name"))
-    }
-
-    if(dom.GetAttr("[if]")!=null){
-        let IfNode=require("../vnode/if-node").IfNode
-        return new IfNode(dom,mvvm,parent,dom.GetAttr("[if]"))              
-    }
-    let ns=GetNS(dom.NodeName)
-    if(IsComponentRegistered(ns.value,ns.namespace||"default")){
-        let option=GetComponent(ns.value,ns.namespace||"default")
-        let surroundmvvm=new MVVM(option)
-        let CustomNode=require("../vnode/custom-node").CustomNode
-        let cust= new CustomNode(dom,mvvm,parent,surroundmvvm)
-        surroundmvvm.$FenceNode=cust
-        cust.ParseTemplate()
-        return cust
-    }
-        
-    return new VNode(dom,mvvm,parent)
-}
-export function NewVNodeNoForNoIf(dom:VDom,mvvm:MVVM,parent:VNode):VNode{
-    if(dom.NodeName.toLowerCase()=="slot"){
-        let SlotNode=require("../vnode/slot-node").SlotNode
-        return new SlotNode(dom,mvvm,parent,dom.GetAttr("name"))
-    }
-    let ns=GetNS(dom.NodeName)
-    if(IsComponentRegistered(ns.value,ns.namespace||"default")){
-        let option=GetComponent(ns.value,ns.namespace||"default")
-        let selfmvvm=new MVVM(option)
-        let CustomNode=require("../vnode/custom-node").CustomNode
-        let cust= new CustomNode(dom,mvvm,parent,selfmvvm)
-        selfmvvm.$FenceNode=cust
-        cust.ParseTemplate()
-        return cust
-    }
-        
-    return new VNode(dom,mvvm,parent)
+    return new VinallaNode(dom,mvvm,parent)
 }

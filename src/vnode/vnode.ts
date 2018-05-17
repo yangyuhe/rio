@@ -1,70 +1,31 @@
-import { REG_IN, REG_OUT, REG_STR, REG_ATTR, REG_TEST_OUTPUT, REG_TEST_INPUT, REG_MULTI, VNodeStatus } from './../const';
 import { REG_SINGLE } from "../const";
-import { DirectiveBind } from "../directive/dir-handler";
 import { MVVM } from '../mvvm/mvvm';
 import { NewVNode, VDom } from '../vdom/vdom';
-import { LogError } from '../util';
-export class VNode {
+import { REG_ATTR, REG_MULTI, VNodeStatus } from './../const';
+export abstract class VNode {
     NodeValue: string
     NodeName: string
     NodeType: number
     /**普通属性 */
     Attrs: { name: string, value: string }[] = []
-    /**指令属性 */
+    
     Children: VNode[] = []
     Dom: Node
     IsTemplate = false
     IsCopy=false
-    //输入与输出值
-    protected ins_pure:{[name:string]:any}={}
-    protected ins_exp:{[name:string]:string}={}
-    protected outs:{[name:string]:string}={}
+    
     protected status:VNodeStatus=VNodeStatus.ACTIVE
 
     constructor(public Vdom:VDom,public mvvm: MVVM,public Parent:VNode) {
     }
     
     AddProperty(name: string, value: string) {
-        value = value.trim()
-        if(REG_IN.test(name)){
-            let attr=RegExp.$1
-            if(attr=="for" || attr=="if")
-                return
-            if(!this.testInput(attr)){
-                LogError("prop "+attr+" not exist on "+this.NodeName)
-                return
-            }
-            if(REG_STR.test(value))
-                this.ins_pure[attr]=RegExp.$2
-            else
-                this.ins_exp[attr]=value
-            return
-        }
-        if(REG_OUT.test(name)){
-            if(!this.testOutput(RegExp.$1)){
-                LogError("event "+RegExp.$1+" not exist on "+this.NodeName)
-                return
-            }
-            this.outs[RegExp.$1]=value
-            return
-        }
         if(REG_ATTR.test(name)){
             this.Attrs.push({name:name,value:value})
         }
     }
-    GetOutput(){
-        return this.outs
-    }
-    GetInput(){
-        return this.ins_exp
-    }
-    protected testOutput(name:string):boolean{
-        return REG_TEST_OUTPUT.test(name)
-    }
-    protected testInput(name:string):boolean{
-        return REG_TEST_INPUT.test(name)
-    }
     
+    protected directiveBind(){}
     /**生成虚拟节点代表的dom并把自己加入父亲dom中 */
     Render() :void{
         if (this.NodeType == 1) {
@@ -81,20 +42,20 @@ export class VNode {
             children.forEach(child => {
                 child.Render()
             })
-            //todo 设置属性
-            DirectiveBind(this)
+
+            this.directiveBind()
         }
         if (this.NodeType == 3) {
             this.Dom = document.createTextNode(this.NodeValue)
             
             if (REG_SINGLE.test(this.NodeValue)) {
-                this.mvvm.$watchExpOrFunc(this,RegExp.$1,(newvalue, oldvalue)=>{
+                this.mvvm.$watch(this,RegExp.$1,(newvalue, oldvalue)=>{
                     this.Dom.textContent = newvalue
                 })
             }else{
                 if(REG_MULTI.test(this.NodeValue)){
                     let res=this.multiBindParse(this.NodeValue)
-                    this.mvvm.$watchExpOrFunc(this,res,(newvalue, oldvalue)=>{
+                    this.mvvm.$watch(this,res,(newvalue, oldvalue)=>{
                         this.Dom.textContent = newvalue
                     })
                 }else{
@@ -256,16 +217,16 @@ export class VNode {
     }
     /**解析自节点信息 */
     protected childSet(){
-            //解析子节点
-            for (let i = 0; i < this.Vdom.Children.length; i++) {
-                let childdom=this.Vdom.Children[i]
-                let vchild=NewVNode(childdom,this.mvvm,this)
-                
-                if(vchild!=null){
-                    vchild.AttachDom()
-                    this.Children.push(vchild)
-                }
+        //解析子节点
+        for (let i = 0; i < this.Vdom.Children.length; i++) {
+            let childdom=this.Vdom.Children[i]
+            let vchild=NewVNode(childdom,this.mvvm,this)
+            
+            if(vchild!=null){
+                vchild.AttachDom()
+                this.Children.push(vchild)
             }
+        }
     }
     AttachDom() {
         this.basicSet()

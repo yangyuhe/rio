@@ -1,6 +1,6 @@
 import { ForExp } from "../models";
 import { MVVM } from '../mvvm/mvvm';
-import { VDom, NewVNodeNoFor } from '../vdom/vdom';
+import { VDom, NewVNode, Priority } from '../vdom/vdom';
 import { CustomNode } from './custom-node';
 import { VNode } from "./vnode";
 import { VNodeStatus } from "../const";
@@ -16,7 +16,7 @@ export class ForNode extends VNode{
     }
     private newCopyNode(n:number){
         let itemexp=this.ForExp.itemExp
-        let mvvm=new MVVM({props:[{name:itemexp,required:true}]})
+        let mvvm=new MVVM({$name:"",data:{},methods:{},computed:{},events:[],$namespace:this.mvvm.$Namespace,props:[{name:itemexp,required:true}]})
         mvvm.SetHirented(true)
 
         let fencenode=new CustomNode(this.Vdom,this.mvvm,null,mvvm)
@@ -32,7 +32,7 @@ export class ForNode extends VNode{
             for(let i=this.dynamicVNodes.length;i<newcount;i++){       
                 let custnode=this.newCopyNode(i)
                 
-                let vnode=NewVNodeNoFor(this.Vdom,custnode.SurroundMvvm,null)
+                let vnode=NewVNode(this.Vdom,custnode.SurroundMvvm,null,Priority.IF)
                 vnode.AttachDom()
                 custnode.SurroundMvvm.$TreeRoot=vnode
                 custnodes.push(custnode)
@@ -64,7 +64,7 @@ export class ForNode extends VNode{
     }
     AttachDom() {}
     Render(){
-        this.mvvm.$watchExpOrFunc(this,this.ForExp.arrayExp+".length",this.reImplementForExp.bind(this))
+        this.mvvm.$watch(this,this.ForExp.arrayExp+".length",this.reImplementForExp.bind(this))
     }
     OnRemoved(){
         this.dynamicVNodes.forEach(vnode=>vnode.OnRemoved())

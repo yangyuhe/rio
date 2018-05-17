@@ -1,13 +1,18 @@
+import { VinallaNode } from './vinalla-node';
+import { REG_IN, REG_OUT, VNodeStatus } from "../const";
 import { GetComponent, IsComponentRegistered } from "../manager/components-manager";
 import { MVVM } from "../mvvm/mvvm";
 import { GetNS } from "../util";
 import { NewVNode, VDom } from "../vdom/vdom";
 import { TemplateNode } from "./template-node";
 import { VNode } from "./vnode";
-import { VNodeStatus } from "../const";
 
 export class CustomNode extends VNode{
-    
+    //输入与输出值
+    private ins_pure:{[name:string]:any}={}
+    private ins_exp:{[name:string]:string}={}
+    private outs:{[name:string]:string}={}
+
     constructor(public Vdom:VDom,public mvvm: MVVM,public Parent:VNode,public SurroundMvvm:MVVM) {
         super(Vdom,mvvm,Parent)
     }
@@ -70,7 +75,7 @@ export class CustomNode extends VNode{
             selfmvvm.$FenceNode=this
             child.ParseTemplate()            
         }else{
-            this.SurroundMvvm.$TreeRoot=new VNode(domtree,this.SurroundMvvm,null)
+            this.SurroundMvvm.$TreeRoot=new VinallaNode(domtree,this.SurroundMvvm,null)
         }
         this.SurroundMvvm.$TreeRoot.AttachDom()
         
@@ -96,16 +101,7 @@ export class CustomNode extends VNode{
     Update(){
         this.SurroundMvvm.$TreeRoot.Update()
     }
-    protected testOutput(name:string):boolean{
-        if(this.SurroundMvvm.$Outs.indexOf(name)==-1)
-            return false
-        return true
-    }
-    protected testInput(name:string):boolean{
-        return this.SurroundMvvm.$Ins.some(prop=>{
-            return prop.name==name
-        })
-    }
+
     OnRemoved(){
         this.SurroundMvvm.$ondestroy()
     }
@@ -113,5 +109,32 @@ export class CustomNode extends VNode{
         this.status=status
         this.SurroundMvvm.$TreeRoot.SetStatus(status)
     }
-
+    AddProperty(name: string, value: string) {
+        //输入
+        for(let i=0;i<this.SurroundMvvm.$Ins.length;i++){
+            let prop=this.SurroundMvvm.$Ins[i]
+            
+            if(REG_IN.test(name) && prop.name==RegExp.$1){
+                this.ins_exp[RegExp.$1]=value
+                return
+            }else{
+                if(prop.name==name){
+                    this.ins_pure[name]=value
+                    return
+                }
+            }
+        }
+        //输出
+        for(let i=0;i<this.SurroundMvvm.$Outs.length;i++){
+            let event=this.SurroundMvvm.$Outs[i]
+            
+            if(REG_OUT.test(name) && event==RegExp.$1){
+                this.outs[RegExp.$1]=value
+                return
+            }
+        }
+        
+        super.AddProperty(name,value)
+    }
+    
 }

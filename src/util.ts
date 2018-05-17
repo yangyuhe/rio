@@ -20,3 +20,24 @@ export function HttpGet(url:string):string{
     else
         return null
 }
+export function IsStringEmpty(str:string){
+    if(str==null)
+        return true
+    str=str.trim()
+    if(str=="")
+        return true
+    return false
+}
+export function Trim(str:string,char:string){
+    if(char.length>1)
+        throw new Error("only receve one character")
+    let start=-1
+    while(str[start+1]==char){
+        start++
+    }
+    let end=str.length
+    while(str[end-1]==char){
+        end--
+    }
+    return str.substring(start+1,end)
+}
