@@ -1,5 +1,5 @@
 # ![rio.js](https://github.com/chaojihexiang/rio/blob/master/riojs.png?raw=true)
-# 0.2.1
+# V0.2.1
 <p>riao.js 是一个用于开发webapp的响应式javascript框架，语法参考了vue.js，概念参考了angular.js。</p>
 
 *注意该框架尚处于初级阶段，暂时不能用于生产*
