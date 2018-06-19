@@ -1,55 +1,70 @@
-import { MVVM } from "../mvvm/mvvm";
+import { ComponentMvvm } from './../mvvm/component-mvvm';
+import { Mvvm } from "../mvvm/mvvm";
 import { VNode } from "./vnode";
 import { VDom, NewVNode, Priority } from "../vdom/vdom";
 import { VNodeStatus } from "../const";
 
 export class IfNode extends VNode {
     private dynamicVNode: VNode
-    constructor(public Vdom:VDom,public mvvm: MVVM, public Parent: VNode, private ifExp: string) {
+    private rendered=false
+    constructor(public Vdom:VDom,public mvvm: Mvvm, public Parent: VNode, private ifExp: string) {
         super(Vdom,mvvm, Parent)
         this.IsTemplate=true
     }
     
     AttachDom() {}
     Render(){
-        this.mvvm.$watch(this,this.ifExp, newvalue=>this.reImpletement(newvalue))
+        this.mvvm.$Watch(this,this.ifExp, newvalue=>this.reImpletement(newvalue))
     }
     Update(){
-        let attached = this.mvvm.GetExpValue(this.ifExp)
+        let attached = this.mvvm.$GetExpValue(this.ifExp)
         this.reImpletement(attached)
     }
 
     private reImpletement(newvalue:boolean){
-        if (newvalue) {
-            if(this.dynamicVNode==null){
+        if(!this.rendered){
+            this.rendered=true
+            if (newvalue) {
                 this.instance()
                 this.dynamicVNode.Render()
-            }else{
-                this.dynamicVNode.Update()
+                this.Dom=this.dynamicVNode.Dom
+                if(this.Parent!=null){
+                    this.Parent.AddChildren(this, [this.dynamicVNode],0)
+                    this.Parent.Refresh()
+                }
             }
-            if(this.Parent!=null){
-                this.Parent.AddChildren(this, [this.dynamicVNode],0)
-                this.Parent.Refresh()
-            }
-            else{
-                this.mvvm.$FenceNode.Dom=this.dynamicVNode.Dom
-                this.mvvm.$FenceNode.Parent.Refresh()           
-            }
-            this.dynamicVNode.SetStatus(VNodeStatus.ACTIVE)
-            
-        } else {
-            if(this.dynamicVNode!=null){
+        }else{
+            if (newvalue) {
+                if(this.dynamicVNode==null){
+                    this.instance()
+                    this.dynamicVNode.Render()
+                    this.Dom=this.dynamicVNode.Dom
+                }else{
+                    this.dynamicVNode.Update()
+                }
+                if(this.Parent!=null){
+                    this.Parent.AddChildren(this, [this.dynamicVNode],0)
+                    this.Parent.Refresh()
+                }
+                else{
+                    (this.mvvm as ComponentMvvm).$GetFenceNode().Dom=this.Dom;
+                    (this.mvvm as ComponentMvvm).$GetFenceNode().Source.Parent.Refresh()           
+                }
+                this.dynamicVNode.SetStatus(VNodeStatus.ACTIVE)
+                
+            } else {
                 if(this.Parent!=null){
                     this.Parent.RemoveChildren([this.dynamicVNode])
                     this.Parent.Refresh()
                 }
                 else{                
-                    this.mvvm.$FenceNode.Dom=null
-                    this.mvvm.$FenceNode.Parent.Refresh()
+                    (this.mvvm as ComponentMvvm).$GetFenceNode().Dom=null;
+                    (this.mvvm as ComponentMvvm).$GetFenceNode().Source.Parent.Refresh()
                 }
                 this.dynamicVNode.SetStatus(VNodeStatus.INACTIVE)
             }
         }
+        
     }
 
     private instance(){

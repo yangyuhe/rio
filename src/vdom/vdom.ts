@@ -1,9 +1,10 @@
 import { VNode } from "../vnode/vnode";
-import { IsComponentRegistered, GetComponent } from "../manager/components-manager";
-import { MVVM } from "../mvvm/mvvm";
+import { IsComponentRegistered, InitComponent } from "../manager/components-manager";
+import { Mvvm } from "../mvvm/mvvm";
 import { GetNS } from "../util";
 import { PRE } from "../const";
 import { VinallaNode } from "../vnode/vinalla-node";
+
 declare let require:(module:string)=>any
 export class VDom{
     NodeValue: string
@@ -30,7 +31,7 @@ export function TraverseDom(dom:Node):VDom{
     if(root.NodeValue!=null){
         root.NodeValue=root.NodeValue.replace(/\s+/g,"")
     }
-    root.NodeName=dom.nodeName
+    root.NodeName=dom.nodeName.toLowerCase()
     root.NodeType=dom.nodeType
     if(dom.nodeType==1){
         let htmldom=dom as HTMLElement
@@ -49,7 +50,7 @@ export enum Priority{
     IF,
     FOR
 }
-export function NewVNode(dom:VDom,mvvm:MVVM,parent:VNode,priority:Priority=Priority.FOR):VNode{
+export function NewVNode(dom:VDom,mvvm:Mvvm,parent:VNode,priority:Priority=Priority.FOR):VNode{
     if(dom.NodeName.toLowerCase()=="slot"){
         let SlotNode=require("../vnode/slot-node").SlotNode
         return new SlotNode(dom,mvvm,parent,dom.GetAttr("name"))
@@ -63,14 +64,17 @@ export function NewVNode(dom:VDom,mvvm:MVVM,parent:VNode,priority:Priority=Prior
         let IfNode=require("../vnode/if-node").IfNode
         return new IfNode(dom,mvvm,parent,dom.GetAttr(PRE+"if"))              
     }
+    if(dom.NodeName=="router-view"){
+        let RouterNode=require("../vnode/router-node").RouterNode
+        return new RouterNode(dom,mvvm,parent)
+    }
     let ns=GetNS(dom.NodeName)
     if(IsComponentRegistered(ns.value,ns.namespace||"default")){
-        let option=GetComponent(ns.value,ns.namespace||"default")
-        let selfmvvm=new MVVM(option)
+        let construct=InitComponent(ns.value,ns.namespace||"default")
+        let selfmvvm=new construct()
         let CustomNode=require("../vnode/custom-node").CustomNode
         let cust= new CustomNode(dom,mvvm,parent,selfmvvm)
-        selfmvvm.$FenceNode=cust
-        cust.ParseTemplate()
+        selfmvvm.$SetFenceNode(cust)
         return cust
     }
         

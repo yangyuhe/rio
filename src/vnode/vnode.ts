@@ -1,5 +1,8 @@
+import { ComponentMvvm } from './../mvvm/component-mvvm';
+import { AppMvvm } from './../mvvm/app-mvvm';
+import { ForNode } from './for-node';
 import { REG_SINGLE } from "../const";
-import { MVVM } from '../mvvm/mvvm';
+import { Mvvm } from '../mvvm/mvvm';
 import { NewVNode, VDom } from '../vdom/vdom';
 import { REG_ATTR, REG_MULTI, VNodeStatus } from './../const';
 export abstract class VNode {
@@ -13,10 +16,13 @@ export abstract class VNode {
     Dom: Node
     IsTemplate = false
     IsCopy=false
+
+    /**指向生成此节点的for节点 */
+    Source:ForNode
     
     protected status:VNodeStatus=VNodeStatus.ACTIVE
 
-    constructor(public Vdom:VDom,public mvvm: MVVM,public Parent:VNode) {
+    constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode) {
     }
     
     AddProperty(name: string, value: string) {
@@ -49,13 +55,13 @@ export abstract class VNode {
             this.Dom = document.createTextNode(this.NodeValue)
             
             if (REG_SINGLE.test(this.NodeValue)) {
-                this.mvvm.$watch(this,RegExp.$1,(newvalue, oldvalue)=>{
+                this.mvvm.$Watch(this,RegExp.$1,(newvalue, oldvalue)=>{
                     this.Dom.textContent = newvalue
                 })
             }else{
                 if(REG_MULTI.test(this.NodeValue)){
                     let res=this.multiBindParse(this.NodeValue)
-                    this.mvvm.$watch(this,res,(newvalue, oldvalue)=>{
+                    this.mvvm.$Watch(this,res,(newvalue, oldvalue)=>{
                         this.Dom.textContent = newvalue
                     })
                 }else{
@@ -63,8 +69,12 @@ export abstract class VNode {
                 }
             }
         }
-        if(this.Parent && this.Parent.Dom)
-            this.Parent.Dom.appendChild(this.Dom)
+        if(this.NodeType==8){
+            this.Dom=document.createComment(this.NodeValue)
+        }
+        if(this.NodeType==1 ||this.NodeType==3 ||this.NodeType==8)
+            if(this.Parent && this.Parent.Dom)
+                this.Parent.Dom.appendChild(this.Dom)
     }
     private multiBindParse(nodevalue:string):string{
         let reg=/\{\{([^\{\}]*)\}\}/g
@@ -100,11 +110,11 @@ export abstract class VNode {
         }
         if (this.NodeType == 3) {
             if (REG_SINGLE.test(this.NodeValue)) {
-                this.Dom.textContent=this.mvvm.GetExpValue(RegExp.$1)
+                this.Dom.textContent=this.mvvm.$GetExpValue(RegExp.$1)
             }else{
                 if(REG_MULTI.test(this.NodeValue)){
                     let res=this.multiBindParse(this.NodeValue)
-                    this.Dom.textContent=this.mvvm.GetExpValue(res)     
+                    this.Dom.textContent=this.mvvm.$GetExpValue(res)     
                 }else{
                     this.Dom.textContent=this.NodeValue
                 }
@@ -241,5 +251,19 @@ export abstract class VNode {
     }
     GetStatus(){
         return this.status
+    }
+    OnRouterChange(){
+        this.Children.forEach(child=>child.OnRouterChange())
+    }
+    NavigateTo(url:string):void{
+        if(this.mvvm.$GetRoot()){
+            (this.mvvm as AppMvvm).$NavigateTo(url)
+        }else{
+            if(this.Parent!=null)
+                this.Parent.NavigateTo(url)
+            else{
+                (this.mvvm as ComponentMvvm).$GetFenceNode().NavigateTo(url)
+            }
+        }
     }
 }

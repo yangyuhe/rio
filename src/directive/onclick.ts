@@ -1,7 +1,7 @@
 import {REG_EVENT, REG_STR} from "../const"
 import { VNode } from "../vnode/vnode";
-export function OnClick(dir:string,vnode:VNode){
-    if (REG_EVENT.test(dir)) {
+export function OnClick(exp:string,vnode:VNode,isconst:boolean){
+    if (REG_EVENT.test(exp)) {
         let methodStr = RegExp.$1
         let paramsStr = RegExp.$2
         if (paramsStr.length > 0) {
@@ -22,17 +22,17 @@ export function OnClick(dir:string,vnode:VNode){
                             params.push(n.valueOf())
                         } else {
                             //肯定是本地变量
-                            params.push(vnode.mvvm.GetExpValue(p))
+                            params.push(vnode.mvvm.$GetExpValue(p))
                         }
                     } else {
                         params.push(RegExp.$2)
                     }
                 })
-                vnode.mvvm.RevokeMethod(methodStr, ...params)
+                vnode.mvvm.$RevokeMethod(methodStr, ...params)
             })
         }else{
             vnode.Dom.addEventListener("click", () => {
-                vnode.mvvm.RevokeMethod(methodStr)  
+                vnode.mvvm.$RevokeMethod(methodStr)  
             })
         }
     }

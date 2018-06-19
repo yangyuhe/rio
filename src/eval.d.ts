@@ -1,0 +1,1 @@
+export declare let EvalExp:(context:any,exp:string)=>any;

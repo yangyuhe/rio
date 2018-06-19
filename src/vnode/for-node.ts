@@ -1,5 +1,6 @@
-import { ForExp } from "../models";
-import { MVVM } from '../mvvm/mvvm';
+import { ComponentMvvm } from './../mvvm/component-mvvm';
+import { ForExp, Prop } from "../models";
+import { Mvvm } from '../mvvm/mvvm';
 import { VDom, NewVNode, Priority } from '../vdom/vdom';
 import { CustomNode } from './custom-node';
 import { VNode } from "./vnode";
@@ -8,7 +9,7 @@ import { VNodeStatus } from "../const";
 export class ForNode extends VNode{
     private dynamicVNodes:CustomNode[] = []
     public ForExp:ForExp
-    constructor(public Vdom:VDom,public mvvm: MVVM,public Parent:VNode,private originForExp:string) {
+    constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode,private originForExp:string) {
         super(Vdom,mvvm,Parent)
         this.IsTemplate=true       
         let forSplit=this.originForExp.trim().split(/\s+/)
@@ -16,11 +17,45 @@ export class ForNode extends VNode{
     }
     private newCopyNode(n:number){
         let itemexp=this.ForExp.itemExp
-        let mvvm=new MVVM({$name:"",data:{},methods:{},computed:{},events:[],$namespace:this.mvvm.$Namespace,props:[{name:itemexp,required:true}]})
-        mvvm.SetHirented(true)
+        let that=this
+        let mvvm=new (class extends ComponentMvvm{
+            $GetTreeroot(): VNode {
+                let vnode=NewVNode(that.Vdom,this,null,Priority.IF)
+                return vnode
+            }
+            $GetNamespace(): string {
+                return that.mvvm.$GetNamespace();
+            }
+            $GetDataItems(): {name:string,value:any}[] {
+                let datas:{name:string,value:any}[]=[]
+                that.mvvm.$GetDataItems().forEach(item=>{
+                    datas.push({name:item.name,value:item.value})
+                })
+                that.mvvm.$GetComputeItems().forEach(item=>{
+                    datas.push({name:item.name,value:(that.mvvm as any)[item.name]})
+                })
+                return datas
+            }
+            $GetComputeItems(): { name: string; get: () => any }[] {
+                return []
+            }
+            $GetName():string{
+                return ""
+            }
+            $GetIns():Prop[]{
+                return [{name:itemexp,required:true}]
+            }
+            $GetOuts():string[]{
+                return []
+            }
+            $GetParams():{alias:string,name:string,required:boolean}[]{
+               return []
+            }
+        });
+        mvvm.$SetHirented(true)
 
         let fencenode=new CustomNode(this.Vdom,this.mvvm,null,mvvm)
-        mvvm.$FenceNode=fencenode        
+        mvvm.$SetFenceNode(fencenode)     
         fencenode.IsCopy=true
         fencenode.AddIns(itemexp,this.ForExp.arrayExp+"["+n+"]")
         return fencenode
@@ -31,10 +66,7 @@ export class ForNode extends VNode{
             let oldcount=this.dynamicVNodes.length
             for(let i=this.dynamicVNodes.length;i<newcount;i++){       
                 let custnode=this.newCopyNode(i)
-                
-                let vnode=NewVNode(this.Vdom,custnode.SurroundMvvm,null,Priority.IF)
-                vnode.AttachDom()
-                custnode.SurroundMvvm.$TreeRoot=vnode
+                custnode.Source=this
                 custnodes.push(custnode)
             }
             custnodes.forEach(custnode=>{
@@ -57,14 +89,14 @@ export class ForNode extends VNode{
     }
     
     Update(){
-        let items=this.mvvm.GetExpValue(this.ForExp.arrayExp)
+        let items=this.mvvm.$GetExpValue(this.ForExp.arrayExp)
         if(toString.call(items) === "[object Array]"){
             this.reImplementForExp(items.length)
         }
     }
     AttachDom() {}
     Render(){
-        this.mvvm.$watch(this,this.ForExp.arrayExp+".length",this.reImplementForExp.bind(this))
+        this.mvvm.$Watch(this,this.ForExp.arrayExp+".length",this.reImplementForExp.bind(this))
     }
     OnRemoved(){
         this.dynamicVNodes.forEach(vnode=>vnode.OnRemoved())

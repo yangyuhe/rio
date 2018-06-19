@@ -1,113 +1,106 @@
-import { VDom } from './../vdom/vdom';
-import { ComponentOption } from "../models";
-import { MVVM } from "../mvvm/mvvm";
-import { CustomNode } from "../vnode/custom-node";
+import { IComponentMvvm } from './../models';
+import { ComponentOption, ComponentMvvmFactoryOption } from '../models';
+import { HttpGet, LogError } from "../util";
 import { TraverseDom } from "../vdom/vdom";
-import { GetNS, HttpGet, LogError, IsStringEmpty } from "../util";
+import { VDom } from './../vdom/vdom';
 
-let roots:{option:ComponentOption,dom:Node}[]=[]
-let namespaces:{[namespace:string]:{[component:string]:ComponentOption}}={
-    "default":{
+
+let repository:{[id:string]:ComponentMvvmFactoryOption}={}
+
+export function Id(namespace:string,name:string){
+    return namespace+"::"+name;
+}
+
+export function RegisterComponent(name:string,namespace:string,constructor:IComponentMvvm,option:ComponentOption) {
+    let factoryOption:ComponentMvvmFactoryOption={
+        $constructor:constructor,
+        $id:Id(namespace,name),
+        $preProcess:false,
+        $domtree:null,
+        $origin:option
     }
+    if(repository[factoryOption.$id]!=null)
+        throw new Error("component "+factoryOption.$id+" already exists")
+    repository[factoryOption.$id]=factoryOption
 }
-export function Start(){
-    firstRender(document.body)
-    roots.forEach(root=>{
-        let domtree=TraverseDom(root.dom)
+export function RegisterComponentDirect(option:ComponentMvvmFactoryOption){
+    if(repository[option.$id]!=null)
+        throw new Error("component " + option.$id + " has already exist")
+    repository[option.$id]=option
+}
 
-        let mountmvvm=new MVVM(root.option)
-        let custnode=new CustomNode(domtree,null,null,mountmvvm)
-        custnode.ParseTemplate()
-        mountmvvm.$FenceNode=custnode
-        custnode.AttachDom()
-        let content=mountmvvm.Render()
-        root.dom.parentElement.replaceChild(content,root.dom)
-    })
-}
-function firstRender(dom:HTMLElement){
-    let ns=GetNS(dom.nodeName)
-    if(IsComponentRegistered(ns.value,ns.namespace||"default")){
-        let component=GetComponent(ns.value,ns.namespace||"default")
-        roots.push({option:component,dom:dom})
+export function InitComponent(name: string, namespace: string): IComponentMvvm {
+    name = name.toLowerCase()
+    namespace = namespace.toLowerCase()
+    let factory = repository[Id(namespace,name)]
+    if (factory && !factory.$preProcess){
+        preProcess(factory)
+        factory.$preProcess=true
+    }
+    if(factory){
+        return factory.$constructor
     }else{
-        for(let i=0;i<dom.children.length;i++){
-            let child=dom.children[i] as HTMLElement
-            firstRender(child)
-        }
+        throw new Error("component "+Id(namespace,name)+" not exists")
     }
+    
 }
-export function RegisterComponent(option:ComponentOption){
-    checkOption(option)
-    option.data=option.data||{}
-    option.events=option.events||[]
-    option.methods=option.methods||{}
-    option.props=option.props||[]
-    option.$name=option.$name||""
-    option.computed=option.computed||{}
-    if(namespaces[option.$namespace]==null)
-        namespaces[option.$namespace]={}
-    let components=namespaces[option.$namespace]
-    components[option.$name]=option
+export function GetDomTree(name: string, namespace: string){
+    name = name.toLowerCase()
+    namespace = namespace.toLowerCase()
+    let factory = repository[Id(namespace,name)]
+    if(factory==null)
+        return null
+    return factory.$domtree
 }
-
-export function GetComponent(name:string,namespace:string):ComponentOption{
-    name=name.toLowerCase()
-    namespace=namespace.toLowerCase()
-    let option=namespaces[namespace] && namespaces[namespace][name]
-    if(option && option.$id==null)
-        preTreatment(option)
-    return option
-}
-export function IsComponentRegistered(name:string,namespace:string){
-    name=name.toLowerCase()
-    namespace=namespace.toLowerCase()
-    if(namespaces[namespace] && namespaces[namespace][name])
+export function IsComponentRegistered(name: string, namespace: string) {
+    name = name.toLowerCase()
+    namespace = namespace.toLowerCase()
+    if (repository[Id(namespace,name)])
         return true
     else
         return false
 }
-function preTreatment(option:ComponentOption){
-    //唯一标识
-    option.$id=option.$namespace+"_"+option.$name
+function preProcess(option: ComponentMvvmFactoryOption) {
     //模版
-    if(option.templateUrl!=null){
-        option.template=HttpGet(option.templateUrl)
-        if(option.template==null){
-            LogError("path "+option.templateUrl+" not found")
+    if (option.$origin.templateUrl != null) {
+        option.$origin.template = HttpGet(option.$origin.templateUrl)
+        if (option.$origin.template == null) {
+            LogError("path " + option.$origin.templateUrl + " not found")
             return
         }
     }
-    
-    let dom=(new DOMParser()).parseFromString(option.template,"text/html").body.children[0]
-    option.$domtree=TraverseDom(dom)
-    //样式
-    if(option.styleUrl!=null){
-        option.style=HttpGet(option.styleUrl)
+
+    let res=(new DOMParser()).parseFromString(option.$origin.template, "text/html").body
+    if(res.children.length>1)
+        throw new Error(option.$origin.name+"::"+option.$origin.namespace+" template should have only one root")
+    if(res.children.length==1)
+        option.$domtree = TraverseDom(res.children[0])
+    else{
+        if(res.childNodes.length==1)
+            option.$domtree = TraverseDom(res.childNodes[0])
+        else
+            throw new Error("template should not be empty")
     }
-    if(option.style!=null){
-        let css=option.style.replace(/(?!\s)([^\{\}]+)(?=\{[^\{\}]*\})/g,function(str){
-            return str+"["+option.$id+"]"
-        })
+    //样式
+    if (option.$origin.styleUrl != null) {
+        option.$origin.style = HttpGet(option.$origin.styleUrl)
+    }
+    if (option.$origin.style != null) {
+        // let css = option.style.replace(/(?!\s)([^\{\}]+?)(?=\s*\{[^\{\}]*\})/g, function (str) {
+        //     return str + "[" + option.$id + "]"
+        // })
         var style = document.createElement('style');
         style.type = 'text/css';
-        style.innerHTML = css;
+        style.innerHTML = option.$origin.style;
         document.getElementsByTagName('head')[0].appendChild(style);
-        addAttr(option.$domtree,option.$id)
+        addAttr(option.$domtree, option.$id)
     }
 }
-function addAttr(dom:VDom,attr:string){
+function addAttr(dom: VDom, attr: string) {
     dom.AddAttr(attr)
-    if(dom.NodeType==1){
-        dom.Children.forEach(child=>{
-            addAttr(child,attr)
+    if (dom.NodeType == 1) {
+        dom.Children.forEach(child => {
+            addAttr(child, attr)
         })
     }
-}
-function checkOption(option:ComponentOption){
-    if(IsStringEmpty(option.$name))
-        throw new Error("component name should not be null")
-    if(IsStringEmpty(option.template) && IsStringEmpty(option.templateUrl))
-        throw new Error("component template should not be null")
-    if(namespaces[option.$namespace] && namespaces[option.$namespace][option.$name])
-        throw new Error("component "+option.$name +" has already exist")
 }

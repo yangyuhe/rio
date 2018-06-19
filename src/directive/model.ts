@@ -1,20 +1,20 @@
 import { VNode } from "../vnode/vnode"
-export function DirModel(exp: string, vnode: VNode) {
+export function DirModel(exp: string, vnode: VNode,isconst:boolean) {
     let inputtype=vnode.Vdom.GetAttr("type")
     let input=vnode.Vdom.NodeName.toLowerCase()
     if(input=="input" && inputtype=="checkbox"){
-        vnode.mvvm.$watch(vnode,exp, (newvalue) => {
+        vnode.mvvm.$Watch(vnode,exp, (newvalue) => {
             setValue(vnode, newvalue)
         },true);
     }else{
-        vnode.mvvm.$watch(vnode,exp, (newvalue) => {
+        vnode.mvvm.$Watch(vnode,exp, (newvalue) => {
             setValue(vnode, newvalue)
         });
     }
     vnode.Dom.addEventListener("input", (event: any) => {
         //select控件
         if (vnode.NodeName.toLowerCase() == "select") {
-            vnode.mvvm.SetValue(exp, event.target.value)
+            vnode.mvvm.$SetValue(exp, event.target.value)
             return
         }
         //text radio checkbox控件
@@ -24,10 +24,10 @@ export function DirModel(exp: string, vnode: VNode) {
         switch (inputType) {
             case "text":
             case "radio":
-                vnode.mvvm.SetValue(exp, event.target.value)
+                vnode.mvvm.$SetValue(exp, event.target.value)
                 break
             case "checkbox":
-                let cur = vnode.mvvm.GetExpValue(exp)
+                let cur = vnode.mvvm.$GetExpValue(exp)
                 if (toString.call(cur) == "[object Array]") {
                     let oldarray = cur as Array<any>;
                     let index = oldarray.indexOf(event.target.value)

@@ -3,8 +3,8 @@ import { OnDataChange } from './../models';
 import { Watcher } from "./watcher";
 import { AddWatcher } from './msg-queue';
 import { VNodeStatus } from '../const';
+import {EvalExp} from "../eval"
 
-declare let EvalExp:(context:any,exp:string)=>any
 export class Observe{
     private static target:Watcher
     constructor(private data:any){}

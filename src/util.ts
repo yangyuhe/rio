@@ -8,8 +8,7 @@ export function GetNS(str:string):{namespace:string,value:string}{
     let res=str.split(":")
     if(res.length==1)
         return {namespace:null,value:res[0]}
-    if(res.length==2)
-        return {namespace:res[0],value:res[1]}
+    return {namespace:res[0],value:res.slice(1).join(":")}
 }
 export function HttpGet(url:string):string{
     let xhr=new XMLHttpRequest()

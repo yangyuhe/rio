@@ -1,9 +1,9 @@
 import { VNode } from "./vnode";
-import { MVVM } from "../mvvm/mvvm";
+import { Mvvm } from "../mvvm/mvvm";
 import { VDom } from "../vdom/vdom";
 
 export class TemplateNode extends VNode{
-    constructor(protected vdom:VDom,public mvvm: MVVM,public Parent:VNode,public templatename:string) {
+    constructor(protected vdom:VDom,public mvvm: Mvvm,public Parent:VNode,public templatename:string) {
         super(vdom,mvvm,Parent)
     }
     

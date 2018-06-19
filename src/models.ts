@@ -1,25 +1,35 @@
+import { AppMvvm } from './mvvm/app-mvvm';
+import { ComponentMvvm } from './mvvm/component-mvvm';
+import { DirectiveMVVM } from './mvvm/directive-mvvm';
 import { VDom } from './vdom/vdom';
+import { DirectiveNode } from './vnode/directive-node';
+import { VNode } from './vnode/vnode';
 
-export interface ComponentOption{
-    $name?:string,
+interface BaseOption{
+    namespace?:string,
+}
+export interface ComponentOption extends BaseOption{
+    events?:string[],
+    name:string,
     template?:string,
     templateUrl?:string,
-    data?:Object,
-    methods?:{[name:string]:Function},
-    props?:Prop[],
-    events?:string[],
     style?:string,
-    styleUrl?:string,
-    $namespace?:string,
-    $id?:string,
-    $domtree?:VDom,
-    computed?:{[name:string]:()=>any}
+    styleUrl?:string
+    
+}
+export interface AppOption extends BaseOption{
+    el:string
+}
+export interface DirectiveOption extends BaseOption{
+    name:string
+    events?:string[]
 }
 
+export type PropType="array"|"object"|"number"|"string"|"boolean"
 export interface Prop{
     name:string
     required:boolean
-    type?:"array"|"object"|"number"|"string"|"boolean"
+    type?:PropType
 }
 export interface OnDataChange {
     (newvalue:any,oldvalue:any):void
@@ -29,17 +39,21 @@ export class ForExp{
     constructor(public itemExp:string,public arrayExp:string){}
 }
 
-/**返回值 */
-export interface RetureValue{
-    exp:string,
-    data:any
-}
-export interface DirectiveOption{
-    $name:string
-    $namespace:string
-    data?:Object
-    methods?:{[name:string]:Function}
-    props?:Prop[]
-    events?:string[]
-}
 
+
+export interface IComponentMvvm{
+    new ():ComponentMvvm
+}
+export interface IAppMvvm{
+    new ():AppMvvm
+}
+export interface IDirectiveConstructor{
+    new (directive:DirectiveNode,vnode:VNode):DirectiveMVVM
+}
+export interface ComponentMvvmFactoryOption {
+    $constructor:IComponentMvvm
+    $preProcess:boolean
+    $id:string,
+    $domtree:VDom,
+    $origin:ComponentOption
+}

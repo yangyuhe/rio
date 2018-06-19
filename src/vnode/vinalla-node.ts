@@ -1,15 +1,15 @@
-import { GetDirective, IsDirectiveRegistered } from '../manager/directive-manager';
+import { GetInnerDir } from "../directive/inner-dir";
+import { GetDirectiveCon, IsDirectiveRegistered } from '../manager/directive-manager';
 import { DirectiveMVVM } from '../mvvm/directive-mvvm';
 import { GetNS } from '../util';
-import { REG_ATTR, REG_IN, REG_OUT, PRE } from './../const';
-import { Directive } from './directive';
+import { REG_ATTR, REG_IN, REG_OUT } from './../const';
+import { InnerDirective } from './../directive/inner-dir';
+import { DirectiveNode } from './directive-node';
 import { VNode } from './vnode';
-import { DirModel } from '../directive/model';
-import { OnClick } from '../directive/onclick';
 export class VinallaNode extends VNode{
     
     private directives:DirectiveMVVM[]=[]
-    private innerDirective:{name:string,value:string}[]=[]
+    private innerDirective:{dir:InnerDirective,isconst:boolean,exp:string}[]=[]
     
     AddProperty(name: string, value: string) {
         if(REG_ATTR.test(name)){
@@ -19,18 +19,13 @@ export class VinallaNode extends VNode{
     
     OnRemoved(){
         super.OnRemoved()
-        this.directives.forEach(dir=>dir.$ondestroy())
+        this.directives.forEach(dir=>dir.$OnDestroy())
     }
 
     protected directiveBind(){
-        this.directives.forEach(dir=>dir.Render())
-        this.innerDirective.forEach(dir=>{
-            if(dir.name==PRE+"model"){
-                DirModel(dir.value,this)
-            }
-            if(dir.name==PRE+"click"){
-                OnClick(dir.value,this)
-            }
+        this.directives.forEach(dir=>dir.$Render())
+        this.innerDirective.forEach(item=>{
+            item.dir(item.exp,this,item.isconst)
         })
     }
     
@@ -45,31 +40,35 @@ export class VinallaNode extends VNode{
             let attr=this.Vdom.Attrs[i]
             let ns=GetNS(attr.Name)
             if(ns.namespace==null)
-                ns.namespace=this.mvvm.$Namespace
+                ns.namespace=this.mvvm.$GetNamespace()
             if(IsDirectiveRegistered(ns.value,ns.namespace)){
-                let directiveoption=GetDirective(ns.value,ns.namespace)
+                let dirNode=new DirectiveNode(this.Vdom)
+                let dirCons=GetDirectiveCon(ns.value,ns.namespace)
+                let dirMvvm=new dirCons(dirNode,this)
                 vanillaAttrs=vanillaAttrs.filter(attr=>{
                     let name=attr.Name
                     if(REG_IN.test(attr.Name) || REG_OUT.test(attr.Name))
                         name=RegExp.$1
                     
-                    let isprop= directiveoption.props.some(prop=>prop.name==name)
-                    let isevent=directiveoption.events.some(event=>event==name)
+                    let isprop= dirMvvm.$Ins.some(prop=>prop.name==name)
+                    let isevent=dirMvvm.$Outs.some(event=>event==name)
                     return !(isprop || isevent)
                 })
-                let directive=new Directive(this.Vdom,directiveoption)
-                let directivemvvm=new DirectiveMVVM(directiveoption,directive,this)
-                this.directives.push(directivemvvm)
+                this.directives.push(dirMvvm)
                 return
             }
         }
         vanillaAttrs= vanillaAttrs.filter(attr=>{
-            if(attr.Name==PRE+"model"){
-                this.innerDirective.push({name:attr.Name,value:attr.Value})
-                return false
+            if(REG_IN.test(attr.Name)){
+                let dir=GetInnerDir(RegExp.$1)
+                if(dir!=null){
+                    this.innerDirective.push({dir:dir,isconst:false,exp:attr.Value})
+                    return false
+                }
             }
-            if(attr.Name==PRE+"click"){
-                this.innerDirective.push({name:attr.Name,value:attr.Value})
+            let dir=GetInnerDir(attr.Name)
+            if(dir!=null){
+                this.innerDirective.push({dir:dir,isconst:true,exp:attr.Value})
                 return false
             }
             return true

@@ -1,6 +1,6 @@
 import {REG_EVENT, REG_STR} from "../const"
-import { MVVM } from "./mvvm";
-export function RevokeEvent(method:string,data:any,mvvm:MVVM){
+import { Mvvm } from "./mvvm";
+export function RevokeEvent(method:string,data:any,mvvm:Mvvm){
     if (REG_EVENT.test(method)) {
         let methodStr = RegExp.$1
         let paramsStr = RegExp.$2
@@ -26,15 +26,15 @@ export function RevokeEvent(method:string,data:any,mvvm:MVVM){
                         params.push(n.valueOf())
                     } else {
                         //肯定是本地变量
-                        params.push(mvvm.GetExpValue(p))
+                        params.push(mvvm.$GetExpValue(p))
                     }
                 } else {
                     params.push(RegExp.$2)
                 }
             })
-            mvvm.RevokeMethod(methodStr, ...params)
+            mvvm.$RevokeMethod(methodStr, ...params)
         }else{
-            mvvm.RevokeMethod(methodStr)  
+            mvvm.$RevokeMethod(methodStr)  
         }
     }
 }

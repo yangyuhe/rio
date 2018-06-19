@@ -5,3 +5,4 @@ var EvalExp=function(context,exp){
     }
     return res
 }
+exports.EvalExp=EvalExp
