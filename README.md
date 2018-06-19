@@ -1,8 +1,8 @@
 # ![rio.js](https://github.com/chaojihexiang/rio/blob/master/riojs.png?raw=true)
+# V0.2.1
+<p>riao.js 是一个用于开发webapp的响应式javascript框架，语法参考了vue.js，概念参考了angular.js。</p>
 
-<p>riao.js 是一个用于开发webapp的响应式javascript框架，语法参考了vue.js，概念参考了angular.js。</p>
-
-*注意该框架尚处于初级阶段，不能用于生产*
+*注意该框架尚处于初级阶段，暂时不能用于生产*
 
 ***
 ### 功能简介
@@ -14,7 +14,7 @@
 ### 开始使用
 1. 安装
 * 通过npm 安装
-<code>npm install rio-js --save</code>
+<code>npm install @yangyuhe/riojs --save</code>
 * 或者直接编译源码，只要把项目拷贝到本地运行gulp命令即可
 2. 简单使用  
 在demo文件夹里包含几个小页面，是我自己随便写的测试的内容，其中主要是一个用riojs写的一个简单的todo应用，后面会继续规范化demo，方便他人阅读和自测。
