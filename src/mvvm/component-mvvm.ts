@@ -13,10 +13,11 @@ export class ComponentMvvm extends Mvvm{
     
     private $ins:Prop[]=[]
 
-    constructor(){
-        super()
-        this.$name=this.$GetName()
-        this.$ins=this.$GetIns()
+    
+    $initialize(){
+        super.$initialize()
+        this.$name=this.$InitName()
+        this.$ins=this.$InitIns()
     }
     
     private $checkProp(prop:Prop,value:any){
@@ -109,28 +110,28 @@ export class ComponentMvvm extends Mvvm{
     }
 
     
-    $GetNamespace(): string {
+    $InitNamespace(): string {
         throw new Error("Method not implemented.");
     }
-    $GetDataItems(): {name:string,value:any}[] {
+    $InitDataItems(): {name:string,value:any}[] {
         throw new Error("Method not implemented.");
     }
-    $GetComputeItems(): { name: string; get: () => any }[] {
+    $InitComputeItems(): { name: string; get: () => any }[] {
         throw new Error("Method not implemented.");
     }
-    $GetName():string{
+    $InitName():string{
         throw new Error("Method not implemented.");
     }
-    $GetIns():Prop[]{
+    $InitIns():Prop[]{
         throw new Error("Method not implemented.");
     }
-    $GetOuts():string[]{
+    $InitOuts():string[]{
         throw new Error("Method not implemented.");
     }
-    $GetParams():{alias:string,name:string,required:boolean}[]{
+    $InitTreeroot(): VNode {
         throw new Error("Method not implemented.");
     }
-    $GetTreeroot(): VNode {
-        throw new Error("Method not implemented.");
+    $GetIns(){
+        return this.$ins
     }
 }

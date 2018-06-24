@@ -19,39 +19,47 @@ export class ForNode extends VNode{
         let itemexp=this.ForExp.itemExp
         let that=this
         let mvvm=new (class extends ComponentMvvm{
-            $GetTreeroot(): VNode {
+            $InitTreeroot(): VNode {
                 let vnode=NewVNode(that.Vdom,this,null,Priority.IF)
                 return vnode
             }
-            $GetNamespace(): string {
-                return that.mvvm.$GetNamespace();
+            $InitNamespace(): string {
+                return that.mvvm.$InitNamespace();
             }
-            $GetDataItems(): {name:string,value:any}[] {
+            $InitDataItems(): {name:string,value:any}[] {
                 let datas:{name:string,value:any}[]=[]
                 that.mvvm.$GetDataItems().forEach(item=>{
-                    datas.push({name:item.name,value:item.value})
-                })
-                that.mvvm.$GetComputeItems().forEach(item=>{
                     datas.push({name:item.name,value:(that.mvvm as any)[item.name]})
                 })
+                that.mvvm.$GetComputedItems().forEach(item=>{
+                    datas.push({name:item.name,value:(that.mvvm as any)[item.name]})
+                })
+                if(that.mvvm instanceof ComponentMvvm){
+                    let props=that.mvvm.$GetIns()
+                    props.forEach(prop=>{
+                        datas.push({name:prop.name,value:(that.mvvm as any)[prop.name]})
+                    })
+                }
+                
                 return datas
             }
-            $GetComputeItems(): { name: string; get: () => any }[] {
+            $InitComputeItems(): { name: string; get: () => any }[] {
                 return []
             }
-            $GetName():string{
+            $InitName():string{
                 return ""
             }
-            $GetIns():Prop[]{
+            $InitIns():Prop[]{
                 return [{name:itemexp,required:true}]
             }
-            $GetOuts():string[]{
+            $InitOuts():string[]{
                 return []
             }
             $GetParams():{alias:string,name:string,required:boolean}[]{
                return []
             }
         });
+        mvvm.$initialize()
         mvvm.$SetHirented(true)
 
         let fencenode=new CustomNode(this.Vdom,this.mvvm,null,mvvm)

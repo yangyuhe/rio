@@ -140,14 +140,18 @@ function App(option) {
         var constructor = /** @class */ (function (_super) {
             __extends($AppMvvm, _super);
             function $AppMvvm() {
-                var _this = _super.call(this) || this;
+                var _this = _super !== null && _super.apply(this, arguments) || this;
                 _this.$InitFuncs = res.initFuncs;
                 _this.$DestroyFuncs = res.destroyFuncs;
-                _this.$InitFuncs.forEach(function (init) {
-                    _this[init].call(_this);
-                });
                 return _this;
             }
+            $AppMvvm.prototype.$initialize = function () {
+                var _this = this;
+                _super.prototype.$initialize.call(this);
+                this.$InitFuncs.forEach(function (init) {
+                    _this[init].call(_this);
+                });
+            };
             $AppMvvm.prototype.$OnDestroy = function () {
                 var _this = this;
                 _super.prototype.$OnDestroy.call(this);
@@ -155,7 +159,7 @@ function App(option) {
                     _this[destroy].call(_this);
                 });
             };
-            $AppMvvm.prototype.$GetTreeroot = function () {
+            $AppMvvm.prototype.$InitTreeroot = function () {
                 var dom = document.querySelector(option.el);
                 if (dom == null) {
                     throw new Error("no specified element " + option.el);
@@ -164,10 +168,10 @@ function App(option) {
                 var vnode = vdom_1.NewVNode(vdom, this, null);
                 return vnode;
             };
-            $AppMvvm.prototype.$GetNamespace = function () {
+            $AppMvvm.prototype.$InitNamespace = function () {
                 return option.namespace;
             };
-            $AppMvvm.prototype.$GetDataItems = function () {
+            $AppMvvm.prototype.$InitDataItems = function () {
                 var _this = this;
                 var datas = [];
                 res.datas.forEach(function (item) {
@@ -175,10 +179,10 @@ function App(option) {
                 });
                 return datas;
             };
-            $AppMvvm.prototype.$GetComputeItems = function () {
+            $AppMvvm.prototype.$InitComputeItems = function () {
                 return res.computes;
             };
-            $AppMvvm.prototype.$GetEl = function () {
+            $AppMvvm.prototype.$InitEl = function () {
                 return option.el;
             };
             return $AppMvvm;
@@ -222,14 +226,18 @@ function Component(option) {
         var constructor = /** @class */ (function (_super) {
             __extends($ComponentMvvm, _super);
             function $ComponentMvvm() {
-                var _this = _super.call(this) || this;
+                var _this = _super !== null && _super.apply(this, arguments) || this;
                 _this.$InitFuncs = res.initFuncs;
                 _this.$DestroyFuncs = res.destroyFuncs;
-                _this.$InitFuncs.forEach(function (init) {
-                    _this[init].call(_this);
-                });
                 return _this;
             }
+            $ComponentMvvm.prototype.$initialize = function () {
+                var _this = this;
+                _super.prototype.$initialize.call(this);
+                this.$InitFuncs.forEach(function (init) {
+                    _this[init].call(_this);
+                });
+            };
             $ComponentMvvm.prototype.$OnDestroy = function () {
                 var _this = this;
                 _super.prototype.$OnDestroy.call(this);
@@ -237,18 +245,18 @@ function Component(option) {
                     _this[destroy].call(_this);
                 });
             };
-            $ComponentMvvm.prototype.$GetTreeroot = function () {
-                var domtree = components_manager_1.GetDomTree(this.$GetName(), this.$GetNamespace());
+            $ComponentMvvm.prototype.$InitTreeroot = function () {
+                var domtree = components_manager_1.GetDomTree(this.$InitName(), this.$InitNamespace());
                 if (domtree == null) {
-                    throw new Error("not found template or templateUrl for component " + this.$GetName() + " in " + this.$GetNamespace());
+                    throw new Error("not found template or templateUrl for component " + this.$InitName() + " in " + this.$InitNamespace());
                 }
                 var vnode = vdom_1.NewVNode(domtree, this, null);
                 return vnode;
             };
-            $ComponentMvvm.prototype.$GetNamespace = function () {
+            $ComponentMvvm.prototype.$InitNamespace = function () {
                 return option.namespace;
             };
-            $ComponentMvvm.prototype.$GetDataItems = function () {
+            $ComponentMvvm.prototype.$InitDataItems = function () {
                 var _this = this;
                 var datas = [];
                 res.datas.forEach(function (item) {
@@ -256,21 +264,18 @@ function Component(option) {
                 });
                 return datas;
             };
-            $ComponentMvvm.prototype.$GetComputeItems = function () {
+            $ComponentMvvm.prototype.$InitComputeItems = function () {
                 return res.computes;
             };
-            $ComponentMvvm.prototype.$GetName = function () {
+            $ComponentMvvm.prototype.$InitName = function () {
                 return option.name;
             };
-            $ComponentMvvm.prototype.$GetIns = function () {
+            $ComponentMvvm.prototype.$InitIns = function () {
                 return res.props;
             };
-            $ComponentMvvm.prototype.$GetOuts = function () {
+            $ComponentMvvm.prototype.$InitOuts = function () {
                 //todo
                 return [];
-            };
-            $ComponentMvvm.prototype.$GetParams = function () {
-                return res.params;
             };
             return $ComponentMvvm;
         }(target));
@@ -349,7 +354,6 @@ var computes = [];
 var props = [];
 var initFuncs = [];
 var destroyFuncs = [];
-var params = [];
 function Data(target, key) {
     datas.push(key);
 }
@@ -375,27 +379,19 @@ function OnDestroy(target, key, descriptor) {
     destroyFuncs.push(key);
 }
 exports.OnDestroy = OnDestroy;
-function Param(name, required) {
-    return function (target, key) {
-        params.push({ alias: key, name: name, required: required });
-    };
-}
-exports.Param = Param;
 function FetchProperty() {
     var res = {
         computes: computes,
         props: props,
         initFuncs: initFuncs,
         destroyFuncs: destroyFuncs,
-        datas: datas,
-        params: params
+        datas: datas
     };
     computes = [];
     props = [];
     initFuncs = [];
     destroyFuncs = [];
     datas = [];
-    params = [];
     return res;
 }
 exports.FetchProperty = FetchProperty;
@@ -408,20 +404,67 @@ exports.FetchProperty = FetchProperty;
   !*** ./src/directive/href.ts ***!
   \*******************************/
 /*! no static exports found */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
+var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 function Href(exp, vnode, isconst) {
-    vnode.Dom.addEventListener("click", function () {
-        if (isconst)
-            vnode.NavigateTo(exp);
-        else {
-            var path = vnode.mvvm.$GetExpValue(exp);
-            vnode.NavigateTo(path);
+    var href = "";
+    if (vnode.Dom.nodeName.toLowerCase() == "a") {
+        if (isconst) {
+            var streval = util_1.StrToEvalstr(exp);
+            if (streval.isconst)
+                vnode.Dom.setAttribute(const_1.PRE + "href", streval.exp);
+            else {
+                vnode.mvvm.$Watch(vnode, streval.exp, function (newvalue) {
+                    href = newvalue;
+                    vnode.Dom.setAttribute(const_1.PRE + "href", newvalue);
+                });
+            }
         }
+        else {
+            vnode.mvvm.$Watch(vnode, exp, function (newvalue) {
+                href = newvalue;
+                vnode.Dom.setAttribute(const_1.PRE + "href", newvalue);
+            });
+        }
+    }
+    vnode.Dom.addEventListener("click", function () {
+        vnode.NavigateTo(href);
     });
 }
 exports.Href = Href;
+
+
+/***/ }),
+
+/***/ "./src/directive/html.ts":
+/*!*******************************!*\
+  !*** ./src/directive/html.ts ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
+function Html(exp, vnode, noBracket) {
+    if (noBracket) {
+        var strEval = util_1.StrToEvalstr(exp);
+        if (strEval.isconst)
+            vnode.Dom.innerHTML = strEval.exp;
+        else
+            vnode.mvvm.$Watch(vnode, strEval.exp, function (newvalue) {
+                vnode.Dom.innerHTML = newvalue;
+            });
+    }
+    else {
+        vnode.mvvm.$Watch(vnode, exp, function (newvalue) {
+            vnode.Dom.innerHTML = newvalue;
+        });
+    }
+}
+exports.Html = Html;
 
 
 /***/ }),
@@ -438,6 +481,7 @@ var href_1 = __webpack_require__(/*! ./href */ "./src/directive/href.ts");
 var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var model_1 = __webpack_require__(/*! ./model */ "./src/directive/model.ts");
 var onclick_1 = __webpack_require__(/*! ./onclick */ "./src/directive/onclick.ts");
+var html_1 = __webpack_require__(/*! ./html */ "./src/directive/html.ts");
 var innerDirs = {};
 function RegisterInnerDir(name, comiple) {
     if (innerDirs[name] != null)
@@ -451,6 +495,7 @@ exports.GetInnerDir = GetInnerDir;
 RegisterInnerDir(const_1.PRE + "href", href_1.Href);
 RegisterInnerDir(const_1.PRE + "model", model_1.DirModel);
 RegisterInnerDir(const_1.PRE + "click", onclick_1.OnClick);
+RegisterInnerDir(const_1.PRE + "html", html_1.Html);
 
 
 /***/ }),
@@ -608,10 +653,16 @@ exports.OnClick = OnClick;
 
 var EvalExp=function(context,exp){
     var res
-    with(context){
-        res=eval(exp)
+    try {
+        with(context){
+            res=eval(exp)
+        }
+        return res
+    } catch (error) {
+        console.error("eval "+exp+" failed")
+        console.error(error)
     }
-    return res
+    return "" 
 }
 exports.EvalExp=EvalExp
 
@@ -637,7 +688,6 @@ exports.Computed = property_1.Computed;
 exports.Prop = property_1.Prop;
 exports.OnInit = property_1.OnInit;
 exports.OnDestroy = property_1.OnDestroy;
-exports.Param = property_1.Param;
 var directive_1 = __webpack_require__(/*! ./decorator/directive */ "./src/decorator/directive.ts");
 exports.Directive = directive_1.Directive;
 var component_mvvm_1 = __webpack_require__(/*! ./mvvm/component-mvvm */ "./src/mvvm/component-mvvm.ts");
@@ -646,8 +696,8 @@ var app_mvvm_1 = __webpack_require__(/*! ./mvvm/app-mvvm */ "./src/mvvm/app-mvvm
 exports.AppMvvm = app_mvvm_1.AppMvvm;
 var directive_mvvm_1 = __webpack_require__(/*! ./mvvm/directive-mvvm */ "./src/mvvm/directive-mvvm.ts");
 exports.DirectiveMVVM = directive_mvvm_1.DirectiveMVVM;
-var router_1 = __webpack_require__(/*! ./router/router */ "./src/router/router.ts");
-exports.RegisterRouter = router_1.RegisterRouter;
+var router_manager_1 = __webpack_require__(/*! ./router/router-manager */ "./src/router/router-manager.ts");
+exports.RegisterRouter = router_manager_1.RegisterRouter;
 document.addEventListener("DOMContentLoaded", function () {
     start_1.Start();
 });
@@ -840,9 +890,10 @@ function Start() {
     var apps = app_manager_1.GetApp();
     apps.forEach(function (App) {
         var mvvm = new App();
+        mvvm.$initialize();
         mvvm.$SetRoot(true);
         var content = mvvm.$Render();
-        var target = document.querySelector(mvvm.$GetEl());
+        var target = document.querySelector(mvvm.$InitEl());
         target.parentElement.replaceChild(content, target);
     });
 }
@@ -890,7 +941,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var router_1 = __webpack_require__(/*! ../router/router */ "./src/router/router.ts");
+var router_manager_1 = __webpack_require__(/*! ../router/router-manager */ "./src/router/router-manager.ts");
 var mvvm_1 = __webpack_require__(/*! ./mvvm */ "./src/mvvm/mvvm.ts");
 var AppMvvm = /** @class */ (function (_super) {
     __extends(AppMvvm, _super);
@@ -901,7 +952,7 @@ var AppMvvm = /** @class */ (function (_super) {
     }
     AppMvvm.prototype.$NavigateTo = function (url) {
         window.history.replaceState(null, null, url);
-        router_1.NotifyUrlChange();
+        router_manager_1.NotifyUrlChange();
     };
     AppMvvm.prototype.$Render = function () {
         this.$treeRoot.Render();
@@ -915,19 +966,19 @@ var AppMvvm = /** @class */ (function (_super) {
         if (typeof this[method] == "function")
             this[method].apply(this, params);
     };
-    AppMvvm.prototype.$GetNamespace = function () {
+    AppMvvm.prototype.$InitNamespace = function () {
         throw new Error("Method not implemented.");
     };
-    AppMvvm.prototype.$GetDataItems = function () {
+    AppMvvm.prototype.$InitDataItems = function () {
         throw new Error("Method not implemented.");
     };
-    AppMvvm.prototype.$GetComputeItems = function () {
+    AppMvvm.prototype.$InitComputeItems = function () {
         throw new Error("Method not implemented.");
     };
-    AppMvvm.prototype.$GetTreeroot = function () {
+    AppMvvm.prototype.$InitTreeroot = function () {
         throw new Error("Method not implemented.");
     };
-    AppMvvm.prototype.$GetEl = function () {
+    AppMvvm.prototype.$InitEl = function () {
         throw new Error("Method not implemented.");
     };
     return AppMvvm;
@@ -960,14 +1011,17 @@ var revoke_event_1 = __webpack_require__(/*! ./revoke-event */ "./src/mvvm/revok
 var ComponentMvvm = /** @class */ (function (_super) {
     __extends(ComponentMvvm, _super);
     function ComponentMvvm() {
-        var _this = _super.call(this) || this;
+        var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.hirented = false;
         _this.$name = "";
         _this.$ins = [];
-        _this.$name = _this.$GetName();
-        _this.$ins = _this.$GetIns();
         return _this;
     }
+    ComponentMvvm.prototype.$initialize = function () {
+        _super.prototype.$initialize.call(this);
+        this.$name = this.$InitName();
+        this.$ins = this.$InitIns();
+    };
     ComponentMvvm.prototype.$checkProp = function (prop, value) {
         var error = function (name, prop, type) {
             throw new Error("component \'" + name + "\' prop \'" + prop + "\' not receive " + type);
@@ -1064,29 +1118,29 @@ var ComponentMvvm = /** @class */ (function (_super) {
     ComponentMvvm.prototype.$SetFenceNode = function (node) {
         this.$fenceNode = node;
     };
-    ComponentMvvm.prototype.$GetNamespace = function () {
+    ComponentMvvm.prototype.$InitNamespace = function () {
         throw new Error("Method not implemented.");
     };
-    ComponentMvvm.prototype.$GetDataItems = function () {
+    ComponentMvvm.prototype.$InitDataItems = function () {
         throw new Error("Method not implemented.");
     };
-    ComponentMvvm.prototype.$GetComputeItems = function () {
+    ComponentMvvm.prototype.$InitComputeItems = function () {
         throw new Error("Method not implemented.");
     };
-    ComponentMvvm.prototype.$GetName = function () {
+    ComponentMvvm.prototype.$InitName = function () {
+        throw new Error("Method not implemented.");
+    };
+    ComponentMvvm.prototype.$InitIns = function () {
+        throw new Error("Method not implemented.");
+    };
+    ComponentMvvm.prototype.$InitOuts = function () {
+        throw new Error("Method not implemented.");
+    };
+    ComponentMvvm.prototype.$InitTreeroot = function () {
         throw new Error("Method not implemented.");
     };
     ComponentMvvm.prototype.$GetIns = function () {
-        throw new Error("Method not implemented.");
-    };
-    ComponentMvvm.prototype.$GetOuts = function () {
-        throw new Error("Method not implemented.");
-    };
-    ComponentMvvm.prototype.$GetParams = function () {
-        throw new Error("Method not implemented.");
-    };
-    ComponentMvvm.prototype.$GetTreeroot = function () {
-        throw new Error("Method not implemented.");
+        return this.$ins;
     };
     return ComponentMvvm;
 }(mvvm_1.Mvvm));
@@ -1178,18 +1232,30 @@ exports.DirectiveMVVM = DirectiveMVVM;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var observe_1 = __webpack_require__(/*! ../observer/observe */ "./src/observer/observe.ts");
+var router_state_1 = __webpack_require__(/*! ../router/router-state */ "./src/router/router-state.ts");
 var Mvvm = /** @class */ (function () {
     function Mvvm() {
-        var _this = this;
         this.$data = {};
         this.$dataItems = [];
         this.$computeItems = [];
         this.$isroot = false;
-        this.$initData();
+    }
+    Object.defineProperty(Mvvm.prototype, "$router", {
+        get: function () {
+            return {
+                active: router_state_1.GetActiveRouter(),
+                cur: null
+            };
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Mvvm.prototype.$initialize = function () {
+        var _this = this;
         this.$observe = new observe_1.Observe(this);
-        this.$dataItems = this.$GetDataItems();
-        this.$computeItems = this.$GetComputeItems();
-        this.$treeRoot = this.$GetTreeroot();
+        this.$dataItems = this.$InitDataItems();
+        this.$computeItems = this.$InitComputeItems();
+        this.$treeRoot = this.$InitTreeroot();
         this.$treeRoot.AttachDom();
         this.$dataItems.forEach(function (item) {
             _this.$data[item.name] = item.value;
@@ -1206,8 +1272,7 @@ var Mvvm = /** @class */ (function () {
         this.$computeItems.forEach(function (item) {
             _this.$observe.WatchComputed(_this.$treeRoot, item.name, item.get);
         });
-    }
-    Mvvm.prototype.$initData = function () { };
+    };
     Mvvm.prototype.$GetExpValue = function (exp) {
         return this.$observe.GetValueWithExp(exp);
     };
@@ -1235,8 +1300,14 @@ var Mvvm = /** @class */ (function () {
     Mvvm.prototype.$SetRoot = function (isroot) {
         this.$isroot = isroot;
     };
-    Mvvm.prototype.$GetRoot = function () {
+    Mvvm.prototype.$IsRoot = function () {
         return this.$isroot;
+    };
+    Mvvm.prototype.$GetDataItems = function () {
+        return this.$dataItems;
+    };
+    Mvvm.prototype.$GetComputedItems = function () {
+        return this.$computeItems;
     };
     return Mvvm;
 }());
@@ -1607,127 +1678,291 @@ exports.Watcher = Watcher;
 
 /***/ }),
 
-/***/ "./src/router/router.ts":
-/*!******************************!*\
-  !*** ./src/router/router.ts ***!
-  \******************************/
+/***/ "./src/router/router-manager.ts":
+/*!**************************************!*\
+  !*** ./src/router/router-manager.ts ***!
+  \**************************************/
 /*! no static exports found */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var paths = [];
-var vnodes = [];
-var root = [];
-var cursor = null;
+var router_state_1 = __webpack_require__(/*! ./router-state */ "./src/router/router-state.ts");
+var matchedRouter = [];
+var appRouters = [];
+var cursor = -1;
 var firstVNode = null;
 function RegisterRouter(routers) {
     checkRouter(routers);
     routers.forEach(function (router) {
-        root.push(copyRouter(null, router));
+        router.urls = router.urls.map(function (url) {
+            if (url.indexOf("/") != 0)
+                return "/" + url;
+            else
+                return url;
+        });
+    });
+    routers.forEach(function (router) {
+        appRouters.push(copyRouter(null, router));
     });
 }
 exports.RegisterRouter = RegisterRouter;
 function checkRouter(routers) {
     routers.forEach(function (router) {
         router.children = router.children ? router.children : [];
+        if (router.redirect != null) {
+            router.component = "";
+            router.url = "";
+        }
         if (router.component == null && router.components == null) {
             throw new Error("must specify component or components in router");
         }
         if (router.url == null && router.urls == null) {
             throw new Error("must specify url or urls in router");
         }
+        router.params = router.params ? router.params : [];
+        router.urls = router.urls ? router.urls : [];
+        if (router.url != null)
+            router.urls.push(router.url);
+        checkRouter(router.children);
     });
 }
 function copyRouter(parent, router) {
     var r = {
-        url: router.url,
         urls: router.urls,
         component: router.component,
         components: router.components,
         children: [],
-        parent: parent
+        parent: parent,
+        fullUrls: [],
+        params: router.params,
+        redirect: router.redirect,
+        marked: false
     };
+    if (parent != null) {
+        r.urls.forEach(function (url) {
+            parent.fullUrls.forEach(function (fullurl) {
+                if (url.indexOf("/") == 0) {
+                    r.fullUrls.push(url);
+                }
+                else {
+                    if (url == "")
+                        r.fullUrls.push(fullurl);
+                    else
+                        r.fullUrls.push(fullurl + "/" + url);
+                }
+            });
+        });
+    }
+    else {
+        r.urls.forEach(function (url) { return r.fullUrls.push(url); });
+    }
     for (var i = 0; i < router.children.length; i++) {
         r.children.push(copyRouter(r, router.children[i]));
     }
     return r;
 }
-function compireArray(vinallaUrl, matchedUrl) {
+function matchRouter(matchedRouter) {
+    var vinallaUrl = location.pathname;
+    while (vinallaUrl.endsWith("/")) {
+        vinallaUrl = vinallaUrl.substr(0, vinallaUrl.length - 1);
+    }
     var vinallaSlice = vinallaUrl.split("/");
-    var matchedSlice = matchedUrl.split("/");
-    if (vinallaSlice.length < matchedSlice.length)
-        return { indexOf: false, params: [] };
-    var res = { indexOf: true, params: [] };
-    for (var i = 0; i < matchedSlice.length; i++) {
-        if (/^\:(\w+)$/.test(matchedSlice[i])) {
-            res.params.push({ name: RegExp.$1, value: vinallaSlice[i] });
-            continue;
-        }
-        if (matchedSlice[i] == vinallaSlice[i]) {
-            continue;
-        }
-        res.indexOf = false;
-        res.params = [];
-        break;
-    }
-    return res;
-}
-function GetRouter(vnode, name) {
-    if (root == null) {
-        throw new Error("no router specified");
-    }
-    var location = window.location.pathname;
-    var tempRouters = [];
-    if (cursor == null) {
-        tempRouters = root;
-        firstVNode = vnode;
-    }
-    else
-        tempRouters = cursor.children;
-    var url = "";
-    paths.forEach(function (path) { return url += path; });
-    for (var i = 0; i < tempRouters.length; i++) {
-        var urls = [];
-        if (tempRouters[i].url != null) {
-            urls.push(tempRouters[i].url);
-        }
-        if (tempRouters[i].urls != null) {
-            urls = urls.concat(tempRouters[i].urls);
-        }
-        for (var j = 0; j < urls.length; j++) {
-            var res = compireArray(location, url + urls[j]);
-            if (res.indexOf) {
-                paths.push(urls[j]);
-                vnodes.push(vnode);
-                cursor = tempRouters[i];
-                if (name == null)
-                    return { component: tempRouters[i].component, params: res.params };
+    var _loop_1 = function (i) {
+        var matchedUrl = matchedRouter.fullUrls[i];
+        var matchedSlice = matchedUrl.split("/");
+        if (vinallaSlice.length != matchedSlice.length)
+            return "continue";
+        var params = [];
+        for (var j = 0; j < matchedSlice.length; j++) {
+            if (/^\:(\w+)$/.test(matchedSlice[j])) {
+                if (vinallaSlice[j] != "") {
+                    var name_1 = RegExp.$1;
+                    params.push({ name: name_1, value: vinallaSlice[j] });
+                    continue;
+                }
                 else {
-                    var com = tempRouters[i].components[name];
-                    if (com == null) {
-                        throw new Error("no specified router view " + name);
-                    }
-                    return { component: com, params: res.params };
+                    break;
                 }
             }
+            if (matchedSlice[j] == vinallaSlice[j]) {
+                continue;
+            }
+            break;
         }
+        if (j == matchedSlice.length) {
+            var requireParams = matchedRouter.params;
+            var searchParams = getSearchParams();
+            params = params.concat(searchParams);
+            requireParams.forEach(function (rp) {
+                var exist = params.find(function (p) { return p.name == rp.name; });
+                if (exist == null && rp.required) {
+                    throw new Error("router match failed,no matched params:" + rp.name);
+                }
+            });
+            return { value: params };
+        }
+    };
+    for (var i = 0; i < matchedRouter.fullUrls.length; i++) {
+        var state_1 = _loop_1(i);
+        if (typeof state_1 === "object")
+            return state_1.value;
     }
     return null;
 }
-exports.GetRouter = GetRouter;
+function getSearchParams() {
+    var searchSlice = location.search.split("?");
+    var res = [];
+    if (searchSlice.length == 2) {
+        var params = searchSlice[1].split("&");
+        params.forEach(function (p) {
+            var name_value = p.split("=");
+            if (name_value.length == 2) {
+                res.push({ name: name_value[0], value: name_value[1] });
+            }
+        });
+    }
+    return res;
+}
+function getLeaf(router) {
+    if (router.marked)
+        return [];
+    if (router.children.length == 0) {
+        router.marked = true;
+        return [router];
+    }
+    var res = [];
+    router.children.forEach(function (child) {
+        res = res.concat(getLeaf(child));
+    });
+    if (res.length == 0) {
+        router.marked = true;
+        return [router];
+    }
+    return res;
+}
+function clearMark(router) {
+    router.children.forEach(function (child) {
+        clearMark(child);
+    });
+    router.marked = false;
+}
+function matchUrl() {
+    appRouters.forEach(function (r) { return clearMark(r); });
+    var routers = [];
+    var _loop_2 = function () {
+        var res = [];
+        appRouters.forEach(function (r) {
+            res = res.concat(getLeaf(r));
+        });
+        if (res.length == 0) {
+            return "break";
+        }
+        else {
+            routers = routers.concat(res);
+        }
+    };
+    while (true) {
+        var state_2 = _loop_2();
+        if (state_2 === "break")
+            break;
+    }
+    var redirect = false;
+    for (var i = 0; i < routers.length; i++) {
+        var router = routers[i];
+        if (router.redirect != null) {
+            window.history.replaceState(null, "", router.redirect);
+            redirect = true;
+            break;
+        }
+        var params = matchRouter(router);
+        if (params != null) {
+            router_state_1.SetActiveRouter(location.pathname, params);
+            matchedRouter = [router];
+            var parent_1 = router.parent;
+            while (parent_1 != null) {
+                matchedRouter.unshift(parent_1);
+                parent_1 = parent_1.parent;
+            }
+            break;
+        }
+    }
+    if (redirect) {
+        matchUrl();
+    }
+}
+function NextRouter(vnode, name) {
+    if (appRouters == null) {
+        throw new Error("no router specified");
+    }
+    if (cursor == -1) {
+        matchUrl();
+        firstVNode = vnode;
+        cursor = 0;
+    }
+    if (cursor < matchedRouter.length) {
+        var component = name ? matchedRouter[cursor].components[name] : matchedRouter[cursor].component;
+        cursor++;
+        return component;
+    }
+    else {
+        throw new Error("router match failed");
+    }
+}
+exports.NextRouter = NextRouter;
+function MoveBack() {
+    cursor--;
+}
+exports.MoveBack = MoveBack;
 function NotifyUrlChange() {
-    paths = [];
-    if (vnodes.length > 0)
-        vnodes.forEach(function (node) { return node.OnRouterChange(); });
-    else
-        firstVNode.OnRouterChange();
+    matchUrl();
+    firstVNode.OnRouterChange();
 }
 exports.NotifyUrlChange = NotifyUrlChange;
-function PopPath() {
-    paths.pop();
-    cursor = cursor.parent;
+
+
+/***/ }),
+
+/***/ "./src/router/router-state.ts":
+/*!************************************!*\
+  !*** ./src/router/router-state.ts ***!
+  \************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
+var _RouterInfo = /** @class */ (function () {
+    function _RouterInfo(path, params) {
+        this.path = path;
+        this.params = params;
+    }
+    _RouterInfo.prototype.getParam = function (name) {
+        var p = this.params.find(function (p) { return p.name == name; });
+        return p && p.value || null;
+    };
+    return _RouterInfo;
+}());
+var active = new _RouterInfo("", []);
+var listeners = [];
+function SetActiveRouter(path, params) {
+    var old = new _RouterInfo(path, params);
+    active.path = path;
+    active.params = params;
+    listeners = listeners.filter(function (listen) { return listen.vnode.GetStatus() != const_1.VNodeStatus.DEPRECATED; });
+    listeners.forEach(function (listen) {
+        if (listen.vnode.GetStatus() == const_1.VNodeStatus.ACTIVE)
+            listen.cb(active, old);
+    });
 }
-exports.PopPath = PopPath;
+exports.SetActiveRouter = SetActiveRouter;
+function GetActiveRouter() {
+    return active;
+}
+exports.GetActiveRouter = GetActiveRouter;
+function WatchRouterChange(vnode, listener) {
+    listeners.push({ cb: listener, vnode: vnode });
+}
+exports.WatchRouterChange = WatchRouterChange;
 
 
 /***/ }),
@@ -1737,9 +1972,10 @@ exports.PopPath = PopPath;
   !*** ./src/util.ts ***!
   \*********************/
 /*! no static exports found */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var const_1 = __webpack_require__(/*! ./const */ "./src/const.ts");
 function LogError(msg) {
     console.error(msg);
 }
@@ -1788,6 +2024,35 @@ function Trim(str, char) {
     return str.substring(start + 1, end);
 }
 exports.Trim = Trim;
+function StrToEvalstr(str) {
+    if (const_1.REG_SINGLE.test(str)) {
+        return { isconst: false, exp: RegExp.$1 };
+    }
+    else {
+        if (const_1.REG_MULTI.test(str)) {
+            var reg = /\{\{([^\{\}]*)\}\}/g;
+            var res = reg.exec(str);
+            var exp = "";
+            var lastindex = 0;
+            while (res) {
+                if (res.index != lastindex) {
+                    exp += "\'" + str.substring(lastindex, res.index) + "\'+";
+                }
+                lastindex = res.index + res[0].length;
+                exp += "(" + RegExp.$1 + ")+";
+                res = reg.exec(str);
+            }
+            if (exp.endsWith("+")) {
+                exp = exp.substring(0, exp.length - 1);
+            }
+            return { isconst: false, exp: exp };
+        }
+        else {
+            return { isconst: true, exp: str };
+        }
+    }
+}
+exports.StrToEvalstr = StrToEvalstr;
 
 
 /***/ }),
@@ -1873,6 +2138,7 @@ function NewVNode(dom, mvvm, parent, priority) {
     if (components_manager_1.IsComponentRegistered(ns.value, ns.namespace || "default")) {
         var construct = components_manager_1.InitComponent(ns.value, ns.namespace || "default");
         var selfmvvm = new construct();
+        selfmvvm.$initialize();
         var CustomNode = __webpack_require__(/*! ../vnode/custom-node */ "./src/vnode/custom-node.ts").CustomNode;
         var cust = new CustomNode(dom, mvvm, parent, selfmvvm);
         selfmvvm.$SetFenceNode(cust);
@@ -1995,7 +2261,7 @@ var CustomNode = /** @class */ (function (_super) {
     };
     CustomNode.prototype.AddProperty = function (name, value) {
         //输入
-        var ins = this.SurroundMvvm.$GetIns();
+        var ins = this.SurroundMvvm.$InitIns();
         for (var i = 0; i < ins.length; i++) {
             var prop = ins[i];
             if (const_1.REG_IN.test(name) && prop.name == RegExp.$1) {
@@ -2010,7 +2276,7 @@ var CustomNode = /** @class */ (function (_super) {
             }
         }
         //输出
-        var outs = this.SurroundMvvm.$GetOuts();
+        var outs = this.SurroundMvvm.$InitOuts();
         for (var i = 0; i < outs.length; i++) {
             var event_1 = outs[i];
             if (const_1.REG_OUT.test(name) && event_1 == RegExp.$1) {
@@ -2125,33 +2391,39 @@ var ForNode = /** @class */ (function (_super) {
             function class_1() {
                 return _super !== null && _super.apply(this, arguments) || this;
             }
-            class_1.prototype.$GetTreeroot = function () {
+            class_1.prototype.$InitTreeroot = function () {
                 var vnode = vdom_1.NewVNode(that.Vdom, this, null, vdom_1.Priority.IF);
                 return vnode;
             };
-            class_1.prototype.$GetNamespace = function () {
-                return that.mvvm.$GetNamespace();
+            class_1.prototype.$InitNamespace = function () {
+                return that.mvvm.$InitNamespace();
             };
-            class_1.prototype.$GetDataItems = function () {
+            class_1.prototype.$InitDataItems = function () {
                 var datas = [];
                 that.mvvm.$GetDataItems().forEach(function (item) {
-                    datas.push({ name: item.name, value: item.value });
-                });
-                that.mvvm.$GetComputeItems().forEach(function (item) {
                     datas.push({ name: item.name, value: that.mvvm[item.name] });
                 });
+                that.mvvm.$GetComputedItems().forEach(function (item) {
+                    datas.push({ name: item.name, value: that.mvvm[item.name] });
+                });
+                if (that.mvvm instanceof component_mvvm_1.ComponentMvvm) {
+                    var props = that.mvvm.$GetIns();
+                    props.forEach(function (prop) {
+                        datas.push({ name: prop.name, value: that.mvvm[prop.name] });
+                    });
+                }
                 return datas;
             };
-            class_1.prototype.$GetComputeItems = function () {
+            class_1.prototype.$InitComputeItems = function () {
                 return [];
             };
-            class_1.prototype.$GetName = function () {
+            class_1.prototype.$InitName = function () {
                 return "";
             };
-            class_1.prototype.$GetIns = function () {
+            class_1.prototype.$InitIns = function () {
                 return [{ name: itemexp, required: true }];
             };
-            class_1.prototype.$GetOuts = function () {
+            class_1.prototype.$InitOuts = function () {
                 return [];
             };
             class_1.prototype.$GetParams = function () {
@@ -2159,6 +2431,7 @@ var ForNode = /** @class */ (function (_super) {
             };
             return class_1;
         }(component_mvvm_1.ComponentMvvm)));
+        mvvm.$initialize();
         mvvm.$SetHirented(true);
         var fencenode = new custom_node_1.CustomNode(this.Vdom, this.mvvm, null, mvvm);
         mvvm.$SetFenceNode(fencenode);
@@ -2345,11 +2618,11 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var router_1 = __webpack_require__(/*! ./../router/router */ "./src/router/router.ts");
 var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var custom_node_1 = __webpack_require__(/*! ./custom-node */ "./src/vnode/custom-node.ts");
 var components_manager_1 = __webpack_require__(/*! ../manager/components-manager */ "./src/manager/components-manager.ts");
 var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
+var router_manager_1 = __webpack_require__(/*! ../router/router-manager */ "./src/router/router-manager.ts");
 var RouterNode = /** @class */ (function (_super) {
     __extends(RouterNode, _super);
     function RouterNode(Vdom, mvvm, Parent) {
@@ -2360,42 +2633,32 @@ var RouterNode = /** @class */ (function (_super) {
         return _this;
     }
     RouterNode.prototype.Render = function () {
-        var router = router_1.GetRouter(this);
+        var router = router_manager_1.NextRouter(this);
         if (router != null) {
             this.instance(router);
             this.dynamicVNode.Render();
-            router_1.PopPath();
+            router_manager_1.MoveBack();
             this.Parent.AddChildren(this, [this.dynamicVNode], 0);
             this.Parent.Refresh();
         }
     };
     RouterNode.prototype.OnRouterChange = function () {
-        var router = router_1.GetRouter(this);
+        var router = router_manager_1.NextRouter(this);
         if (router != null) {
-            if (router.component != this.component) {
-                this.Parent.RemoveChildren([this.dynamicVNode]);
-                this.instance(router);
-                this.dynamicVNode.Render();
-                router_1.PopPath();
-                this.Parent.AddChildren(this, [this.dynamicVNode], 0);
-                this.Parent.Refresh();
-                return;
-            }
-            else {
-                if (this.dynamicVNode != null) {
-                    this.dynamicVNode.SurroundMvvm.$OnRouterChange();
-                    router_1.PopPath();
-                }
-            }
+            this.Parent.RemoveChildren([this.dynamicVNode]);
+            this.instance(router);
+            this.dynamicVNode.Render();
+            router_manager_1.MoveBack();
+            this.Parent.AddChildren(this, [this.dynamicVNode], 0);
+            this.Parent.Refresh();
         }
         else {
             this.Parent.RemoveChildren([this.dynamicVNode]);
             this.Parent.Refresh();
         }
     };
-    RouterNode.prototype.instance = function (router) {
-        this.component = router.component;
-        var ns = util_1.GetNS(router.component);
+    RouterNode.prototype.instance = function (componentStr) {
+        var ns = util_1.GetNS(componentStr);
         if (ns.namespace == null)
             ns.namespace = "default";
         var construct = components_manager_1.InitComponent(ns.value, ns.namespace);
@@ -2403,14 +2666,7 @@ var RouterNode = /** @class */ (function (_super) {
             throw new Error("router can not find component name:" + ns.value + ",namespace:" + ns.namespace);
         }
         var mvvm = new construct();
-        mvvm.$GetParams().forEach(function (param) {
-            var i = router.params.find(function (p) { return p.name == param.name; });
-            if (i == null && param.required) {
-                throw new Error("no specified router params " + param.name);
-            }
-            if (i != null)
-                mvvm[param.alias] = i.value;
-        });
+        mvvm.$initialize();
         var custnode = new custom_node_1.CustomNode(null, this.mvvm, null, mvvm);
         mvvm.$SetFenceNode(custnode);
         this.dynamicVNode = custnode;
@@ -2596,7 +2852,7 @@ var VinallaNode = /** @class */ (function (_super) {
             var attr = this_1.Vdom.Attrs[i];
             var ns = util_1.GetNS(attr.Name);
             if (ns.namespace == null)
-                ns.namespace = this_1.mvvm.$GetNamespace();
+                ns.namespace = this_1.mvvm.$InitNamespace();
             if (directive_manager_1.IsDirectiveRegistered(ns.value, ns.namespace)) {
                 var dirNode = new directive_node_1.DirectiveNode(this_1.Vdom);
                 var dirCons = directive_manager_1.GetDirectiveCon(ns.value, ns.namespace);
@@ -2653,9 +2909,9 @@ exports.VinallaNode = VinallaNode;
 /***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
+var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
-var const_2 = __webpack_require__(/*! ./../const */ "./src/const.ts");
+var const_1 = __webpack_require__(/*! ./../const */ "./src/const.ts");
 var VNode = /** @class */ (function () {
     function VNode(Vdom, mvvm, Parent) {
         this.Vdom = Vdom;
@@ -2666,10 +2922,10 @@ var VNode = /** @class */ (function () {
         this.Children = [];
         this.IsTemplate = false;
         this.IsCopy = false;
-        this.status = const_2.VNodeStatus.ACTIVE;
+        this.status = const_1.VNodeStatus.ACTIVE;
     }
     VNode.prototype.AddProperty = function (name, value) {
-        if (const_2.REG_ATTR.test(name)) {
+        if (const_1.REG_ATTR.test(name)) {
             this.Attrs.push({ name: name, value: value });
         }
     };
@@ -2695,21 +2951,14 @@ var VNode = /** @class */ (function () {
         }
         if (this.NodeType == 3) {
             this.Dom = document.createTextNode(this.NodeValue);
-            if (const_1.REG_SINGLE.test(this.NodeValue)) {
-                this.mvvm.$Watch(this, RegExp.$1, function (newvalue, oldvalue) {
+            var evalexp = util_1.StrToEvalstr(this.NodeValue);
+            if (!evalexp.isconst) {
+                this.mvvm.$Watch(this, evalexp.exp, function (newvalue, oldvalue) {
                     _this.Dom.textContent = newvalue;
                 });
             }
             else {
-                if (const_2.REG_MULTI.test(this.NodeValue)) {
-                    var res = this.multiBindParse(this.NodeValue);
-                    this.mvvm.$Watch(this, res, function (newvalue, oldvalue) {
-                        _this.Dom.textContent = newvalue;
-                    });
-                }
-                else {
-                    this.Dom.textContent = this.NodeValue;
-                }
+                this.Dom.textContent = evalexp.exp;
             }
         }
         if (this.NodeType == 8) {
@@ -2718,24 +2967,6 @@ var VNode = /** @class */ (function () {
         if (this.NodeType == 1 || this.NodeType == 3 || this.NodeType == 8)
             if (this.Parent && this.Parent.Dom)
                 this.Parent.Dom.appendChild(this.Dom);
-    };
-    VNode.prototype.multiBindParse = function (nodevalue) {
-        var reg = /\{\{([^\{\}]*)\}\}/g;
-        var res = reg.exec(nodevalue);
-        var exp = "";
-        var lastindex = 0;
-        while (res) {
-            if (res.index != lastindex) {
-                exp += "\'" + nodevalue.substring(lastindex, res.index) + "\'+";
-            }
-            lastindex = res.index + res[0].length;
-            exp += "(" + RegExp.$1 + ")+";
-            res = reg.exec(nodevalue);
-        }
-        if (exp.lastIndexOf("+") == exp.length - 1) {
-            exp = exp.substring(0, exp.length - 1);
-        }
-        return exp;
     };
     VNode.prototype.Update = function () {
         //todo 更新属性
@@ -2751,17 +2982,12 @@ var VNode = /** @class */ (function () {
             return;
         }
         if (this.NodeType == 3) {
-            if (const_1.REG_SINGLE.test(this.NodeValue)) {
-                this.Dom.textContent = this.mvvm.$GetExpValue(RegExp.$1);
+            var evalexp = util_1.StrToEvalstr(this.NodeValue);
+            if (!evalexp.isconst) {
+                this.Dom.textContent = this.mvvm.$GetExpValue(evalexp.exp);
             }
             else {
-                if (const_2.REG_MULTI.test(this.NodeValue)) {
-                    var res = this.multiBindParse(this.NodeValue);
-                    this.Dom.textContent = this.mvvm.$GetExpValue(res);
-                }
-                else {
-                    this.Dom.textContent = this.NodeValue;
-                }
+                this.Dom.textContent = evalexp.exp;
             }
         }
     };
@@ -2897,7 +3123,7 @@ var VNode = /** @class */ (function () {
         this.Children.forEach(function (child) { return child.OnRouterChange(); });
     };
     VNode.prototype.NavigateTo = function (url) {
-        if (this.mvvm.$GetRoot()) {
+        if (this.mvvm.$IsRoot()) {
             this.mvvm.$NavigateTo(url);
         }
         else {

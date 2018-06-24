@@ -1,4 +1,4 @@
-import { NotifyUrlChange } from '../router/router';
+import { NotifyUrlChange } from '../router/router-manager';
 import { VNode } from '../vnode/vnode';
 import { Mvvm } from './mvvm';
 export class AppMvvm extends Mvvm{
@@ -16,20 +16,20 @@ export class AppMvvm extends Mvvm{
         if(typeof (this as any)[method]=="function")
             (this as any)[method].apply(this,params)
     }
-    $GetNamespace(): string {
+    $InitNamespace(): string {
         throw new Error("Method not implemented.");
     }
-    $GetDataItems(): {name:string,value:any}[] {
+    $InitDataItems(): {name:string,value:any}[] {
         throw new Error("Method not implemented.");
     }
-    $GetComputeItems(): { name: string; get: () => any }[] {
+    $InitComputeItems(): { name: string; get: () => any }[] {
         throw new Error("Method not implemented.");
     }
 
-    $GetTreeroot(): VNode {
+    $InitTreeroot(): VNode {
         throw new Error("Method not implemented.");
     }
-    $GetEl():string{
+    $InitEl():string{
         throw new Error("Method not implemented.");
     }
 }

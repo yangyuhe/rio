@@ -14,8 +14,9 @@ export function Component(option:ComponentOption){
         let constructor= class $ComponentMvvm extends target{
             $InitFuncs:string[]=res.initFuncs
             $DestroyFuncs:string[]=res.destroyFuncs
-            constructor(){
-                super()
+            
+            $initialize(){
+                super.$initialize()
                 this.$InitFuncs.forEach(init=>{
                     (this as any)[init].call(this)
                 })
@@ -26,39 +27,36 @@ export function Component(option:ComponentOption){
                     (this as any)[destroy].call(this)
                 })
             }
-            $GetTreeroot():VNode{
-                let domtree=GetDomTree(this.$GetName(),this.$GetNamespace())
+            $InitTreeroot():VNode{
+                let domtree=GetDomTree(this.$InitName(),this.$InitNamespace())
                 if(domtree==null){
-                    throw new Error("not found template or templateUrl for component "+this.$GetName()+" in "+this.$GetNamespace())
+                    throw new Error("not found template or templateUrl for component "+this.$InitName()+" in "+this.$InitNamespace())
                 }
                 let vnode=NewVNode(domtree,this,null)
                 return vnode
             }
-            $GetNamespace(): string {
+            $InitNamespace(): string {
                 return option.namespace
             }
-            $GetDataItems(): {name:string,value:any}[] {
+            $InitDataItems(): {name:string,value:any}[] {
                 let datas:{name:string,value:any}[]=[]
                 res.datas.forEach(item=>{
                     datas.push({name:item,value:(this as any)[item]})
                 })
                 return datas
             }
-            $GetComputeItems(): { name: string; get: () => any }[] {
+            $InitComputeItems(): { name: string; get: () => any }[] {
                 return res.computes
             }
-            $GetName():string{
+            $InitName():string{
                 return option.name
             }
-            $GetIns():Prop[]{
+            $InitIns():Prop[]{
                 return res.props
             }
-            $GetOuts():string[]{
+            $InitOuts():string[]{
                 //todo
                 return []
-            }
-            $GetParams(){
-                return res.params
             }
         }
         RegisterComponent(option.name,option.namespace,constructor,option)

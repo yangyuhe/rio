@@ -57,3 +57,16 @@ export interface ComponentMvvmFactoryOption {
     $domtree:VDom,
     $origin:ComponentOption
 }
+export interface RouterInfo{
+    path:string,
+    params:{
+        name:string,
+        value:string
+    }[],
+    getParam(name:string):string
+}
+export interface RouterState{
+    active:RouterInfo,
+    cur:RouterInfo
+}
+export type RouterChangeCallback=(newrouter:RouterInfo,oldrouter:RouterInfo)=>void

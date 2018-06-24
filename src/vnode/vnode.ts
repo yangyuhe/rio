@@ -1,10 +1,10 @@
-import { ComponentMvvm } from './../mvvm/component-mvvm';
-import { AppMvvm } from './../mvvm/app-mvvm';
-import { ForNode } from './for-node';
-import { REG_SINGLE } from "../const";
 import { Mvvm } from '../mvvm/mvvm';
+import { StrToEvalstr } from '../util';
 import { NewVNode, VDom } from '../vdom/vdom';
-import { REG_ATTR, REG_MULTI, VNodeStatus } from './../const';
+import { REG_ATTR, VNodeStatus } from './../const';
+import { AppMvvm } from './../mvvm/app-mvvm';
+import { ComponentMvvm } from './../mvvm/component-mvvm';
+import { ForNode } from './for-node';
 export abstract class VNode {
     NodeValue: string
     NodeName: string
@@ -54,19 +54,13 @@ export abstract class VNode {
         if (this.NodeType == 3) {
             this.Dom = document.createTextNode(this.NodeValue)
             
-            if (REG_SINGLE.test(this.NodeValue)) {
-                this.mvvm.$Watch(this,RegExp.$1,(newvalue, oldvalue)=>{
+            let evalexp=StrToEvalstr(this.NodeValue)
+            if (!evalexp.isconst) {
+                this.mvvm.$Watch(this,evalexp.exp,(newvalue, oldvalue)=>{
                     this.Dom.textContent = newvalue
                 })
             }else{
-                if(REG_MULTI.test(this.NodeValue)){
-                    let res=this.multiBindParse(this.NodeValue)
-                    this.mvvm.$Watch(this,res,(newvalue, oldvalue)=>{
-                        this.Dom.textContent = newvalue
-                    })
-                }else{
-                    this.Dom.textContent=this.NodeValue
-                }
+                this.Dom.textContent=evalexp.exp
             }
         }
         if(this.NodeType==8){
@@ -76,25 +70,7 @@ export abstract class VNode {
             if(this.Parent && this.Parent.Dom)
                 this.Parent.Dom.appendChild(this.Dom)
     }
-    private multiBindParse(nodevalue:string):string{
-        let reg=/\{\{([^\{\}]*)\}\}/g
-        let res=reg.exec(nodevalue)
-        let exp=""
-        let lastindex=0
-        while(res){
-            if(res.index!=lastindex){
-                exp+="\'"+nodevalue.substring(lastindex,res.index)+"\'+"
-            }
-            lastindex=res.index+res[0].length
-            exp+="("+RegExp.$1+")+"
-            res=reg.exec(nodevalue)
-        }
-        if(exp.lastIndexOf("+")==exp.length-1){
-            exp=exp.substring(0,exp.length-1)
-        }
-
-        return exp
-    }
+    
     Update(){
         //todo 更新属性
         if (this.NodeType == 1) {
@@ -109,15 +85,11 @@ export abstract class VNode {
             return
         }
         if (this.NodeType == 3) {
-            if (REG_SINGLE.test(this.NodeValue)) {
-                this.Dom.textContent=this.mvvm.$GetExpValue(RegExp.$1)
+            let evalexp=StrToEvalstr(this.NodeValue)
+            if (!evalexp.isconst) {
+                this.Dom.textContent=this.mvvm.$GetExpValue(evalexp.exp)
             }else{
-                if(REG_MULTI.test(this.NodeValue)){
-                    let res=this.multiBindParse(this.NodeValue)
-                    this.Dom.textContent=this.mvvm.$GetExpValue(res)     
-                }else{
-                    this.Dom.textContent=this.NodeValue
-                }
+                this.Dom.textContent=evalexp.exp
             }
         }
     }
@@ -256,7 +228,7 @@ export abstract class VNode {
         this.Children.forEach(child=>child.OnRouterChange())
     }
     NavigateTo(url:string):void{
-        if(this.mvvm.$GetRoot()){
+        if(this.mvvm.$IsRoot()){
             (this.mvvm as AppMvvm).$NavigateTo(url)
         }else{
             if(this.Parent!=null)

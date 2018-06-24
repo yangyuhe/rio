@@ -1,8 +1,14 @@
 var EvalExp=function(context,exp){
     var res
-    with(context){
-        res=eval(exp)
+    try {
+        with(context){
+            res=eval(exp)
+        }
+        return res
+    } catch (error) {
+        console.error("eval "+exp+" failed")
+        console.error(error)
     }
-    return res
+    return "" 
 }
 exports.EvalExp=EvalExp

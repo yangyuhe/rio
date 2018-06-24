@@ -72,6 +72,7 @@ export function NewVNode(dom:VDom,mvvm:Mvvm,parent:VNode,priority:Priority=Prior
     if(IsComponentRegistered(ns.value,ns.namespace||"default")){
         let construct=InitComponent(ns.value,ns.namespace||"default")
         let selfmvvm=new construct()
+        selfmvvm.$initialize()
         let CustomNode=require("../vnode/custom-node").CustomNode
         let cust= new CustomNode(dom,mvvm,parent,selfmvvm)
         selfmvvm.$SetFenceNode(cust)

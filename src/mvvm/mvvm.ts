@@ -1,6 +1,7 @@
 import { Observe } from "../observer/observe";
+import { GetActiveRouter } from "../router/router-state";
 import { VNode } from "../vnode/vnode";
-import { OnDataChange } from './../models';
+import { OnDataChange, RouterState } from './../models';
 export abstract class Mvvm {
     private $data:any={}
     protected $observe:Observe
@@ -11,12 +12,20 @@ export abstract class Mvvm {
     protected $computeItems:{name:string,get:()=>any}[]=[]
     private $isroot=false
 
-    constructor(){ 
-        this.$initData()
+    protected get $router():RouterState{
+        return {
+            active:GetActiveRouter(),
+            cur:null
+        }
+    }
+
+    constructor(){
+    }
+    $initialize(){
         this.$observe=new Observe(this)    
-        this.$dataItems=this.$GetDataItems()
-        this.$computeItems=this.$GetComputeItems()
-        this.$treeRoot=this.$GetTreeroot()
+        this.$dataItems=this.$InitDataItems()
+        this.$computeItems=this.$InitComputeItems()
+        this.$treeRoot=this.$InitTreeroot()
 
         this.$treeRoot.AttachDom()
 
@@ -38,7 +47,6 @@ export abstract class Mvvm {
         })
     }
     
-    protected $initData(){}
     $GetExpValue(exp:string):any{
         return this.$observe.GetValueWithExp(exp)
     }
@@ -69,14 +77,20 @@ export abstract class Mvvm {
     $SetRoot(isroot:boolean){
         this.$isroot=isroot
     }
-    $GetRoot(){
+    $IsRoot(){
         return this.$isroot
     }
-    abstract $GetDataItems():{name:string,value:any}[];
-    abstract $GetComputeItems():{name:string,get:(()=>any)}[];
-    abstract $GetNamespace():string;
+    $GetDataItems(){
+        return this.$dataItems
+    }
+    $GetComputedItems(){
+        return this.$computeItems
+    }
+    abstract $InitDataItems():{name:string,value:any}[];
+    abstract $InitComputeItems():{name:string,get:(()=>any)}[];
+    abstract $InitNamespace():string;
 
     abstract $Render():Node;
     abstract $RevokeMethod(method:string,...params:any[]):void;
-    abstract $GetTreeroot():VNode;
+    abstract $InitTreeroot():VNode;
 }

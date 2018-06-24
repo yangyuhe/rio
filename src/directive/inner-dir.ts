@@ -3,6 +3,7 @@ import { Href } from './href';
 import { PRE } from '../const';
 import { DirModel } from './model';
 import { OnClick } from './onclick';
+import {Html} from "./html"
 
 let innerDirs:{[name:string]:InnerDirective}={}
 function RegisterInnerDir(name:string,comiple:InnerDirective){
@@ -23,3 +24,4 @@ export interface InnerDirective{
 RegisterInnerDir(PRE+"href",Href)
 RegisterInnerDir(PRE+"model",DirModel)
 RegisterInnerDir(PRE+"click",OnClick)
+RegisterInnerDir(PRE+"html",Html)

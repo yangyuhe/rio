@@ -14,8 +14,9 @@ export function App(option:AppOption){
             
             $InitFuncs:string[]=res.initFuncs
             $DestroyFuncs:string[]=res.destroyFuncs
-            constructor(){
-                super()
+            
+            $initialize(){
+                super.$initialize()
                 this.$InitFuncs.forEach(init=>{
                     (this as any)[init].call(this)
                 })
@@ -26,7 +27,7 @@ export function App(option:AppOption){
                     (this as any)[destroy].call(this)
                 })
             }
-            $GetTreeroot(): VNode {
+            $InitTreeroot(): VNode {
                 let dom=document.querySelector(option.el)
                 if(dom==null){
                     throw new Error("no specified element "+option.el)
@@ -35,20 +36,20 @@ export function App(option:AppOption){
                 let vnode=NewVNode(vdom,this,null)
                 return vnode
             }
-            $GetNamespace(): string {
+            $InitNamespace(): string {
                 return option.namespace
             }
-            $GetDataItems(): {name:string,value:any}[] {
+            $InitDataItems(): {name:string,value:any}[] {
                 let datas:{name:string,value:any}[]=[]
                 res.datas.forEach(item=>{
                     datas.push({name:item,value:(this as any)[item]})
                 })
                 return datas
             }
-            $GetComputeItems(): { name: string; get: () => any }[] {
+            $InitComputeItems(): { name: string; get: () => any }[] {
                 return res.computes
             }
-            $GetEl(){
+            $InitEl(){
                 return option.el
             }
             

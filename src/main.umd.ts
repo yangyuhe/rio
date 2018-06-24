@@ -41,7 +41,7 @@ function Rio(option:AppOption){
                 option.methods.OnDestroy()
             }
         }
-        $GetTreeroot(): VNode {
+        $InitTreeroot(): VNode {
             let dom=document.querySelector(option.el)
             if(dom==null){
                 throw new Error("no specified element "+option.el)
@@ -50,15 +50,15 @@ function Rio(option:AppOption){
             let vnode=NewVNode(vdom,this,null)
             return vnode
         }
-        $GetNamespace(): string {
+        $InitNamespace(): string {
             return option.namespace
         }
-        $GetDataItems(): {name:string,value:any}[] {
+        $InitDataItems(): {name:string,value:any}[] {
             let dataitems:{name:string,value:any}[]=[]
             Object.keys(option.data).forEach(key=>dataitems.push({name:key,value:option.data[key]}))
             return dataitems
         }
-        $GetComputeItems(): { name: string; get: () => any }[] {
+        $InitComputeItems(): { name: string; get: () => any }[] {
             let computes:{ name: string; get: () => any }[]=[]
             for(let key in option.computed){
                 computes.push({name:key,get:option.computed[key]})
@@ -66,7 +66,7 @@ function Rio(option:AppOption){
             return computes
         }
         
-        $GetEl():string{
+        $InitEl():string{
             return option.el
         }
     }

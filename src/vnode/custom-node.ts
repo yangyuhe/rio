@@ -97,7 +97,7 @@ export class CustomNode extends VNode{
     }
     AddProperty(name: string, value: string) {
         //输入
-        let ins=this.SurroundMvvm.$GetIns()
+        let ins=this.SurroundMvvm.$InitIns()
         for(let i=0;i<ins.length;i++){
             let prop=ins[i]
             
@@ -112,7 +112,7 @@ export class CustomNode extends VNode{
             }
         }
         //输出
-        let outs=this.SurroundMvvm.$GetOuts()
+        let outs=this.SurroundMvvm.$InitOuts()
         for(let i=0;i<outs.length;i++){
             let event=outs[i]
             

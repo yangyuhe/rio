@@ -1,58 +1,48 @@
-import { PopPath, GetRouter } from './../router/router';
 import { VNode } from "./vnode";
 import { Mvvm } from "../mvvm/mvvm";
 import { CustomNode } from "./custom-node";
 import { InitComponent } from "../manager/components-manager";
 import { GetNS } from '../util';
 import { VDom } from '../vdom/vdom';
+import { NextRouter, MoveBack } from "../router/router-manager";
 
 export class RouterNode extends VNode{
     private dynamicVNode: CustomNode
-    private component:string
 
     constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode) {
         super(Vdom,mvvm,Parent)
     }
 
     Render() :void{
-        let router=GetRouter(this)
+        let router=NextRouter(this)
         if(router!=null){
             this.instance(router)
             this.dynamicVNode.Render()
-            PopPath()
+            MoveBack()
             this.Parent.AddChildren(this, [this.dynamicVNode],0)
             this.Parent.Refresh()
         }
         
     }
     OnRouterChange(){
-        let router=GetRouter(this)
+        let router=NextRouter(this)
         if(router!=null){
-            if(router.component!=this.component){
-                this.Parent.RemoveChildren([this.dynamicVNode])
-                this.instance(router)
-    
-                this.dynamicVNode.Render()
-                PopPath()
-                this.Parent.AddChildren(this, [this.dynamicVNode],0)
-                this.Parent.Refresh()
-                return
-            }else{
-                if(this.dynamicVNode!=null){
-                    this.dynamicVNode.SurroundMvvm.$OnRouterChange()
-                    PopPath()
-                }
-            }
+            this.Parent.RemoveChildren([this.dynamicVNode])
+            this.instance(router)
+
+            this.dynamicVNode.Render()
+            MoveBack()
+            this.Parent.AddChildren(this, [this.dynamicVNode],0)
+            this.Parent.Refresh()
         }else{
             this.Parent.RemoveChildren([this.dynamicVNode])
             this.Parent.Refresh()
         }
     }
     
-    private instance(router:{component:string,params:{name:string,value:string}[]}){
-        this.component=router.component
+    private instance(componentStr:string){
 
-        let ns=GetNS(router.component)
+        let ns=GetNS(componentStr)
         if(ns.namespace==null)
             ns.namespace="default"
         let construct=InitComponent(ns.value,ns.namespace)
@@ -61,14 +51,8 @@ export class RouterNode extends VNode{
             throw new Error(`router can not find component name:${ns.value},namespace:${ns.namespace}`)
         }
         let mvvm=new construct()
-        mvvm.$GetParams().forEach(param=>{
-            let i=router.params.find((p)=>p.name==param.name)
-            if(i==null && param.required){
-                throw new Error("no specified router params "+param.name)
-            }
-            if(i!=null)
-                (mvvm as any)[param.alias]=i.value
-        })
+        mvvm.$initialize()
+        
         let custnode=new CustomNode(null,this.mvvm,null,mvvm)
         mvvm.$SetFenceNode(custnode)
         this.dynamicVNode=custnode

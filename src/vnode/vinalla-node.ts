@@ -40,7 +40,7 @@ export class VinallaNode extends VNode{
             let attr=this.Vdom.Attrs[i]
             let ns=GetNS(attr.Name)
             if(ns.namespace==null)
-                ns.namespace=this.mvvm.$GetNamespace()
+                ns.namespace=this.mvvm.$InitNamespace()
             if(IsDirectiveRegistered(ns.value,ns.namespace)){
                 let dirNode=new DirectiveNode(this.Vdom)
                 let dirCons=GetDirectiveCon(ns.value,ns.namespace)

@@ -1,3 +1,5 @@
+import { REG_SINGLE, REG_MULTI } from "./const";
+
 export function LogError(msg:any){
     console.error(msg)
 }
@@ -39,4 +41,32 @@ export function Trim(str:string,char:string){
         end--
     }
     return str.substring(start+1,end)
+}
+
+export function StrToEvalstr(str:string):{isconst:boolean,exp:string}{
+    if (REG_SINGLE.test(str)) {
+        return {isconst:false,exp:RegExp.$1}
+    }else{
+        if(REG_MULTI.test(str)){
+            let reg=/\{\{([^\{\}]*)\}\}/g
+            let res=reg.exec(str)
+            let exp=""
+            let lastindex=0
+            while(res){
+                if(res.index!=lastindex){
+                    exp+="\'"+str.substring(lastindex,res.index)+"\'+"
+                }
+                lastindex=res.index+res[0].length
+                exp+="("+RegExp.$1+")+"
+                res=reg.exec(str)
+            }
+            if(exp.endsWith("+")){
+                exp=exp.substring(0,exp.length-1)
+            }
+
+            return {isconst:false,exp:exp}
+        }else{
+            return {isconst:true,exp:str}
+        }
+    }
 }
