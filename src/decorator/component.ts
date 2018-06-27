@@ -1,4 +1,4 @@
-import { IComponentMvvm } from './../models';
+import { IComponentMvvm, Event } from './../models';
 import { RegisterComponent, GetDomTree } from '../manager/components-manager';
 import { ComponentOption, Prop } from '../models';
 import { FetchProperty } from './property';
@@ -54,9 +54,8 @@ export function Component(option:ComponentOption){
             $InitIns():Prop[]{
                 return res.props
             }
-            $InitOuts():string[]{
-                //todo
-                return []
+            $InitOuts():Event[]{
+                return option.events
             }
         }
         RegisterComponent(option.name,option.namespace,constructor,option)

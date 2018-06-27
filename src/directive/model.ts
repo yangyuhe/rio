@@ -1,24 +1,28 @@
+import { VinallaNode } from './../vnode/vinalla-node';
 import { VNode } from "../vnode/vnode"
-export function DirModel(exp: string, vnode: VNode,isconst:boolean) {
+export function DirModel(exp: string, vnode: VinallaNode,isconst:boolean) {
     let inputtype=vnode.Vdom.GetAttr("type")
     let input=vnode.Vdom.NodeName.toLowerCase()
+
+    let newvalue=vnode.mvvm.$GetExpOrFunValue(exp);
+    setValue(vnode, newvalue)
     if(input=="input" && inputtype=="checkbox"){
-        vnode.mvvm.$Watch(vnode,exp, (newvalue) => {
+        vnode.mvvm.$CreateWatcher(vnode,exp, (newvalue) => {
             setValue(vnode, newvalue)
         },true);
     }else{
-        vnode.mvvm.$Watch(vnode,exp, (newvalue) => {
+        vnode.mvvm.$CreateWatcher(vnode,exp, (newvalue) => {
             setValue(vnode, newvalue)
         });
     }
-    vnode.Dom.addEventListener("input", (event: any) => {
+    vnode.DomSet[0].dom.addEventListener("input", (event: any) => {
         //select控件
-        if (vnode.NodeName.toLowerCase() == "select") {
+        if (vnode.GetNodeName() == "select") {
             vnode.mvvm.$SetValue(exp, event.target.value)
             return
         }
         //text radio checkbox控件
-        let inputType = (vnode.Dom as HTMLElement).getAttribute("type")
+        let inputType = (vnode.DomSet[0].dom as HTMLElement).getAttribute("type")
         if (inputType == null || inputType == "")
             inputType = "text"
         switch (inputType) {
@@ -27,7 +31,7 @@ export function DirModel(exp: string, vnode: VNode,isconst:boolean) {
                 vnode.mvvm.$SetValue(exp, event.target.value)
                 break
             case "checkbox":
-                let cur = vnode.mvvm.$GetExpValue(exp)
+                let cur = vnode.mvvm.$GetExpOrFunValue(exp)
                 if (toString.call(cur) == "[object Array]") {
                     let oldarray = cur as Array<any>;
                     let index = oldarray.indexOf(event.target.value)
@@ -43,31 +47,32 @@ export function DirModel(exp: string, vnode: VNode,isconst:boolean) {
 }
 
 function setValue(vnode: VNode, newvalue: any) {
+    let dom=vnode.DomSet[0].dom;
     //select控件
-    if (vnode.NodeName.toLowerCase() == "select") {
-        (vnode.Dom as HTMLInputElement).value = newvalue
+    if (vnode.GetNodeName()== "select") {
+        (dom as HTMLSelectElement).value = newvalue;
         return
     }
     //text radio checkbox控件
-    let inputType = (vnode.Dom as HTMLElement).getAttribute("type")
+    let inputType = (dom as HTMLElement).getAttribute("type")
     if (inputType == null || inputType == "")
         inputType = "text"
     switch (inputType) {
         case "text":
-            (vnode.Dom as HTMLInputElement).value = newvalue
+            (dom as HTMLInputElement).value = newvalue
             break
         case "radio":
-            if ((vnode.Dom as HTMLInputElement).value == newvalue) {
-                (vnode.Dom as HTMLInputElement).checked = true
+            if ((dom as HTMLInputElement).value == newvalue) {
+                (dom as HTMLInputElement).checked = true
             } else
-                (vnode.Dom as HTMLInputElement).checked = false;
+                (dom as HTMLInputElement).checked = false;
             break
         case "checkbox":
             if (toString.call(newvalue) == "[object Array]") {
-                if (newvalue.indexOf((vnode.Dom as HTMLInputElement).value) == -1) {
-                    (vnode.Dom as HTMLInputElement).checked = false
+                if (newvalue.indexOf((dom as HTMLInputElement).value) == -1) {
+                    (dom as HTMLInputElement).checked = false
                 } else
-                    (vnode.Dom as HTMLInputElement).checked = true;
+                    (dom as HTMLInputElement).checked = true;
             }
 
             break

@@ -1,7 +1,8 @@
+import { VNodeStatus } from "../const";
+import { DomStatus } from '../models';
+import { VDom } from "../vdom/vdom";
 import { ComponentMvvm } from './../mvvm/component-mvvm';
 import { VNode } from "./vnode";
-import { VDom } from "../vdom/vdom";
-import { VNodeStatus } from "../const";
 
 export class SlotNode extends VNode{
     constructor(protected vdom:VDom,public mvvm: ComponentMvvm, public Parent: VNode, private name: string) {
@@ -9,15 +10,14 @@ export class SlotNode extends VNode{
         if(this.name==null || this.name=="")
             this.name="default"
     }
-    Render(): void {
+    Render(): DomStatus[] {
         let template=this.mvvm.$GetFenceNode().GetTemplate(this.name)
         if(template!=null){
-            template.Render()
-            this.Dom = template.Dom
-            while(this.Dom.firstChild!=null){
-                this.Parent.Dom.appendChild(this.Dom.firstChild)
-            }
+            template.Parent=this;
+            this.Children=[template];
+            this.DomSet=template.Render();
         }
+        return this.DomSet;
     }
     
     Update(){
@@ -35,4 +35,5 @@ export class SlotNode extends VNode{
         let template=this.mvvm.$GetFenceNode().GetTemplate(this.name)
         template.OnRemoved()
     }
+    
 }

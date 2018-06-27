@@ -1,5 +1,6 @@
 import { VNode } from '../vnode/vnode';
 import { SetActiveRouter } from './router-state';
+import { RefreshApp } from '../manager/start';
 
 
 let matchedRouter:InnerRouter[]=[]
@@ -237,6 +238,7 @@ interface InnerRouter extends _Router{
 export function NotifyUrlChange(){
     matchUrl()
     firstVNode.OnRouterChange()
+    RefreshApp()
 }
 
 

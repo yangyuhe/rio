@@ -108,6 +108,15 @@ var VNodeStatus;
     /**抛弃 */
     VNodeStatus[VNodeStatus["DEPRECATED"] = 2] = "DEPRECATED";
 })(VNodeStatus = exports.VNodeStatus || (exports.VNodeStatus = {}));
+var DomType;
+(function (DomType) {
+    /*没有变化的*/
+    DomType[DomType["CONSTANT"] = 0] = "CONSTANT";
+    /**新增的 */
+    DomType[DomType["NEW"] = 1] = "NEW";
+    /**删除的 */
+    DomType[DomType["DELETE"] = 2] = "DELETE";
+})(DomType = exports.DomType || (exports.DomType = {}));
 
 
 /***/ }),
@@ -274,8 +283,7 @@ function Component(option) {
                 return res.props;
             };
             $ComponentMvvm.prototype.$InitOuts = function () {
-                //todo
-                return [];
+                return option.events;
             };
             return $ComponentMvvm;
         }(target));
@@ -399,6 +407,50 @@ exports.FetchProperty = FetchProperty;
 
 /***/ }),
 
+/***/ "./src/directive/class.ts":
+/*!********************************!*\
+  !*** ./src/directive/class.ts ***!
+  \********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
+function Classes(exp, vnode, isconst) {
+    if (isconst) {
+        var hacked = "var a=" + exp + ";a";
+        var classes_1;
+        try {
+            classes_1 = eval(hacked);
+        }
+        catch (error) {
+            util_1.LogError("json format error:" + exp);
+            return;
+        }
+        var _loop_1 = function (key) {
+            var istrue = vnode.mvvm.$GetExpOrFunValue(key);
+            if (istrue) {
+                vnode.DomSet[0].dom.classList.add(classes_1[key]);
+            }
+            vnode.mvvm.$CreateWatcher(vnode, key, function (newvalue) {
+                if (newvalue) {
+                    vnode.DomSet[0].dom.classList.add(classes_1[key]);
+                }
+                else {
+                    vnode.DomSet[0].dom.classList.remove(classes_1[key]);
+                }
+            });
+        };
+        for (var key in classes_1) {
+            _loop_1(key);
+        }
+    }
+}
+exports.Classes = Classes;
+
+
+/***/ }),
+
 /***/ "./src/directive/href.ts":
 /*!*******************************!*\
   !*** ./src/directive/href.ts ***!
@@ -407,30 +459,37 @@ exports.FetchProperty = FetchProperty;
 /***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
+var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 function Href(exp, vnode, isconst) {
     var href = "";
-    if (vnode.Dom.nodeName.toLowerCase() == "a") {
+    if (vnode.DomSet[0].dom.nodeName.toLowerCase() == "a") {
         if (isconst) {
             var streval = util_1.StrToEvalstr(exp);
-            if (streval.isconst)
-                vnode.Dom.setAttribute(const_1.PRE + "href", streval.exp);
+            if (streval.isconst) {
+                href = streval.exp;
+                vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", streval.exp);
+            }
             else {
-                vnode.mvvm.$Watch(vnode, streval.exp, function (newvalue) {
+                var newvalue = vnode.mvvm.$GetExpOrFunValue(streval.exp);
+                href = newvalue;
+                vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", newvalue);
+                vnode.mvvm.$CreateWatcher(vnode, streval.exp, function (newvalue) {
                     href = newvalue;
-                    vnode.Dom.setAttribute(const_1.PRE + "href", newvalue);
+                    vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", newvalue);
                 });
             }
         }
         else {
-            vnode.mvvm.$Watch(vnode, exp, function (newvalue) {
+            var newvalue = vnode.mvvm.$GetExpOrFunValue(exp);
+            href = newvalue;
+            vnode.mvvm.$CreateWatcher(vnode, exp, function (newvalue) {
                 href = newvalue;
-                vnode.Dom.setAttribute(const_1.PRE + "href", newvalue);
+                vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", newvalue);
             });
         }
     }
-    vnode.Dom.addEventListener("click", function () {
+    vnode.DomSet[0].dom.addEventListener("click", function () {
         vnode.NavigateTo(href);
     });
 }
@@ -452,15 +511,20 @@ function Html(exp, vnode, noBracket) {
     if (noBracket) {
         var strEval = util_1.StrToEvalstr(exp);
         if (strEval.isconst)
-            vnode.Dom.innerHTML = strEval.exp;
-        else
-            vnode.mvvm.$Watch(vnode, strEval.exp, function (newvalue) {
-                vnode.Dom.innerHTML = newvalue;
+            vnode.DomSet[0].dom.innerHTML = strEval.exp;
+        else {
+            var newvalue = vnode.mvvm.$GetExpOrFunValue(strEval.exp);
+            vnode.DomSet[0].dom.innerHTML = newvalue;
+            vnode.mvvm.$CreateWatcher(vnode, strEval.exp, function (newvalue) {
+                vnode.DomSet[0].dom.innerHTML = newvalue;
             });
+        }
     }
     else {
-        vnode.mvvm.$Watch(vnode, exp, function (newvalue) {
-            vnode.Dom.innerHTML = newvalue;
+        var newvalue = vnode.mvvm.$GetExpOrFunValue(exp);
+        vnode.DomSet[0].dom.innerHTML = newvalue;
+        vnode.mvvm.$CreateWatcher(vnode, exp, function (newvalue) {
+            vnode.DomSet[0].dom.innerHTML = newvalue;
         });
     }
 }
@@ -482,6 +546,8 @@ var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var model_1 = __webpack_require__(/*! ./model */ "./src/directive/model.ts");
 var onclick_1 = __webpack_require__(/*! ./onclick */ "./src/directive/onclick.ts");
 var html_1 = __webpack_require__(/*! ./html */ "./src/directive/html.ts");
+var style_1 = __webpack_require__(/*! ./style */ "./src/directive/style.ts");
+var class_1 = __webpack_require__(/*! ./class */ "./src/directive/class.ts");
 var innerDirs = {};
 function RegisterInnerDir(name, comiple) {
     if (innerDirs[name] != null)
@@ -496,6 +562,8 @@ RegisterInnerDir(const_1.PRE + "href", href_1.Href);
 RegisterInnerDir(const_1.PRE + "model", model_1.DirModel);
 RegisterInnerDir(const_1.PRE + "click", onclick_1.OnClick);
 RegisterInnerDir(const_1.PRE + "html", html_1.Html);
+RegisterInnerDir(const_1.PRE + "class", class_1.Classes);
+RegisterInnerDir(const_1.PRE + "style", style_1.Style);
 
 
 /***/ }),
@@ -511,24 +579,26 @@ Object.defineProperty(exports, "__esModule", { value: true });
 function DirModel(exp, vnode, isconst) {
     var inputtype = vnode.Vdom.GetAttr("type");
     var input = vnode.Vdom.NodeName.toLowerCase();
+    var newvalue = vnode.mvvm.$GetExpOrFunValue(exp);
+    setValue(vnode, newvalue);
     if (input == "input" && inputtype == "checkbox") {
-        vnode.mvvm.$Watch(vnode, exp, function (newvalue) {
+        vnode.mvvm.$CreateWatcher(vnode, exp, function (newvalue) {
             setValue(vnode, newvalue);
         }, true);
     }
     else {
-        vnode.mvvm.$Watch(vnode, exp, function (newvalue) {
+        vnode.mvvm.$CreateWatcher(vnode, exp, function (newvalue) {
             setValue(vnode, newvalue);
         });
     }
-    vnode.Dom.addEventListener("input", function (event) {
+    vnode.DomSet[0].dom.addEventListener("input", function (event) {
         //select控件
-        if (vnode.NodeName.toLowerCase() == "select") {
+        if (vnode.GetNodeName() == "select") {
             vnode.mvvm.$SetValue(exp, event.target.value);
             return;
         }
         //text radio checkbox控件
-        var inputType = vnode.Dom.getAttribute("type");
+        var inputType = vnode.DomSet[0].dom.getAttribute("type");
         if (inputType == null || inputType == "")
             inputType = "text";
         switch (inputType) {
@@ -537,7 +607,7 @@ function DirModel(exp, vnode, isconst) {
                 vnode.mvvm.$SetValue(exp, event.target.value);
                 break;
             case "checkbox":
-                var cur = vnode.mvvm.$GetExpValue(exp);
+                var cur = vnode.mvvm.$GetExpOrFunValue(exp);
                 if (toString.call(cur) == "[object Array]") {
                     var oldarray = cur;
                     var index = oldarray.indexOf(event.target.value);
@@ -554,33 +624,34 @@ function DirModel(exp, vnode, isconst) {
 }
 exports.DirModel = DirModel;
 function setValue(vnode, newvalue) {
+    var dom = vnode.DomSet[0].dom;
     //select控件
-    if (vnode.NodeName.toLowerCase() == "select") {
-        vnode.Dom.value = newvalue;
+    if (vnode.GetNodeName() == "select") {
+        dom.value = newvalue;
         return;
     }
     //text radio checkbox控件
-    var inputType = vnode.Dom.getAttribute("type");
+    var inputType = dom.getAttribute("type");
     if (inputType == null || inputType == "")
         inputType = "text";
     switch (inputType) {
         case "text":
-            vnode.Dom.value = newvalue;
+            dom.value = newvalue;
             break;
         case "radio":
-            if (vnode.Dom.value == newvalue) {
-                vnode.Dom.checked = true;
+            if (dom.value == newvalue) {
+                dom.checked = true;
             }
             else
-                vnode.Dom.checked = false;
+                dom.checked = false;
             break;
         case "checkbox":
             if (toString.call(newvalue) == "[object Array]") {
-                if (newvalue.indexOf(vnode.Dom.value) == -1) {
-                    vnode.Dom.checked = false;
+                if (newvalue.indexOf(dom.value) == -1) {
+                    dom.checked = false;
                 }
                 else
-                    vnode.Dom.checked = true;
+                    dom.checked = true;
             }
             break;
     }
@@ -604,7 +675,7 @@ function OnClick(exp, vnode, isconst) {
         var paramsStr = RegExp.$2;
         if (paramsStr.length > 0) {
             var ps_1 = paramsStr.split(",");
-            vnode.Dom.addEventListener("click", function () {
+            vnode.DomSet[0].dom.addEventListener("click", function () {
                 var params = [];
                 ps_1.forEach(function (p) {
                     if (!const_1.REG_STR.test(p)) {
@@ -621,7 +692,7 @@ function OnClick(exp, vnode, isconst) {
                         }
                         else {
                             //肯定是本地变量
-                            params.push(vnode.mvvm.$GetExpValue(p));
+                            params.push(vnode.mvvm.$GetExpOrFunValue(p));
                         }
                     }
                     else {
@@ -633,13 +704,64 @@ function OnClick(exp, vnode, isconst) {
             });
         }
         else {
-            vnode.Dom.addEventListener("click", function () {
+            vnode.DomSet[0].dom.addEventListener("click", function () {
                 vnode.mvvm.$RevokeMethod(methodStr_1);
             });
         }
     }
 }
 exports.OnClick = OnClick;
+
+
+/***/ }),
+
+/***/ "./src/directive/style.ts":
+/*!********************************!*\
+  !*** ./src/directive/style.ts ***!
+  \********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
+function Style(exp, vnode, isconst) {
+    if (isconst) {
+        var hacked = "var a=" + exp + ";a";
+        var styleexp = void 0;
+        try {
+            styleexp = eval(hacked);
+        }
+        catch (error) {
+            util_1.LogError("json format error:" + exp);
+            return;
+        }
+        var _loop_1 = function (key) {
+            var istrue = vnode.mvvm.$GetExpOrFunValue(key);
+            var styles = styleexp[key];
+            if (istrue) {
+                for (var stylename in styles) {
+                    vnode.DomSet[0].dom.style[stylename] = styles[stylename];
+                }
+            }
+            vnode.mvvm.$CreateWatcher(vnode, key, function (newvalue) {
+                if (newvalue) {
+                    for (var stylename in styles) {
+                        vnode.DomSet[0].dom.style[stylename] = styles[stylename];
+                    }
+                }
+                else {
+                    for (var stylename in styles) {
+                        vnode.DomSet[0].dom.style[stylename] = "";
+                    }
+                }
+            });
+        };
+        for (var key in styleexp) {
+            _loop_1(key);
+        }
+    }
+}
+exports.Style = Style;
 
 
 /***/ }),
@@ -651,10 +773,14 @@ exports.OnClick = OnClick;
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-var EvalExp=function(context,exp){
-    var res
+var EvalExp=function(context,exp,attachObj){
+    var res;
+    var newcontext=context
+    if(attachObj!=null){
+        newcontext=Object.assign(context,$attachObj)
+    }
     try {
-        with(context){
+        with(newcontext){
             res=eval(exp)
         }
         return res
@@ -664,6 +790,7 @@ var EvalExp=function(context,exp){
     }
     return "" 
 }
+
 exports.EvalExp=EvalExp
 
 
@@ -886,18 +1013,25 @@ exports.IsDirectiveRegistered = IsDirectiveRegistered;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var app_manager_1 = __webpack_require__(/*! ./app-manager */ "./src/manager/app-manager.ts");
+var apps = [];
 function Start() {
-    var apps = app_manager_1.GetApp();
-    apps.forEach(function (App) {
+    var appscons = app_manager_1.GetApp();
+    appscons.forEach(function (App) {
         var mvvm = new App();
         mvvm.$initialize();
+        mvvm.$AttachChildren();
         mvvm.$SetRoot(true);
+        apps.push(mvvm);
         var content = mvvm.$Render();
         var target = document.querySelector(mvvm.$InitEl());
-        target.parentElement.replaceChild(content, target);
+        target.parentElement.replaceChild(content.dom, target);
     });
 }
 exports.Start = Start;
+function RefreshApp() {
+    apps.forEach(function (app) { return app.$Refresh(); });
+}
+exports.RefreshApp = RefreshApp;
 
 
 /***/ }),
@@ -955,16 +1089,8 @@ var AppMvvm = /** @class */ (function (_super) {
         router_manager_1.NotifyUrlChange();
     };
     AppMvvm.prototype.$Render = function () {
-        this.$treeRoot.Render();
-        return this.$treeRoot.Dom;
-    };
-    AppMvvm.prototype.$RevokeMethod = function (method) {
-        var params = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            params[_i - 1] = arguments[_i];
-        }
-        if (typeof this[method] == "function")
-            this[method].apply(this, params);
+        var doms = this.$treeRoot.Render();
+        return doms[0];
     };
     AppMvvm.prototype.$InitNamespace = function () {
         throw new Error("Method not implemented.");
@@ -1006,21 +1132,43 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 var mvvm_1 = __webpack_require__(/*! ./mvvm */ "./src/mvvm/mvvm.ts");
-var revoke_event_1 = __webpack_require__(/*! ./revoke-event */ "./src/mvvm/revoke-event.ts");
 var ComponentMvvm = /** @class */ (function (_super) {
     __extends(ComponentMvvm, _super);
     function ComponentMvvm() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.hirented = false;
         _this.$name = "";
         _this.$ins = [];
+        _this.$outs = [];
         return _this;
     }
     ComponentMvvm.prototype.$initialize = function () {
+        var _this = this;
         _super.prototype.$initialize.call(this);
-        this.$name = this.$InitName();
         this.$ins = this.$InitIns();
+        this.$outs = this.$InitOuts();
+        this.$name = this.$InitName();
+        this.$ins.forEach(function (prop) {
+            var inName = _this.$fenceNode.GetIn(prop.name);
+            if (inName == null && prop.required) {
+                throw new Error("component \'" + _this.$name + "\' need prop \'" + prop.name);
+            }
+            if (inName != null) {
+                if (inName.const) {
+                    _this[prop.name] = inName.value;
+                }
+                else {
+                    Object.defineProperty(_this, prop.name, {
+                        get: function () {
+                            var newvalue = _this.$fenceNode.mvvm.$GetExpOrFunValue(inName.value);
+                            _this.$checkProp(prop, newvalue);
+                            return newvalue;
+                        }
+                    });
+                }
+            }
+        });
     };
     ComponentMvvm.prototype.$checkProp = function (prop, value) {
         var error = function (name, prop, type) {
@@ -1042,41 +1190,9 @@ var ComponentMvvm = /** @class */ (function (_super) {
             error(this.$name, prop.name, prop.type);
         }
     };
-    ComponentMvvm.prototype.$SetHirented = function (hirentedFromParent) {
-        this.hirented = hirentedFromParent;
-    };
     ComponentMvvm.prototype.$Render = function () {
-        var _this = this;
-        if (this.hirented) {
-            this.$dataItems.forEach(function (item) {
-                _this.$fenceNode.mvvm.$Watch(_this.$fenceNode, item.name, function (newvalue, oldvalue) {
-                    _this[item.name] = newvalue;
-                });
-            });
-        }
-        this.$ins.forEach(function (prop) {
-            var inName = _this.$fenceNode.GetIn(prop.name);
-            if (inName == null && prop.required) {
-                throw new Error("component \'" + _this.$name + "\' need prop \'" + prop.name);
-            }
-            if (inName != null) {
-                if (inName.const) {
-                    _this[prop.name] = inName.value;
-                }
-                else {
-                    _this.$fenceNode.mvvm.$Watch(_this.$fenceNode, inName.value, function (newvalue, oldvalue) {
-                        _this.$checkProp(prop, newvalue);
-                        _this[prop.name] = newvalue;
-                    });
-                    _this.$observe.ReactiveKey(_this, prop.name, true);
-                }
-            }
-        });
-        this.$treeRoot.Render();
-        return this.$treeRoot.Dom;
-    };
-    ComponentMvvm.prototype.$Refresh = function () {
-        this.$treeRoot.Refresh();
+        var doms = this.$treeRoot.Render();
+        return doms[0];
     };
     ComponentMvvm.prototype.$Update = function () {
         this.$treeRoot.Update();
@@ -1084,29 +1200,30 @@ var ComponentMvvm = /** @class */ (function (_super) {
     ComponentMvvm.prototype.$SetStatus = function (status) {
         this.$treeRoot.SetStatus(status);
     };
-    ComponentMvvm.prototype.$RevokeMethod = function (method) {
-        var params = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            params[_i - 1] = arguments[_i];
-        }
-        if (this.hirented) {
-            (_a = this.$fenceNode.mvvm).$RevokeMethod.apply(_a, [method].concat(params));
-        }
-        else {
-            if (typeof this[method] == "function")
-                this[method].apply(this, params);
-        }
-        var _a;
-    };
     ComponentMvvm.prototype.$Emit = function (event) {
         var data = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             data[_i - 1] = arguments[_i];
         }
         if (this.$fenceNode != null && this.$fenceNode.mvvm != null) {
+            var e = this.$outs.find(function (out) {
+                return out.name == event;
+            });
+            if (e == null) {
+                throw new Error("no specified event " + event + " at component " + this.$namespace + "::" + this.$name);
+            }
+            if (data.length != e.paramsType.length) {
+                throw new Error("no specified params " + event + " at component " + this.$namespace + "::" + this.$name);
+            }
+            for (var i = 0; i < e.paramsType.length; i++) {
+                if (util_1.TypeOf(data[i]) != e.paramsType[i]) {
+                    throw new Error("params expected " + e.paramsType[i] + ",but received " + toString.call(data[i]) + " at component " + this.$namespace + "::" + this.$name);
+                }
+            }
             var method = this.$fenceNode.GetOut(event);
-            revoke_event_1.RevokeEvent(method, data, this.$fenceNode.mvvm);
+            (_a = this.$fenceNode.mvvm).$RevokeMethod.apply(_a, [method].concat(data));
         }
+        var _a;
     };
     ;
     ComponentMvvm.prototype.$OnRouterChange = function () {
@@ -1174,7 +1291,7 @@ var DirectiveMVVM = /** @class */ (function () {
     };
     DirectiveMVVM.prototype.$Render = function () {
         var _this = this;
-        this.$element = this.$vnode.Dom;
+        this.$element = this.$vnode.DomSet[0].dom;
         this.$InitFuncs.forEach(function (init) {
             _this[init].call(_this);
         });
@@ -1188,7 +1305,10 @@ var DirectiveMVVM = /** @class */ (function () {
                     _this[prop.name] = inName.value;
                 }
                 else {
-                    _this.$vnode.mvvm.$Watch(_this.$vnode, inName.value, function (newvalue, oldvalue) {
+                    var newvalue = _this.$vnode.mvvm.$GetExpOrFunValue(inName.value);
+                    _this.$checkProp(prop, newvalue);
+                    _this[prop.name] = newvalue;
+                    _this.$vnode.mvvm.$CreateWatcher(_this.$vnode, inName.value, function (newvalue, oldvalue) {
                         _this.$checkProp(prop, newvalue);
                         _this[prop.name] = newvalue;
                     });
@@ -1231,11 +1351,14 @@ exports.DirectiveMVVM = DirectiveMVVM;
 /***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var observe_1 = __webpack_require__(/*! ../observer/observe */ "./src/observer/observe.ts");
 var router_state_1 = __webpack_require__(/*! ../router/router-state */ "./src/router/router-state.ts");
+var observer_1 = __webpack_require__(/*! ../observer/observer */ "./src/observer/observer.ts");
+var eval_1 = __webpack_require__(/*! ../eval */ "./src/eval.js");
+var watcher_1 = __webpack_require__(/*! ../observer/watcher */ "./src/observer/watcher.ts");
 var Mvvm = /** @class */ (function () {
     function Mvvm() {
         this.$data = {};
+        this.$namespace = "default";
         this.$dataItems = [];
         this.$computeItems = [];
         this.$isroot = false;
@@ -1252,11 +1375,10 @@ var Mvvm = /** @class */ (function () {
     });
     Mvvm.prototype.$initialize = function () {
         var _this = this;
-        this.$observe = new observe_1.Observe(this);
         this.$dataItems = this.$InitDataItems();
         this.$computeItems = this.$InitComputeItems();
         this.$treeRoot = this.$InitTreeroot();
-        this.$treeRoot.AttachDom();
+        this.$namespace = this.$InitNamespace();
         this.$dataItems.forEach(function (item) {
             _this.$data[item.name] = item.value;
             Object.defineProperty(_this, item.name, {
@@ -1268,14 +1390,25 @@ var Mvvm = /** @class */ (function () {
                 }
             });
         });
-        this.$observe.ReactiveData(this.$data);
+        observer_1.ReactiveData(this.$data);
         this.$computeItems.forEach(function (item) {
-            _this.$observe.WatchComputed(_this.$treeRoot, item.name, item.get);
+            observer_1.ReactiveComputed(_this, _this.$treeRoot, item.name, item.get);
         });
     };
-    Mvvm.prototype.$GetExpValue = function (exp) {
-        return this.$observe.GetValueWithExp(exp);
+    Mvvm.prototype.$AttachChildren = function () {
+        this.$treeRoot.AttachChildren();
     };
+    Mvvm.prototype.$GetExpOrFunValue = function (expOrFunc) {
+        var res;
+        if (typeof expOrFunc == "string") {
+            res = eval_1.EvalExp(this, expOrFunc);
+        }
+        if (typeof expOrFunc == "function") {
+            res = expOrFunc.call(this);
+        }
+        return res;
+    };
+    Mvvm.prototype.$ExtendMvvm = function () { return this; };
     Mvvm.prototype.$SetValue = function (exp, value) {
         var keys = exp.split(".");
         var target = this.$data;
@@ -1291,8 +1424,8 @@ var Mvvm = /** @class */ (function () {
         if (hasTraget && target != null)
             target[keys[keys.length - 1]] = value;
     };
-    Mvvm.prototype.$Watch = function (vnode, exp, listener, arraydeep) {
-        this.$observe.AddWatcher(vnode, exp, listener, arraydeep);
+    Mvvm.prototype.$CreateWatcher = function (vnode, exp, listener, watchingArrayItem) {
+        new watcher_1.Watcher(this, vnode, exp, listener, watchingArrayItem);
     };
     Mvvm.prototype.$OnDestroy = function () {
         this.$treeRoot.OnRemoved();
@@ -1309,64 +1442,22 @@ var Mvvm = /** @class */ (function () {
     Mvvm.prototype.$GetComputedItems = function () {
         return this.$computeItems;
     };
+    Mvvm.prototype.$Refresh = function () {
+        this.$treeRoot.Rerender();
+    };
+    Mvvm.prototype.$RevokeMethod = function (method) {
+        var params = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            params[_i - 1] = arguments[_i];
+        }
+        if (typeof this[method] == "function")
+            this[method].apply(this, params);
+        else
+            throw new Error(method + " is not a function");
+    };
     return Mvvm;
 }());
 exports.Mvvm = Mvvm;
-
-
-/***/ }),
-
-/***/ "./src/mvvm/revoke-event.ts":
-/*!**********************************!*\
-  !*** ./src/mvvm/revoke-event.ts ***!
-  \**********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
-function RevokeEvent(method, data, mvvm) {
-    if (const_1.REG_EVENT.test(method)) {
-        var methodStr = RegExp.$1;
-        var paramsStr = RegExp.$2;
-        if (paramsStr.length > 0) {
-            var ps = paramsStr.split(",");
-            var params_1 = [];
-            ps.forEach(function (p) {
-                if (!const_1.REG_STR.test(p)) {
-                    if (p === "true") {
-                        params_1.push(true);
-                        return;
-                    }
-                    if (p === "false") {
-                        params_1.push(false);
-                        return;
-                    }
-                    if (p == "$event") {
-                        params_1.push.apply(params_1, data);
-                        return;
-                    }
-                    var n = new Number(p).valueOf();
-                    if (!isNaN(n)) {
-                        params_1.push(n.valueOf());
-                    }
-                    else {
-                        //肯定是本地变量
-                        params_1.push(mvvm.$GetExpValue(p));
-                    }
-                }
-                else {
-                    params_1.push(RegExp.$2);
-                }
-            });
-            mvvm.$RevokeMethod.apply(mvvm, [methodStr].concat(params_1));
-        }
-        else {
-            mvvm.$RevokeMethod(methodStr);
-        }
-    }
-}
-exports.RevokeEvent = RevokeEvent;
 
 
 /***/ }),
@@ -1376,9 +1467,10 @@ exports.RevokeEvent = RevokeEvent;
   !*** ./src/observer/msg-queue.ts ***!
   \***********************************/
 /*! no static exports found */
-/***/ (function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var start_1 = __webpack_require__(/*! ../manager/start */ "./src/manager/start.ts");
 var queue = [];
 var settimeout = false;
 function AddWatcher(watcher) {
@@ -1401,203 +1493,195 @@ function RevokeWatcher() {
     if (queue.length > 0) {
         RevokeWatcher();
     }
+    else {
+        start_1.RefreshApp();
+    }
 }
 exports.RevokeWatcher = RevokeWatcher;
 
 
 /***/ }),
 
-/***/ "./src/observer/observe.ts":
-/*!*********************************!*\
-  !*** ./src/observer/observe.ts ***!
-  \*********************************/
+/***/ "./src/observer/observer.ts":
+/*!**********************************!*\
+  !*** ./src/observer/observer.ts ***!
+  \**********************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var watcher_1 = __webpack_require__(/*! ./watcher */ "./src/observer/watcher.ts");
+var watcher_collect_1 = __webpack_require__(/*! ./watcher-collect */ "./src/observer/watcher-collect.ts");
+var $target;
+function SetTarget(target) {
+    $target = target;
+}
+exports.SetTarget = SetTarget;
+function CleanTarget() {
+    $target = null;
+}
+exports.CleanTarget = CleanTarget;
+function ReactiveData(data) {
+    if (data != null && typeof data == "object") {
+        Object.keys(data).forEach(function (key) {
+            reactiveKey(data, key);
+            ReactiveData(data[key]);
+        });
+    }
+}
+exports.ReactiveData = ReactiveData;
+function reactiveKey(data, key) {
+    var collecter = new watcher_collect_1.WatcherCollecter(key);
+    var value = data[key];
+    if (toString.call(value) == "[object Array]") {
+        reactiveArray(value, collecter);
+    }
+    Object.defineProperty(data, key, {
+        get: function () {
+            if ($target != null) {
+                collecter.AddTarget($target);
+            }
+            return value;
+        },
+        set: function (newval) {
+            if (newval != value) {
+                value = newval;
+                if (toString.call(value) == "[object Array]") {
+                    reactiveArray(value, collecter);
+                }
+                ReactiveData(newval);
+                collecter.Notify();
+            }
+        },
+        enumerable: true,
+        configurable: true
+    });
+}
+function reactiveArray(array, collecter) {
+    if (array.push != Array.prototype.push)
+        return;
+    Object.defineProperty(array, "push", {
+        enumerable: false,
+        configurable: true,
+        value: function () {
+            var params = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                params[_i] = arguments[_i];
+            }
+            var old = array.length;
+            var res = (_a = Array.prototype.push).call.apply(_a, [array].concat(params));
+            for (var i = old; i < res; i++) {
+                reactiveKey(array, "" + i);
+            }
+            collecter.Notify();
+            return res;
+            var _a;
+        }
+    });
+    Object.defineProperty(array, "pop", {
+        enumerable: false,
+        configurable: true,
+        value: function () {
+            var params = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                params[_i] = arguments[_i];
+            }
+            var res = (_a = Array.prototype.pop).call.apply(_a, [array].concat(params));
+            collecter.Notify();
+            return res;
+            var _a;
+        }
+    });
+    Object.defineProperty(array, "splice", {
+        enumerable: false,
+        configurable: true,
+        value: function () {
+            var params = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                params[_i] = arguments[_i];
+            }
+            var res = (_a = Array.prototype.splice).call.apply(_a, [array].concat(params));
+            if (params.length > 2) {
+                var newitems = params.slice(2);
+                newitems.forEach(function (item) {
+                    var index = array.indexOf(item);
+                    reactiveKey(array, "" + index);
+                });
+            }
+            collecter.Notify();
+            return res;
+            var _a;
+        }
+    });
+    Object.defineProperty(array, "shift", {
+        enumerable: false,
+        configurable: true,
+        value: function () {
+            var params = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                params[_i] = arguments[_i];
+            }
+            var res = (_a = Array.prototype.shift).call.apply(_a, [array].concat(params));
+            collecter.Notify();
+            return res;
+            var _a;
+        }
+    });
+}
+function ReactiveComputed(mvvm, vnode, key, func) {
+    var collecter = new watcher_collect_1.WatcherCollecter(key);
+    var firstget = true;
+    var value;
+    Object.defineProperty(mvvm, key, {
+        get: function () {
+            if ($target != null) {
+                collecter.AddTarget($target);
+            }
+            if (firstget) {
+                var old = $target;
+                $target = null;
+                value = func.call(mvvm);
+                new watcher_1.Watcher(mvvm, vnode, func, function (newval) {
+                    value = newval;
+                    collecter.Notify();
+                });
+                $target = old;
+                firstget = false;
+            }
+            return value;
+        },
+        enumerable: true,
+        configurable: true
+    });
+}
+exports.ReactiveComputed = ReactiveComputed;
+
+
+/***/ }),
+
+/***/ "./src/observer/watcher-collect.ts":
+/*!*****************************************!*\
+  !*** ./src/observer/watcher-collect.ts ***!
+  \*****************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+Object.defineProperty(exports, "__esModule", { value: true });
 var msg_queue_1 = __webpack_require__(/*! ./msg-queue */ "./src/observer/msg-queue.ts");
 var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
-var eval_1 = __webpack_require__(/*! ../eval */ "./src/eval.js");
-var Observe = /** @class */ (function () {
-    function Observe(data) {
-        this.data = data;
-    }
-    Observe.prototype.GetValue = function (watcher) {
-        Observe.target = watcher;
-        var res;
-        if (typeof watcher.ExpOrFunc == "string") {
-            res = eval_1.EvalExp(this.data, watcher.ExpOrFunc);
-        }
-        if (typeof watcher.ExpOrFunc == "function") {
-            res = watcher.ExpOrFunc.call(this.data);
-        }
-        Observe.target = null;
-        return res;
-    };
-    Observe.prototype.GetValueWithExp = function (exp) {
-        var res = eval_1.EvalExp(this.data, exp);
-        return res;
-    };
-    Observe.prototype.AddWatcher = function (vnode, exp, listener, deep) {
-        new watcher_1.Watcher(vnode, exp, listener, this, deep);
-    };
-    Observe.prototype.ReactiveData = function (data) {
-        var _this = this;
-        if (data != null && typeof data == "object") {
-            Object.keys(data).forEach(function (key) {
-                var depend = new Depender(key);
-                _this.defineReactive(data, key, false, depend);
-                _this.ReactiveData(data[key]);
-            });
-        }
-    };
-    Observe.prototype.ReactiveKey = function (data, key, shallow) {
-        var depend = new Depender(key);
-        this.defineReactive(data, key, shallow, depend);
-    };
-    Observe.prototype.reactiveArray = function (array, depend) {
-        var _this = this;
-        if (array.push != Array.prototype.push)
-            return;
-        Object.defineProperty(array, "push", {
-            enumerable: false,
-            configurable: true,
-            value: function () {
-                var params = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    params[_i] = arguments[_i];
-                }
-                var old = array.length;
-                var res = (_a = Array.prototype.push).call.apply(_a, [array].concat(params));
-                for (var i = old; i < res; i++) {
-                    _this.ReactiveKey(array, "" + i, false);
-                }
-                depend.Notify();
-                return res;
-                var _a;
-            }
-        });
-        Object.defineProperty(array, "pop", {
-            enumerable: false,
-            configurable: true,
-            value: function () {
-                var params = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    params[_i] = arguments[_i];
-                }
-                var res = (_a = Array.prototype.pop).call.apply(_a, [array].concat(params));
-                depend.Notify();
-                return res;
-                var _a;
-            }
-        });
-        Object.defineProperty(array, "splice", {
-            enumerable: false,
-            configurable: true,
-            value: function () {
-                var params = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    params[_i] = arguments[_i];
-                }
-                var res = (_a = Array.prototype.splice).call.apply(_a, [array].concat(params));
-                if (params.length > 2) {
-                    var newitems = params.slice(2);
-                    newitems.forEach(function (item) {
-                        var index = array.indexOf(item);
-                        _this.ReactiveKey(array, "" + index, false);
-                    });
-                }
-                depend.Notify();
-                return res;
-                var _a;
-            }
-        });
-        Object.defineProperty(array, "shift", {
-            enumerable: false,
-            configurable: true,
-            value: function () {
-                var params = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    params[_i] = arguments[_i];
-                }
-                var res = (_a = Array.prototype.shift).call.apply(_a, [array].concat(params));
-                depend.Notify();
-                return res;
-                var _a;
-            }
-        });
-    };
-    Observe.prototype.defineReactive = function (data, key, shallow, depend) {
-        var _this = this;
-        var value = data[key];
-        if (toString.call(value) == "[object Array]") {
-            this.reactiveArray(value, depend);
-        }
-        Object.defineProperty(data, key, {
-            get: function () {
-                if (Observe.target != null) {
-                    depend.AddTarget(Observe.target);
-                }
-                return value;
-            },
-            set: function (newval) {
-                if (newval != value) {
-                    value = newval;
-                    if (toString.call(value) == "[object Array]") {
-                        _this.reactiveArray(value, depend);
-                    }
-                    if (!shallow)
-                        _this.ReactiveData(newval);
-                    depend.Notify();
-                }
-            },
-            enumerable: true,
-            configurable: true
-        });
-    };
-    Observe.prototype.WatchComputed = function (vnode, key, func) {
-        var _this = this;
-        var depend = new Depender(key);
-        var firstget = true;
-        var value;
-        Object.defineProperty(this.data, key, {
-            get: function () {
-                if (Observe.target != null) {
-                    depend.AddTarget(Observe.target);
-                }
-                if (firstget) {
-                    var old = Observe.target;
-                    Observe.target = null;
-                    new watcher_1.Watcher(vnode, func, function (newval) {
-                        value = newval;
-                        depend.Notify();
-                    }, _this);
-                    Observe.target = old;
-                    firstget = false;
-                }
-                return value;
-            },
-            enumerable: true,
-            configurable: true
-        });
-    };
-    return Observe;
-}());
-exports.Observe = Observe;
-var Depender = /** @class */ (function () {
-    function Depender(key) {
+var WatcherCollecter = /** @class */ (function () {
+    function WatcherCollecter(key) {
         this.key = key;
         this.watches = [];
     }
-    Depender.prototype.GetKey = function () {
+    WatcherCollecter.prototype.GetKey = function () {
         return this.key;
     };
-    Depender.prototype.AddTarget = function (watcher) {
+    WatcherCollecter.prototype.AddTarget = function (watcher) {
         if (this.watches.indexOf(watcher) == -1)
             this.watches.push(watcher);
     };
-    Depender.prototype.Notify = function () {
+    WatcherCollecter.prototype.Notify = function () {
         this.watches = this.watches.filter(function (watcher) {
             if (watcher.GetVNode().GetStatus() == const_1.VNodeStatus.ACTIVE) {
                 msg_queue_1.AddWatcher(watcher);
@@ -1609,9 +1693,9 @@ var Depender = /** @class */ (function () {
                 return false;
         });
     };
-    return Depender;
+    return WatcherCollecter;
 }());
-exports.Depender = Depender;
+exports.WatcherCollecter = WatcherCollecter;
 
 
 /***/ }),
@@ -1625,47 +1709,54 @@ exports.Depender = Depender;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
+var observer_1 = __webpack_require__(/*! ./observer */ "./src/observer/observer.ts");
 var Watcher = /** @class */ (function () {
-    function Watcher(vnode, ExpOrFunc, cb, observer, deep) {
+    function Watcher(mvvm, vnode, ExpOrFunc, cb, watchingArrayItem) {
+        this.mvvm = mvvm;
         this.vnode = vnode;
         this.ExpOrFunc = ExpOrFunc;
         this.cb = cb;
-        this.observer = observer;
-        this.deep = deep;
+        this.watchingArrayItem = watchingArrayItem;
         this.deepRecord = [];
-        this.value = this.observer.GetValue(this);
-        if (this.deep && toString.call(this.value) == "[object Array]") {
+        this.value = this.getValue();
+        if (this.watchingArrayItem && toString.call(this.value) == "[object Array]") {
             for (var i = 0; i < this.value.length; i++) {
                 this.deepRecord[i] = this.value[i];
             }
         }
-        this.cb(this.value, undefined);
     }
+    Watcher.prototype.getValue = function () {
+        observer_1.SetTarget(this);
+        var res = this.mvvm.$GetExpOrFunValue(this.ExpOrFunc);
+        observer_1.CleanTarget();
+        return res;
+    };
     Watcher.prototype.GetVNode = function () {
         return this.vnode;
     };
     Watcher.prototype.Update = function () {
-        var newval = this.observer.GetValue(this);
-        if (this.value != newval) {
-            if (this.vnode.GetStatus() == const_1.VNodeStatus.ACTIVE)
+        if (this.vnode.GetStatus() == const_1.VNodeStatus.ACTIVE) {
+            var newval = this.getValue();
+            if (this.value != newval) {
                 this.cb(newval, this.value);
-            this.value = newval;
-        }
-        else {
-            //判断数组元素是否有变化
-            if (this.deep && toString.call(this.value) == "[object Array]") {
-                var diff = false;
-                for (var i = 0; i < newval.length; i++) {
-                    if (newval[i] != this.deepRecord[i]) {
-                        this.cb(newval, this.value);
-                        diff = true;
-                        break;
-                    }
-                }
-                if (diff) {
-                    this.deepRecord = [];
+                this.value = newval;
+            }
+            else {
+                //判断数组元素是否有变化
+                if (this.watchingArrayItem && toString.call(this.value) == "[object Array]") {
+                    var diff = false;
                     for (var i = 0; i < newval.length; i++) {
-                        this.deepRecord[i] = newval[i];
+                        if (newval[i] != this.deepRecord[i]) {
+                            this.cb(newval, this.value);
+                            diff = true;
+                            break;
+                        }
+                    }
+                    if (diff) {
+                        this.deepRecord = [];
+                        for (var i = 0; i < newval.length; i++) {
+                            this.deepRecord[i] = newval[i];
+                        }
                     }
                 }
             }
@@ -1687,6 +1778,7 @@ exports.Watcher = Watcher;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var router_state_1 = __webpack_require__(/*! ./router-state */ "./src/router/router-state.ts");
+var start_1 = __webpack_require__(/*! ../manager/start */ "./src/manager/start.ts");
 var matchedRouter = [];
 var appRouters = [];
 var cursor = -1;
@@ -1916,6 +2008,7 @@ exports.MoveBack = MoveBack;
 function NotifyUrlChange() {
     matchUrl();
     firstVNode.OnRouterChange();
+    start_1.RefreshApp();
 }
 exports.NotifyUrlChange = NotifyUrlChange;
 
@@ -2053,6 +2146,45 @@ function StrToEvalstr(str) {
     }
 }
 exports.StrToEvalstr = StrToEvalstr;
+function InsertDomChild(parent, child, after) {
+    if (after == null) {
+        if (parent.firstChild != null)
+            parent.insertBefore(child, parent.firstChild);
+        else
+            parent.appendChild(child);
+    }
+    else {
+        if (after.nextSibling != null)
+            parent.insertBefore(child, after.nextSibling);
+        else
+            parent.appendChild(child);
+    }
+}
+exports.InsertDomChild = InsertDomChild;
+function TypeOf(param) {
+    if (toString.call(param) == "[object Boolean]") {
+        return "boolean";
+    }
+    if (toString.call(param) == "[object Array]") {
+        return "array";
+    }
+    if (toString.call(param) == "[object Number]") {
+        return "number";
+    }
+    if (toString.call(param) == "[object Object]") {
+        return "object";
+    }
+    if (toString.call(param) == "[object Null]") {
+        return "object";
+    }
+    if (toString.call(param) == "[object String]") {
+        return "string";
+    }
+    if (toString.call(param) == "[object Undefined]") {
+        throw new Error("function TypeOf: undefined is not allowed");
+    }
+}
+exports.TypeOf = TypeOf;
 
 
 /***/ }),
@@ -2120,28 +2252,38 @@ function NewVNode(dom, mvvm, parent, priority) {
     if (priority === void 0) { priority = Priority.FOR; }
     if (dom.NodeName.toLowerCase() == "slot") {
         var SlotNode = __webpack_require__(/*! ../vnode/slot-node */ "./src/vnode/slot-node.ts").SlotNode;
-        return new SlotNode(dom, mvvm, parent, dom.GetAttr("name"));
+        var vnode = new SlotNode(dom, mvvm, parent, dom.GetAttr("name"));
+        return vnode;
     }
     if (priority >= Priority.FOR && dom.GetAttr(const_1.PRE + "for") != null) {
         var ForNode = __webpack_require__(/*! ../vnode/for-node */ "./src/vnode/for-node.ts").ForNode;
-        return new ForNode(dom, mvvm, parent, dom.GetAttr(const_1.PRE + "for"));
+        var vnode = new ForNode(dom, mvvm, parent, dom.GetAttr(const_1.PRE + "for"));
+        return vnode;
     }
     if (priority >= Priority.IF && dom.GetAttr(const_1.PRE + "if") != null) {
         var IfNode = __webpack_require__(/*! ../vnode/if-node */ "./src/vnode/if-node.ts").IfNode;
-        return new IfNode(dom, mvvm, parent, dom.GetAttr(const_1.PRE + "if"));
+        var vnode = new IfNode(dom, mvvm, parent, dom.GetAttr(const_1.PRE + "if"));
+        return vnode;
+    }
+    if (dom.NodeName == "r-template") {
+        var TemplateNode = __webpack_require__(/*! ../vnode/template-node */ "./src/vnode/template-node.ts").TemplateNode;
+        var vnode = new TemplateNode(dom, mvvm, parent);
+        return vnode;
     }
     if (dom.NodeName == "router-view") {
         var RouterNode = __webpack_require__(/*! ../vnode/router-node */ "./src/vnode/router-node.ts").RouterNode;
-        return new RouterNode(dom, mvvm, parent);
+        var vnode = new RouterNode(dom, mvvm, parent);
+        return vnode;
     }
     var ns = util_1.GetNS(dom.NodeName);
     if (components_manager_1.IsComponentRegistered(ns.value, ns.namespace || "default")) {
         var construct = components_manager_1.InitComponent(ns.value, ns.namespace || "default");
         var selfmvvm = new construct();
-        selfmvvm.$initialize();
         var CustomNode = __webpack_require__(/*! ../vnode/custom-node */ "./src/vnode/custom-node.ts").CustomNode;
         var cust = new CustomNode(dom, mvvm, parent, selfmvvm);
         selfmvvm.$SetFenceNode(cust);
+        selfmvvm.$initialize();
+        selfmvvm.$AttachChildren();
         return cust;
     }
     return new vinalla_node_1.VinallaNode(dom, mvvm, parent);
@@ -2171,7 +2313,7 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
-var template_node_1 = __webpack_require__(/*! ./template-node */ "./src/vnode/template-node.ts");
+var plug_node_1 = __webpack_require__(/*! ./plug-node */ "./src/vnode/plug-node.ts");
 var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var CustomNode = /** @class */ (function (_super) {
     __extends(CustomNode, _super);
@@ -2185,6 +2327,36 @@ var CustomNode = /** @class */ (function (_super) {
         _this.ins_pure = {};
         _this.ins_exp = {};
         _this.outs = {};
+        if (_this.Vdom) {
+            for (var i = 0; i < _this.Vdom.Attrs.length; i++) {
+                var name_1 = _this.Vdom.Attrs[i].Name;
+                var value = _this.Vdom.Attrs[i].Value;
+                //输入
+                var ins = _this.SurroundMvvm.$InitIns();
+                for (var i_1 = 0; i_1 < ins.length; i_1++) {
+                    var prop = ins[i_1];
+                    if (const_1.REG_IN.test(name_1) && prop.name == RegExp.$1) {
+                        _this.ins_exp[RegExp.$1] = value;
+                        break;
+                    }
+                    else {
+                        if (prop.name == name_1) {
+                            _this.ins_pure[name_1] = value;
+                            break;
+                        }
+                    }
+                }
+                //输出
+                var outs = _this.SurroundMvvm.$InitOuts();
+                for (var i_2 = 0; i_2 < outs.length; i_2++) {
+                    var event_1 = outs[i_2];
+                    if (const_1.REG_OUT.test(name_1) && event_1.name == RegExp.$1) {
+                        _this.outs[RegExp.$1] = value;
+                        break;
+                    }
+                }
+            }
+        }
         return _this;
     }
     CustomNode.prototype.AddIns = function (name, exp) {
@@ -2200,40 +2372,39 @@ var CustomNode = /** @class */ (function (_super) {
         return null;
     };
     CustomNode.prototype.Render = function () {
-        this.Dom = this.SurroundMvvm.$Render();
-        if (this.Dom && this.Parent && this.Parent.Dom)
-            this.Parent.Dom.appendChild(this.Dom);
+        var doms = this.SurroundMvvm.$Render();
+        this.DomSet = [doms];
+        return this.DomSet;
     };
-    /**override vnode */
-    CustomNode.prototype.childSet = function () {
-        //制造中间节点管理template
-        var defaultTemplate = new template_node_1.TemplateNode(this.Vdom, this.mvvm ? this.mvvm : this.SurroundMvvm, this, "default");
-        defaultTemplate.Parent = this;
-        var templates = { "default": defaultTemplate };
-        //解析子节点
-        for (var i = 0; i < this.Vdom.Children.length; i++) {
-            var childnode = this.Vdom.Children[i];
-            var name_1 = this.Vdom.GetAttr("slot");
-            if (name_1 == null || name_1 == "") {
-                name_1 = "default";
+    CustomNode.prototype.AttachChildren = function () {
+        if (this.Vdom != null) {
+            //制造中间节点管理template
+            var defaultTemplate = new plug_node_1.PlugNode(null, this.mvvm, null, "default");
+            var templates = { "default": defaultTemplate };
+            //解析子节点
+            for (var i = 0; i < this.Vdom.Children.length; i++) {
+                var childnode = this.Vdom.Children[i];
+                var name_2 = childnode.GetAttr("slot");
+                if (name_2 == null || name_2 == "") {
+                    name_2 = "default";
+                }
+                if (templates[name_2] == null) {
+                    templates[name_2] = new plug_node_1.PlugNode(null, this.mvvm, null, name_2);
+                }
+                var vchild = vdom_1.NewVNode(childnode, templates[name_2].mvvm, templates[name_2]);
+                vchild.AttachChildren();
+                templates[name_2].Children.push(vchild);
             }
-            if (templates[name_1] == null) {
-                templates[name_1] = new template_node_1.TemplateNode(this.Vdom, this.mvvm ? this.mvvm : this.SurroundMvvm, this, name_1);
-                templates[name_1].Parent = this;
+            for (var name_3 in templates) {
+                this.Children.push(templates[name_3]);
             }
-            var vchild = vdom_1.NewVNode(childnode, templates[name_1].mvvm, templates[name_1]);
-            vchild.AttachDom();
-            templates[name_1].Children.push(vchild);
-        }
-        for (var name_2 in templates) {
-            this.Children.push(templates[name_2]);
         }
     };
     CustomNode.prototype.GetInValue = function (prop) {
         if (this.ins_pure[prop] != null)
             return this.ins_pure[prop];
         if (this.ins_exp[prop] != null)
-            return this.mvvm.$GetExpValue(this.ins_exp[prop]);
+            return this.mvvm.$GetExpOrFunValue(this.ins_exp[prop]);
         return null;
     };
     CustomNode.prototype.GetIn = function (prop) {
@@ -2246,7 +2417,7 @@ var CustomNode = /** @class */ (function (_super) {
     CustomNode.prototype.GetOut = function (prop) {
         return this.outs[prop];
     };
-    CustomNode.prototype.Refresh = function () {
+    CustomNode.prototype.Rerender = function () {
         this.SurroundMvvm.$Refresh();
     };
     CustomNode.prototype.Update = function () {
@@ -2259,32 +2430,7 @@ var CustomNode = /** @class */ (function (_super) {
         this.status = status;
         this.SurroundMvvm.$SetStatus(status);
     };
-    CustomNode.prototype.AddProperty = function (name, value) {
-        //输入
-        var ins = this.SurroundMvvm.$InitIns();
-        for (var i = 0; i < ins.length; i++) {
-            var prop = ins[i];
-            if (const_1.REG_IN.test(name) && prop.name == RegExp.$1) {
-                this.ins_exp[RegExp.$1] = value;
-                return;
-            }
-            else {
-                if (prop.name == name) {
-                    this.ins_pure[name] = value;
-                    return;
-                }
-            }
-        }
-        //输出
-        var outs = this.SurroundMvvm.$InitOuts();
-        for (var i = 0; i < outs.length; i++) {
-            var event_1 = outs[i];
-            if (const_1.REG_OUT.test(name) && event_1 == RegExp.$1) {
-                this.outs[RegExp.$1] = value;
-                return;
-            }
-        }
-        _super.prototype.AddProperty.call(this, name, value);
+    CustomNode.prototype.Reflow = function () {
     };
     return CustomNode;
 }(vnode_1.VNode));
@@ -2363,12 +2509,13 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var component_mvvm_1 = __webpack_require__(/*! ./../mvvm/component-mvvm */ "./src/mvvm/component-mvvm.ts");
-var models_1 = __webpack_require__(/*! ../models */ "./src/models.ts");
-var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
-var custom_node_1 = __webpack_require__(/*! ./custom-node */ "./src/vnode/custom-node.ts");
-var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
+var eval_1 = __webpack_require__(/*! ../eval */ "./src/eval.js");
+var models_1 = __webpack_require__(/*! ../models */ "./src/models.ts");
+var mvvm_1 = __webpack_require__(/*! ../mvvm/mvvm */ "./src/mvvm/mvvm.ts");
+var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
+var const_2 = __webpack_require__(/*! ./../const */ "./src/const.ts");
+var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var ForNode = /** @class */ (function (_super) {
     __extends(ForNode, _super);
     function ForNode(Vdom, mvvm, Parent, originForExp) {
@@ -2377,112 +2524,129 @@ var ForNode = /** @class */ (function (_super) {
         _this.mvvm = mvvm;
         _this.Parent = Parent;
         _this.originForExp = originForExp;
-        _this.dynamicVNodes = [];
-        _this.IsTemplate = true;
         var forSplit = _this.originForExp.trim().split(/\s+/);
         _this.ForExp = new models_1.ForExp(forSplit[0], forSplit[2]);
         return _this;
     }
     ForNode.prototype.newCopyNode = function (n) {
         var itemexp = this.ForExp.itemExp;
+        var itemexpValue = this.ForExp.arrayExp + "[" + n + "]";
         var that = this;
         var mvvm = new (/** @class */ (function (_super) {
             __extends(class_1, _super);
             function class_1() {
-                return _super !== null && _super.apply(this, arguments) || this;
+                var _this = _super !== null && _super.apply(this, arguments) || this;
+                _this.$hirented = that.mvvm;
+                return _this;
             }
-            class_1.prototype.$InitTreeroot = function () {
-                var vnode = vdom_1.NewVNode(that.Vdom, this, null, vdom_1.Priority.IF);
-                return vnode;
-            };
-            class_1.prototype.$InitNamespace = function () {
-                return that.mvvm.$InitNamespace();
-            };
             class_1.prototype.$InitDataItems = function () {
-                var datas = [];
-                that.mvvm.$GetDataItems().forEach(function (item) {
-                    datas.push({ name: item.name, value: that.mvvm[item.name] });
-                });
-                that.mvvm.$GetComputedItems().forEach(function (item) {
-                    datas.push({ name: item.name, value: that.mvvm[item.name] });
-                });
-                if (that.mvvm instanceof component_mvvm_1.ComponentMvvm) {
-                    var props = that.mvvm.$GetIns();
-                    props.forEach(function (prop) {
-                        datas.push({ name: prop.name, value: that.mvvm[prop.name] });
-                    });
-                }
-                return datas;
+                return [];
             };
             class_1.prototype.$InitComputeItems = function () {
                 return [];
             };
-            class_1.prototype.$InitName = function () {
-                return "";
+            class_1.prototype.$Render = function () {
+                return null;
             };
-            class_1.prototype.$InitIns = function () {
-                return [{ name: itemexp, required: true }];
+            class_1.prototype.$InitTreeroot = function () {
+                return null;
             };
-            class_1.prototype.$InitOuts = function () {
-                return [];
+            class_1.prototype.$InitNamespace = function () {
+                return that.mvvm.$InitNamespace();
             };
-            class_1.prototype.$GetParams = function () {
-                return [];
+            class_1.prototype.$GetExpOrFunValue = function (exp) {
+                var mvvm = this.$ExtendMvvm();
+                return eval_1.EvalExp(mvvm, exp);
+            };
+            class_1.prototype.$ExtendMvvm = function () {
+                var mvvm = that.mvvm.$ExtendMvvm();
+                Object.defineProperty(mvvm, itemexp, {
+                    get: function () {
+                        return mvvm.$GetExpOrFunValue(itemexpValue);
+                    },
+                    enumerable: true,
+                    configurable: true
+                });
+                Object.defineProperty(mvvm, "$index", {
+                    value: n,
+                    configurable: true,
+                    enumerable: true
+                });
+                return mvvm;
+            };
+            class_1.prototype.$RevokeMethod = function (method) {
+                var params = [];
+                for (var _i = 1; _i < arguments.length; _i++) {
+                    params[_i - 1] = arguments[_i];
+                }
+                var mvvm = this.$ExtendMvvm();
+                mvvm.$RevokeMethod.apply(mvvm, [method].concat(params));
             };
             return class_1;
-        }(component_mvvm_1.ComponentMvvm)));
-        mvvm.$initialize();
-        mvvm.$SetHirented(true);
-        var fencenode = new custom_node_1.CustomNode(this.Vdom, this.mvvm, null, mvvm);
-        mvvm.$SetFenceNode(fencenode);
-        fencenode.IsCopy = true;
-        fencenode.AddIns(itemexp, this.ForExp.arrayExp + "[" + n + "]");
-        return fencenode;
+        }(mvvm_1.Mvvm)));
+        var vnode = vdom_1.NewVNode(this.Vdom, mvvm, this, vdom_1.Priority.IF);
+        vnode.AttachChildren();
+        return vnode;
     };
-    ForNode.prototype.reImplementForExp = function (newcount) {
+    ForNode.prototype.implementForExp = function (newcount) {
         var _this = this;
-        if (newcount > this.dynamicVNodes.length) {
+        if (newcount > this.Children.length) {
             var custnodes = [];
-            var oldcount = this.dynamicVNodes.length;
-            for (var i = this.dynamicVNodes.length; i < newcount; i++) {
+            for (var i = this.Children.length; i < newcount; i++) {
                 var custnode = this.newCopyNode(i);
-                custnode.Source = this;
                 custnodes.push(custnode);
             }
             custnodes.forEach(function (custnode) {
-                _this.dynamicVNodes.push(custnode);
-                custnode.Render();
+                _this.Children.push(custnode);
+                _this.DomSet = _this.DomSet.concat(custnode.Render());
             });
-            this.Parent.AddChildren(this, custnodes, oldcount);
-            this.Parent.Refresh();
+            this.Parent.Reflow();
             return;
         }
-        if (newcount < this.dynamicVNodes.length) {
-            var moved = this.dynamicVNodes.splice(newcount);
+        if (newcount < this.Children.length) {
+            var moved = this.Children.splice(newcount);
+            moved.forEach(function (moveditem) {
+                _this.DomSet.forEach(function (dom) {
+                    var exist = moveditem.DomSet.some(function (moveddom) {
+                        return moveddom.dom == dom.dom;
+                    });
+                    if (exist) {
+                        dom.type = const_2.DomType.DELETE;
+                    }
+                });
+            });
             moved.forEach(function (vnode) { return vnode.SetStatus(const_1.VNodeStatus.DEPRECATED); });
-            this.Parent.RemoveChildren(moved);
             moved.forEach(function (item) {
                 item.OnRemoved();
             });
-            this.Parent.Refresh();
         }
     };
     ForNode.prototype.Update = function () {
-        var items = this.mvvm.$GetExpValue(this.ForExp.arrayExp);
+        var items = this.mvvm.$GetExpOrFunValue(this.ForExp.arrayExp);
         if (toString.call(items) === "[object Array]") {
-            this.reImplementForExp(items.length);
+            this.implementForExp(items.length);
         }
     };
-    ForNode.prototype.AttachDom = function () { };
+    ForNode.prototype.AttachChildren = function () {
+        var num = this.mvvm.$GetExpOrFunValue(this.ForExp.arrayExp + ".length");
+        for (var i = 0; i < num; i++) {
+            this.Children.push(this.newCopyNode(i));
+        }
+    };
     ForNode.prototype.Render = function () {
-        this.mvvm.$Watch(this, this.ForExp.arrayExp + ".length", this.reImplementForExp.bind(this));
+        var _this = this;
+        this.mvvm.$CreateWatcher(this, this.ForExp.arrayExp + ".length", this.implementForExp.bind(this));
+        this.Children.forEach(function (child) {
+            _this.DomSet = _this.DomSet.concat(child.Render());
+        });
+        return this.DomSet;
     };
     ForNode.prototype.OnRemoved = function () {
-        this.dynamicVNodes.forEach(function (vnode) { return vnode.OnRemoved(); });
+        this.Children.forEach(function (vnode) { return vnode.OnRemoved(); });
     };
     ForNode.prototype.SetStatus = function (status) {
         this.status = status;
-        this.dynamicVNodes.forEach(function (vnode) { return vnode.SetStatus(status); });
+        this.Children.forEach(function (vnode) { return vnode.SetStatus(status); });
     };
     return ForNode;
 }(vnode_1.VNode));
@@ -2509,9 +2673,9 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+var const_1 = __webpack_require__(/*! ./../const */ "./src/const.ts");
 var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
-var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var IfNode = /** @class */ (function (_super) {
     __extends(IfNode, _super);
     function IfNode(Vdom, mvvm, Parent, ifExp) {
@@ -2520,82 +2684,111 @@ var IfNode = /** @class */ (function (_super) {
         _this.mvvm = mvvm;
         _this.Parent = Parent;
         _this.ifExp = ifExp;
-        _this.rendered = false;
-        _this.IsTemplate = true;
         return _this;
     }
-    IfNode.prototype.AttachDom = function () { };
+    IfNode.prototype.AttachChildren = function () {
+        var boolvalue = this.mvvm.$GetExpOrFunValue(this.ifExp);
+        if (boolvalue) {
+            var vnode = vdom_1.NewVNode(this.Vdom, this.mvvm, null, vdom_1.Priority.NORMAL);
+            vnode.AttachChildren();
+            this.Children = [vnode];
+        }
+    };
     IfNode.prototype.Render = function () {
         var _this = this;
-        this.mvvm.$Watch(this, this.ifExp, function (newvalue) { return _this.reImpletement(newvalue); });
+        this.Children.forEach(function (child) {
+            _this.DomSet = _this.DomSet.concat(child.Render());
+        });
+        this.mvvm.$CreateWatcher(this, this.ifExp, function (newvalue) { return _this.reImpletement(newvalue); });
+        return this.DomSet;
     };
     IfNode.prototype.Update = function () {
-        var attached = this.mvvm.$GetExpValue(this.ifExp);
+        var attached = this.mvvm.$GetExpOrFunValue(this.ifExp);
         this.reImpletement(attached);
     };
     IfNode.prototype.reImpletement = function (newvalue) {
-        if (!this.rendered) {
-            this.rendered = true;
-            if (newvalue) {
-                this.instance();
-                this.dynamicVNode.Render();
-                this.Dom = this.dynamicVNode.Dom;
-                if (this.Parent != null) {
-                    this.Parent.AddChildren(this, [this.dynamicVNode], 0);
-                    this.Parent.Refresh();
-                }
-            }
+        var _this = this;
+        if (newvalue) {
+            var vnode = vdom_1.NewVNode(this.Vdom, this.mvvm, null, vdom_1.Priority.NORMAL);
+            vnode.AttachChildren();
+            this.Children = [vnode];
+            this.Children.forEach(function (child) {
+                _this.DomSet = _this.DomSet.concat(child.Render());
+            });
+            this.Parent.Reflow();
         }
         else {
-            if (newvalue) {
-                if (this.dynamicVNode == null) {
-                    this.instance();
-                    this.dynamicVNode.Render();
-                    this.Dom = this.dynamicVNode.Dom;
-                }
-                else {
-                    this.dynamicVNode.Update();
-                }
-                if (this.Parent != null) {
-                    this.Parent.AddChildren(this, [this.dynamicVNode], 0);
-                    this.Parent.Refresh();
-                }
-                else {
-                    this.mvvm.$GetFenceNode().Dom = this.Dom;
-                    this.mvvm.$GetFenceNode().Source.Parent.Refresh();
-                }
-                this.dynamicVNode.SetStatus(const_1.VNodeStatus.ACTIVE);
-            }
-            else {
-                if (this.Parent != null) {
-                    this.Parent.RemoveChildren([this.dynamicVNode]);
-                    this.Parent.Refresh();
-                }
-                else {
-                    this.mvvm.$GetFenceNode().Dom = null;
-                    this.mvvm.$GetFenceNode().Source.Parent.Refresh();
-                }
-                this.dynamicVNode.SetStatus(const_1.VNodeStatus.INACTIVE);
-            }
+            this.Children = [];
+            this.DomSet.forEach(function (dom) {
+                dom.type = const_1.DomType.DELETE;
+            });
         }
     };
-    IfNode.prototype.instance = function () {
-        this.dynamicVNode = vdom_1.NewVNode(this.Vdom, this.mvvm, null, vdom_1.Priority.NORMAL);
-        this.dynamicVNode.IsCopy = true;
-        this.dynamicVNode.AttachDom();
-    };
     IfNode.prototype.OnRemoved = function () {
-        if (this.dynamicVNode != null)
-            this.dynamicVNode.OnRemoved();
+        if (this.Children.length > 0)
+            this.Children[0].OnRemoved();
     };
     IfNode.prototype.SetStatus = function (status) {
         this.status = status;
-        if (this.dynamicVNode != null)
-            this.dynamicVNode.SetStatus(status);
+        if (this.Children.length > 0)
+            this.Children[0].SetStatus(status);
     };
     return IfNode;
 }(vnode_1.VNode));
 exports.IfNode = IfNode;
+
+
+/***/ }),
+
+/***/ "./src/vnode/plug-node.ts":
+/*!********************************!*\
+  !*** ./src/vnode/plug-node.ts ***!
+  \********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
+var PlugNode = /** @class */ (function (_super) {
+    __extends(PlugNode, _super);
+    function PlugNode(vdom, mvvm, Parent, templatename) {
+        var _this = _super.call(this, vdom, mvvm, Parent) || this;
+        _this.vdom = vdom;
+        _this.mvvm = mvvm;
+        _this.Parent = Parent;
+        _this.templatename = templatename;
+        return _this;
+    }
+    PlugNode.prototype.Render = function () {
+        var _this = this;
+        this.Children.forEach(function (child) {
+            var doms = child.Render();
+            _this.DomSet = _this.DomSet.concat(doms);
+        });
+        return this.DomSet;
+    };
+    PlugNode.prototype.Update = function () {
+        var children = [];
+        this.Children.forEach(function (child) {
+            children.push(child);
+        });
+        children.forEach(function (child) {
+            child.Update();
+        });
+    };
+    return PlugNode;
+}(vnode_1.VNode));
+exports.PlugNode = PlugNode;
 
 
 /***/ }),
@@ -2618,6 +2811,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+var const_1 = __webpack_require__(/*! ./../const */ "./src/const.ts");
 var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var custom_node_1 = __webpack_require__(/*! ./custom-node */ "./src/vnode/custom-node.ts");
 var components_manager_1 = __webpack_require__(/*! ../manager/components-manager */ "./src/manager/components-manager.ts");
@@ -2635,26 +2829,28 @@ var RouterNode = /** @class */ (function (_super) {
     RouterNode.prototype.Render = function () {
         var router = router_manager_1.NextRouter(this);
         if (router != null) {
-            this.instance(router);
-            this.dynamicVNode.Render();
+            var vnode = this.instance(router);
+            this.Children = [vnode];
+            this.DomSet = vnode.Render();
             router_manager_1.MoveBack();
-            this.Parent.AddChildren(this, [this.dynamicVNode], 0);
-            this.Parent.Refresh();
         }
+        return this.DomSet;
     };
     RouterNode.prototype.OnRouterChange = function () {
         var router = router_manager_1.NextRouter(this);
         if (router != null) {
-            this.Parent.RemoveChildren([this.dynamicVNode]);
-            this.instance(router);
-            this.dynamicVNode.Render();
+            var vnode = this.instance(router);
+            this.Children = [vnode];
+            this.DomSet.forEach(function (dom) { return dom.type = const_1.DomType.DELETE; });
+            this.DomSet = this.DomSet.concat(vnode.Render());
+            this.Parent.Reflow();
             router_manager_1.MoveBack();
-            this.Parent.AddChildren(this, [this.dynamicVNode], 0);
-            this.Parent.Refresh();
         }
         else {
-            this.Parent.RemoveChildren([this.dynamicVNode]);
-            this.Parent.Refresh();
+            this.Children = [];
+            this.DomSet.forEach(function (dom) {
+                dom.type = const_1.DomType.DELETE;
+            });
         }
     };
     RouterNode.prototype.instance = function (componentStr) {
@@ -2666,10 +2862,15 @@ var RouterNode = /** @class */ (function (_super) {
             throw new Error("router can not find component name:" + ns.value + ",namespace:" + ns.namespace);
         }
         var mvvm = new construct();
-        mvvm.$initialize();
         var custnode = new custom_node_1.CustomNode(null, this.mvvm, null, mvvm);
         mvvm.$SetFenceNode(custnode);
-        this.dynamicVNode = custnode;
+        mvvm.$initialize();
+        mvvm.$AttachChildren();
+        return custnode;
+    };
+    RouterNode.prototype.Update = function () {
+    };
+    RouterNode.prototype.Reflow = function () {
     };
     return RouterNode;
 }(vnode_1.VNode));
@@ -2712,12 +2913,11 @@ var SlotNode = /** @class */ (function (_super) {
     SlotNode.prototype.Render = function () {
         var template = this.mvvm.$GetFenceNode().GetTemplate(this.name);
         if (template != null) {
-            template.Render();
-            this.Dom = template.Dom;
-            while (this.Dom.firstChild != null) {
-                this.Parent.Dom.appendChild(this.Dom.firstChild);
-            }
+            template.Parent = this;
+            this.Children = [template];
+            this.DomSet = template.Render();
         }
+        return this.DomSet;
     };
     SlotNode.prototype.Update = function () {
         var template = this.mvvm.$GetFenceNode().GetTemplate(this.name);
@@ -2762,28 +2962,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var TemplateNode = /** @class */ (function (_super) {
     __extends(TemplateNode, _super);
-    function TemplateNode(vdom, mvvm, Parent, templatename) {
-        var _this = _super.call(this, vdom, mvvm, Parent) || this;
-        _this.vdom = vdom;
-        _this.mvvm = mvvm;
-        _this.Parent = Parent;
-        _this.templatename = templatename;
-        return _this;
+    function TemplateNode() {
+        return _super !== null && _super.apply(this, arguments) || this;
     }
     TemplateNode.prototype.Render = function () {
-        this.Dom = document.createElement("div");
+        var _this = this;
         this.Children.forEach(function (child) {
-            child.Render();
+            _this.DomSet = _this.DomSet.concat(child.Render());
         });
+        return this.DomSet;
     };
     TemplateNode.prototype.Update = function () {
-        var children = [];
-        this.Children.forEach(function (child) {
-            children.push(child);
-        });
-        children.forEach(function (child) {
-            child.Update();
-        });
     };
     return TemplateNode;
 }(vnode_1.VNode));
@@ -2818,36 +3007,18 @@ var directive_node_1 = __webpack_require__(/*! ./directive-node */ "./src/vnode/
 var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var VinallaNode = /** @class */ (function (_super) {
     __extends(VinallaNode, _super);
-    function VinallaNode() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
+    function VinallaNode(Vdom, mvvm, Parent) {
+        var _this = _super.call(this, Vdom, mvvm, Parent) || this;
+        _this.Vdom = Vdom;
+        _this.mvvm = mvvm;
+        _this.Parent = Parent;
         _this.directives = [];
         _this.innerDirective = [];
-        return _this;
-    }
-    VinallaNode.prototype.AddProperty = function (name, value) {
-        if (const_1.REG_ATTR.test(name)) {
-            this.Attrs.push({ name: name, value: value });
-        }
-    };
-    VinallaNode.prototype.OnRemoved = function () {
-        _super.prototype.OnRemoved.call(this);
-        this.directives.forEach(function (dir) { return dir.$OnDestroy(); });
-    };
-    VinallaNode.prototype.directiveBind = function () {
-        var _this = this;
-        this.directives.forEach(function (dir) { return dir.$Render(); });
-        this.innerDirective.forEach(function (item) {
-            item.dir(item.exp, _this, item.isconst);
-        });
-    };
-    /**解析基本信息 */
-    VinallaNode.prototype.basicSet = function () {
-        var _this = this;
-        this.NodeValue = this.Vdom.NodeValue;
-        this.NodeName = this.Vdom.NodeName;
-        this.NodeType = this.Vdom.NodeType;
+        _this.nodeValue = _this.Vdom.NodeValue;
+        _this.nodeName = _this.Vdom.NodeName;
+        _this.nodeType = _this.Vdom.NodeType;
         //保存元素属性
-        var vanillaAttrs = this.Vdom.Attrs;
+        var vanillaAttrs = _this.Vdom.Attrs;
         var _loop_1 = function (i) {
             var attr = this_1.Vdom.Attrs[i];
             var ns = util_1.GetNS(attr.Name);
@@ -2866,11 +3037,11 @@ var VinallaNode = /** @class */ (function (_super) {
                     return !(isprop || isevent);
                 });
                 this_1.directives.push(dirMvvm_1);
-                return { value: void 0 };
+                return { value: _this };
             }
         };
         var this_1 = this;
-        for (var i = 0; i < this.Vdom.Attrs.length; i++) {
+        for (var i = 0; i < _this.Vdom.Attrs.length; i++) {
             var state_1 = _loop_1(i);
             if (typeof state_1 === "object")
                 return state_1.value;
@@ -2891,8 +3062,113 @@ var VinallaNode = /** @class */ (function (_super) {
             return true;
         });
         vanillaAttrs.forEach(function (attr) {
-            _this.AddProperty(attr.Name, attr.Value);
+            if (const_1.REG_ATTR.test(attr.Name)) {
+                _this.attrs.push({ name: attr.Name, value: attr.Value });
+            }
         });
+        return _this;
+    }
+    VinallaNode.prototype.OnRemoved = function () {
+        _super.prototype.OnRemoved.call(this);
+        this.directives.forEach(function (dir) { return dir.$OnDestroy(); });
+    };
+    VinallaNode.prototype.directiveBind = function () {
+        var _this = this;
+        this.directives.forEach(function (dir) { return dir.$Render(); });
+        this.innerDirective.forEach(function (item) {
+            item.dir(item.exp, _this, item.isconst);
+        });
+    };
+    VinallaNode.prototype.Render = function () {
+        var _this = this;
+        if (this.nodeType == 1) {
+            var dom_1 = document.createElement(this.nodeName);
+            this.attrs.forEach(function (prop) {
+                dom_1.setAttribute(prop.name, prop.value);
+            });
+            this.DomSet = [{ type: const_1.DomType.NEW, dom: dom_1 }];
+            this.Children.forEach(function (child) {
+                var childdomset = child.Render();
+                childdomset.forEach(function (childdom) {
+                    _this.DomSet[0].dom.appendChild(childdom.dom);
+                });
+                childdomset.forEach(function (childom) {
+                    childom.type = const_1.DomType.CONSTANT;
+                });
+            });
+            this.directiveBind();
+            return this.DomSet;
+        }
+        if (this.nodeType == 3) {
+            var dom_2 = document.createTextNode(this.nodeValue);
+            this.DomSet = [{ type: const_1.DomType.NEW, dom: dom_2 }];
+            var evalexp = util_1.StrToEvalstr(this.nodeValue);
+            if (!evalexp.isconst) {
+                dom_2.textContent = this.mvvm.$GetExpOrFunValue(evalexp.exp);
+                this.mvvm.$CreateWatcher(this, evalexp.exp, function (newvalue, oldvalue) {
+                    dom_2.textContent = newvalue;
+                });
+            }
+            else {
+                dom_2.textContent = evalexp.exp;
+            }
+            return this.DomSet;
+        }
+        if (this.nodeType == 8) {
+            var dom = document.createComment(this.nodeValue);
+            this.DomSet = [{ type: const_1.DomType.NEW, dom: dom }];
+            return this.DomSet;
+        }
+    };
+    VinallaNode.prototype.Rerender = function () {
+        this.DomSet.forEach(function (dom) { return dom.type = const_1.DomType.CONSTANT; });
+        if (this.nodeType == 1) {
+            var thedom_1 = this.DomSet[0].dom;
+            var childdom_1 = null;
+            this.Children.forEach(function (child) {
+                child.DomSet.forEach(function (domstate) {
+                    if (domstate.type == const_1.DomType.CONSTANT) {
+                        childdom_1 = domstate.dom;
+                        return;
+                    }
+                    if (domstate.type == const_1.DomType.NEW) {
+                        util_1.InsertDomChild(thedom_1, domstate.dom, childdom_1);
+                        childdom_1 = domstate.dom;
+                        return;
+                    }
+                    if (domstate.type == const_1.DomType.DELETE) {
+                        thedom_1.removeChild(domstate.dom);
+                        return;
+                    }
+                });
+            });
+        }
+        this.Children.forEach(function (child) { return child.Rerender(); });
+    };
+    VinallaNode.prototype.Update = function () {
+        //todo 更新属性
+        if (this.nodeType == 1) {
+            var children_1 = [];
+            this.Children.forEach(function (child) {
+                children_1.push(child);
+            });
+            children_1.forEach(function (child) {
+                child.Update();
+            });
+            //todo 设置属性
+            return;
+        }
+        if (this.nodeType == 3) {
+            var evalexp = util_1.StrToEvalstr(this.nodeValue);
+            if (!evalexp.isconst) {
+                this.DomSet[0].dom.textContent = this.mvvm.$GetExpOrFunValue(evalexp.exp);
+            }
+            else {
+                this.DomSet[0].dom.textContent = evalexp.exp;
+            }
+        }
+    };
+    VinallaNode.prototype.Reflow = function () {
     };
     return VinallaNode;
 }(vnode_1.VNode));
@@ -2909,7 +3185,6 @@ exports.VinallaNode = VinallaNode;
 /***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
 var const_1 = __webpack_require__(/*! ./../const */ "./src/const.ts");
 var VNode = /** @class */ (function () {
@@ -2918,202 +3193,49 @@ var VNode = /** @class */ (function () {
         this.mvvm = mvvm;
         this.Parent = Parent;
         /**普通属性 */
-        this.Attrs = [];
+        this.attrs = [];
         this.Children = [];
-        this.IsTemplate = false;
-        this.IsCopy = false;
+        this.DomSet = [];
         this.status = const_1.VNodeStatus.ACTIVE;
+        if (this.Vdom != null) {
+            this.nodeValue = this.Vdom.NodeValue;
+            this.nodeName = this.Vdom.NodeName;
+            this.nodeType = this.Vdom.NodeType;
+        }
     }
-    VNode.prototype.AddProperty = function (name, value) {
-        if (const_1.REG_ATTR.test(name)) {
-            this.Attrs.push({ name: name, value: value });
-        }
-    };
-    VNode.prototype.directiveBind = function () { };
-    /**生成虚拟节点代表的dom并把自己加入父亲dom中 */
-    VNode.prototype.Render = function () {
+    VNode.prototype.Reflow = function () {
         var _this = this;
-        if (this.NodeType == 1) {
-            var dom_1 = document.createElement(this.NodeName);
-            this.Attrs.forEach(function (prop) {
-                dom_1.setAttribute(prop.name, prop.value);
-            });
-            this.Dom = dom_1;
-            var children_1 = [];
-            this.Children.forEach(function (child) {
-                if (!child.IsCopy)
-                    children_1.push(child);
-            });
-            children_1.forEach(function (child) {
-                child.Render();
-            });
-            this.directiveBind();
-        }
-        if (this.NodeType == 3) {
-            this.Dom = document.createTextNode(this.NodeValue);
-            var evalexp = util_1.StrToEvalstr(this.NodeValue);
-            if (!evalexp.isconst) {
-                this.mvvm.$Watch(this, evalexp.exp, function (newvalue, oldvalue) {
-                    _this.Dom.textContent = newvalue;
-                });
-            }
-            else {
-                this.Dom.textContent = evalexp.exp;
-            }
-        }
-        if (this.NodeType == 8) {
-            this.Dom = document.createComment(this.NodeValue);
-        }
-        if (this.NodeType == 1 || this.NodeType == 3 || this.NodeType == 8)
-            if (this.Parent && this.Parent.Dom)
-                this.Parent.Dom.appendChild(this.Dom);
-    };
-    VNode.prototype.Update = function () {
-        //todo 更新属性
-        if (this.NodeType == 1) {
-            var children_2 = [];
-            this.Children.forEach(function (child) {
-                children_2.push(child);
-            });
-            children_2.forEach(function (child) {
-                child.Update();
-            });
-            //todo 设置属性
-            return;
-        }
-        if (this.NodeType == 3) {
-            var evalexp = util_1.StrToEvalstr(this.NodeValue);
-            if (!evalexp.isconst) {
-                this.Dom.textContent = this.mvvm.$GetExpValue(evalexp.exp);
-            }
-            else {
-                this.Dom.textContent = evalexp.exp;
-            }
-        }
-    };
-    VNode.prototype.Refresh = function () {
-        var _this = this;
-        if (this.IsTemplate) {
-            return;
-        }
-        var allnodes = this.Dom.childNodes;
-        var allvnodes = [];
+        this.DomSet = [];
         this.Children.forEach(function (child) {
-            if (!child.IsTemplate && child.Dom != null) {
-                allvnodes = allvnodes.concat(child);
-            }
+            _this.DomSet = _this.DomSet.concat(child.DomSet);
         });
-        var ruler = {
-            old_j: -1,
-            i: 0,
-            j: 0
-        };
-        var opers = [];
-        while (true) {
-            if (ruler.i > allnodes.length - 1) {
-                break;
-            }
-            if (ruler.j > allvnodes.length - 1) {
-                opers.push({
-                    type: "remove",
-                    node: allnodes[ruler.i]
-                });
-                ruler.i++;
-                ruler.j = ruler.old_j + 1;
-                continue;
-            }
-            if (allnodes[ruler.i] != allvnodes[ruler.j].Dom) {
-                ruler.j++;
-                continue;
-            }
-            if (allnodes[ruler.i] == allvnodes[ruler.j].Dom) {
-                if (ruler.i < ruler.j) {
-                    var index = ruler.old_j + 1;
-                    while (index < ruler.j) {
-                        opers.push({
-                            type: "add",
-                            beforeNode: allnodes[ruler.i],
-                            node: allvnodes[index].Dom
-                        });
-                        index++;
-                    }
-                }
-                ruler.old_j = ruler.j;
-                ruler.i++;
-                ruler.j++;
-                continue;
-            }
-        }
-        while (ruler.j < allvnodes.length) {
-            opers.push({
-                type: "add",
-                beforeNode: null,
-                node: allvnodes[ruler.j].Dom
-            });
-            ruler.j++;
-        }
-        opers.forEach(function (oper) {
-            if (oper.type == "add") {
-                if (oper.beforeNode != null)
-                    _this.Dom.insertBefore(oper.node, oper.beforeNode);
-                else
-                    _this.Dom.appendChild(oper.node);
-            }
-            if (oper.type == "remove")
-                oper.node.remove();
-        });
+        if (this.Parent != null)
+            this.Parent.Reflow();
     };
-    VNode.prototype.AddChildren = function (child, nodes, offset) {
-        for (var i = 0; i < this.Children.length; i++) {
-            if (this.Children[i] == child) {
-                (_a = this.Children).splice.apply(_a, [i + 1 + offset, 0].concat(nodes));
-                break;
-            }
-        }
-        var _a;
-    };
-    VNode.prototype.RemoveChildren = function (nodes) {
-        this.Children = this.Children.filter(function (child) {
-            return nodes.indexOf(child) == -1;
-        });
+    VNode.prototype.Rerender = function () {
+        this.DomSet = this.DomSet.filter(function (dom) { return dom.type != const_1.DomType.DELETE; });
+        this.Children.forEach(function (child) { return child.Rerender(); });
     };
     VNode.prototype.OnRemoved = function () {
         this.Children.forEach(function (child) {
-            if (!child.IsCopy)
-                child.OnRemoved();
+            child.OnRemoved();
         });
     };
-    /**解析基本信息 */
-    VNode.prototype.basicSet = function () {
-        this.NodeValue = this.Vdom.NodeValue;
-        this.NodeName = this.Vdom.NodeName;
-        this.NodeType = this.Vdom.NodeType;
-        //保存元素属性
-        for (var i = 0; i < this.Vdom.Attrs.length; i++) {
-            this.AddProperty(this.Vdom.Attrs[i].Name, this.Vdom.Attrs[i].Value);
-        }
-    };
-    /**解析自节点信息 */
-    VNode.prototype.childSet = function () {
+    VNode.prototype.AttachChildren = function () {
         //解析子节点
         for (var i = 0; i < this.Vdom.Children.length; i++) {
             var childdom = this.Vdom.Children[i];
             var vchild = vdom_1.NewVNode(childdom, this.mvvm, this);
             if (vchild != null) {
-                vchild.AttachDom();
+                vchild.AttachChildren();
                 this.Children.push(vchild);
             }
         }
     };
-    VNode.prototype.AttachDom = function () {
-        this.basicSet();
-        this.childSet();
-    };
     VNode.prototype.SetStatus = function (status) {
         this.status = status;
         this.Children.forEach(function (child) {
-            if (!child.IsCopy)
-                child.SetStatus(status);
+            child.SetStatus(status);
         });
     };
     VNode.prototype.GetStatus = function () {
@@ -3133,6 +3255,9 @@ var VNode = /** @class */ (function () {
                 this.mvvm.$GetFenceNode().NavigateTo(url);
             }
         }
+    };
+    VNode.prototype.GetNodeName = function () {
+        return this.nodeName.toLowerCase();
     };
     return VNode;
 }());

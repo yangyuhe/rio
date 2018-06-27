@@ -1,12 +1,12 @@
+import { VinallaNode } from './../vnode/vinalla-node';
 import {REG_EVENT, REG_STR} from "../const"
-import { VNode } from "../vnode/vnode";
-export function OnClick(exp:string,vnode:VNode,isconst:boolean){
+export function OnClick(exp:string,vnode:VinallaNode,isconst:boolean){
     if (REG_EVENT.test(exp)) {
         let methodStr = RegExp.$1
         let paramsStr = RegExp.$2
         if (paramsStr.length > 0) {
             let ps = paramsStr.split(",")
-            vnode.Dom.addEventListener("click", () => {
+            vnode.DomSet[0].dom.addEventListener("click", () => {
                 let params: any[] = []
                 ps.forEach(p => {
                     if (!REG_STR.test(p)) {
@@ -22,7 +22,7 @@ export function OnClick(exp:string,vnode:VNode,isconst:boolean){
                             params.push(n.valueOf())
                         } else {
                             //肯定是本地变量
-                            params.push(vnode.mvvm.$GetExpValue(p))
+                            params.push(vnode.mvvm.$GetExpOrFunValue(p))
                         }
                     } else {
                         params.push(RegExp.$2)
@@ -31,7 +31,7 @@ export function OnClick(exp:string,vnode:VNode,isconst:boolean){
                 vnode.mvvm.$RevokeMethod(methodStr, ...params)
             })
         }else{
-            vnode.Dom.addEventListener("click", () => {
+            vnode.DomSet[0].dom.addEventListener("click", () => {
                 vnode.mvvm.$RevokeMethod(methodStr)  
             })
         }

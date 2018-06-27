@@ -1,4 +1,5 @@
 import { Watcher } from './watcher';
+import {RefreshApp} from "../manager/start"
 
 let queue:Watcher[]=[]
 let settimeout=false
@@ -21,5 +22,7 @@ export function RevokeWatcher(){
     temp.forEach(watcher=>watcher.Update())
     if(queue.length>0){
         RevokeWatcher()
+    }else{
+        RefreshApp()
     }
 }

@@ -1,7 +1,11 @@
-var EvalExp=function(context,exp){
-    var res
+var EvalExp=function(context,exp,attachObj){
+    var res;
+    var newcontext=context
+    if(attachObj!=null){
+        newcontext=Object.assign(context,$attachObj)
+    }
     try {
-        with(context){
+        with(newcontext){
             res=eval(exp)
         }
         return res
@@ -11,4 +15,5 @@ var EvalExp=function(context,exp){
     }
     return "" 
 }
+
 exports.EvalExp=EvalExp

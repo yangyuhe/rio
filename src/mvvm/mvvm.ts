@@ -1,10 +1,12 @@
-import { Observe } from "../observer/observe";
 import { GetActiveRouter } from "../router/router-state";
 import { VNode } from "../vnode/vnode";
-import { OnDataChange, RouterState } from './../models';
+import { OnDataChange, RouterState, DomStatus } from './../models';
+import {ReactiveData, ReactiveComputed} from "../observer/observer"
+import {EvalExp} from "../eval"
+import { Watcher } from "../observer/watcher";
 export abstract class Mvvm {
     private $data:any={}
-    protected $observe:Observe
+    protected $namespace="default"
 
     protected $treeRoot:VNode
     
@@ -22,12 +24,10 @@ export abstract class Mvvm {
     constructor(){
     }
     $initialize(){
-        this.$observe=new Observe(this)    
         this.$dataItems=this.$InitDataItems()
         this.$computeItems=this.$InitComputeItems()
         this.$treeRoot=this.$InitTreeroot()
-
-        this.$treeRoot.AttachDom()
+        this.$namespace=this.$InitNamespace()
 
         this.$dataItems.forEach(item=>{
             this.$data[item.name]=item.value
@@ -40,16 +40,28 @@ export abstract class Mvvm {
                 }
             })
         })
-        this.$observe.ReactiveData(this.$data)
+        ReactiveData(this.$data)
 
         this.$computeItems.forEach(item=>{
-            this.$observe.WatchComputed(this.$treeRoot,item.name,item.get)
+            ReactiveComputed(this,this.$treeRoot,item.name,item.get)
         })
+
+    }
+    $AttachChildren(){
+        this.$treeRoot.AttachChildren()
     }
     
-    $GetExpValue(exp:string):any{
-        return this.$observe.GetValueWithExp(exp)
+    $GetExpOrFunValue(expOrFunc:string|Function):any{
+        let res:any;
+        if(typeof expOrFunc == "string"){
+            res=EvalExp(this,expOrFunc)
+        }
+        if(typeof expOrFunc =="function"){
+            res=expOrFunc.call(this)
+        }
+        return res;
     }
+    $ExtendMvvm():Mvvm{return this;}
     
     $SetValue(exp:string,value:any){
         let keys=exp.split(".")
@@ -66,10 +78,9 @@ export abstract class Mvvm {
         if(hasTraget && target!=null)
             target[keys[keys.length-1]]=value
     }
-    $Watch(vnode:VNode,exp:string|Function,listener:OnDataChange,arraydeep?:boolean){
-        this.$observe.AddWatcher(vnode,exp,listener,arraydeep)
+    $CreateWatcher(vnode:VNode,exp:string|Function,listener:OnDataChange,watchingArrayItem?:boolean){
+        new Watcher(this,vnode,exp,listener,watchingArrayItem)
     }
-    
     
     $OnDestroy(){
         this.$treeRoot.OnRemoved()
@@ -86,11 +97,23 @@ export abstract class Mvvm {
     $GetComputedItems(){
         return this.$computeItems
     }
+    $Refresh(){
+        this.$treeRoot.Rerender()
+    }
+    $RevokeMethod(method:string,...params:any[]){
+        if(typeof (this as any)[method]=="function")
+            (this as any)[method].apply(this,params)
+        else
+            throw new Error(method +" is not a function")
+    }
+
     abstract $InitDataItems():{name:string,value:any}[];
     abstract $InitComputeItems():{name:string,get:(()=>any)}[];
     abstract $InitNamespace():string;
 
-    abstract $Render():Node;
-    abstract $RevokeMethod(method:string,...params:any[]):void;
+    abstract $Render():DomStatus;
+    
     abstract $InitTreeroot():VNode;
+
+    
 }

@@ -1,4 +1,5 @@
 import { REG_SINGLE, REG_MULTI } from "./const";
+import { ParamType } from "./models";
 
 export function LogError(msg:any){
     console.error(msg)
@@ -68,5 +69,43 @@ export function StrToEvalstr(str:string):{isconst:boolean,exp:string}{
         }else{
             return {isconst:true,exp:str}
         }
+    }
+}
+
+export function InsertDomChild(parent:Node,child:Node,after:Node){
+    if(after==null){
+        if(parent.firstChild!=null)
+            parent.insertBefore(child,parent.firstChild)
+        else
+            parent.appendChild(child)
+    }else{
+        if(after.nextSibling!=null)
+            parent.insertBefore(child,after.nextSibling)
+        else
+            parent.appendChild(child)
+    }
+}
+
+export function TypeOf(param:any):ParamType{
+    if(toString.call(param)=="[object Boolean]"){
+        return "boolean"
+    }
+    if(toString.call(param)=="[object Array]"){
+        return "array"
+    }
+    if(toString.call(param)=="[object Number]"){
+        return "number"
+    }
+    if(toString.call(param)=="[object Object]"){
+        return "object"
+    }
+    if(toString.call(param)=="[object Null]"){
+        return "object"
+    }
+    if(toString.call(param)=="[object String]"){
+        return "string"
+    }
+    if(toString.call(param)=="[object Undefined]"){
+        throw new Error("function TypeOf: undefined is not allowed")
     }
 }

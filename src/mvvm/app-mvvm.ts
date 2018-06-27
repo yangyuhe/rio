@@ -1,21 +1,19 @@
 import { NotifyUrlChange } from '../router/router-manager';
 import { VNode } from '../vnode/vnode';
 import { Mvvm } from './mvvm';
+import { DomStatus } from '../models';
 export class AppMvvm extends Mvvm{
     protected $el:string=""
-
+    
     $NavigateTo(url:string){
         window.history.replaceState(null,null,url)
         NotifyUrlChange()
     }
-    $Render(): Node {
-        this.$treeRoot.Render()
-        return this.$treeRoot.Dom
+    $Render(): DomStatus {
+        let doms=this.$treeRoot.Render()
+        return doms[0]
     }
-    $RevokeMethod(method: string, ...params: any[]): void {
-        if(typeof (this as any)[method]=="function")
-            (this as any)[method].apply(this,params)
-    }
+    
     $InitNamespace(): string {
         throw new Error("Method not implemented.");
     }

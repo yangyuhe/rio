@@ -1,29 +1,36 @@
-import { VNode } from "../vnode/vnode";
-import { StrToEvalstr } from "../util";
 import { PRE } from "../const";
+import { StrToEvalstr } from "../util";
+import { VinallaNode } from './../vnode/vinalla-node';
 
-export function Href(exp:string,vnode:VNode,isconst:boolean){
+export function Href(exp:string,vnode:VinallaNode,isconst:boolean){
     let href:string=""
-    if(vnode.Dom.nodeName.toLowerCase()=="a"){
+    if(vnode.DomSet[0].dom.nodeName.toLowerCase()=="a"){
         if(isconst){
             let streval=StrToEvalstr(exp)
-            if(streval.isconst)
-                (vnode.Dom as HTMLElement).setAttribute(PRE+"href",streval.exp);
+            if(streval.isconst){
+                href=streval.exp;
+                (vnode.DomSet[0].dom as HTMLElement).setAttribute(PRE+"href",streval.exp);
+            }
             else{
-                vnode.mvvm.$Watch(vnode,streval.exp,newvalue=>{
+                let newvalue=vnode.mvvm.$GetExpOrFunValue(streval.exp);
+                href=newvalue;
+                (vnode.DomSet[0].dom as HTMLElement).setAttribute(PRE+"href",newvalue);
+                vnode.mvvm.$CreateWatcher(vnode,streval.exp,newvalue=>{
                     href=newvalue;
-                    (vnode.Dom as HTMLElement).setAttribute(PRE+"href",newvalue);
+                    (vnode.DomSet[0].dom as HTMLElement).setAttribute(PRE+"href",newvalue);
                 })                
             }
         }else{
-            vnode.mvvm.$Watch(vnode,exp,newvalue=>{
+            let newvalue=vnode.mvvm.$GetExpOrFunValue(exp);
+            href=newvalue;
+            vnode.mvvm.$CreateWatcher(vnode,exp,newvalue=>{
                 href=newvalue;
-                (vnode.Dom as HTMLElement).setAttribute(PRE+"href",newvalue);
-            })
+                (vnode.DomSet[0].dom as HTMLElement).setAttribute(PRE+"href",newvalue);
+            });
         }
         
     }
-    vnode.Dom.addEventListener("click",()=>{
+    vnode.DomSet[0].dom.addEventListener("click",()=>{
         vnode.NavigateTo(href)
     })
 }

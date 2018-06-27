@@ -1,23 +1,47 @@
-import { Prop } from "../models";
+import { DomStatus, Event, Prop } from "../models";
+import { TypeOf } from "../util";
 import { CustomNode } from "../vnode/custom-node";
 import { VNode } from "../vnode/vnode";
 import { VNodeStatus } from './../const';
 import { Mvvm } from './mvvm';
-import { RevokeEvent } from './revoke-event';
 export class ComponentMvvm extends Mvvm{
     
-    private hirented=false
 
     private $fenceNode:CustomNode
     private $name:string=""
     
     private $ins:Prop[]=[]
+    private $outs:Event[]=[]
 
     
     $initialize(){
         super.$initialize()
-        this.$name=this.$InitName()
+
         this.$ins=this.$InitIns()
+        this.$outs=this.$InitOuts()
+        this.$name=this.$InitName()
+
+        this.$ins.forEach(prop=>{
+            let inName=this.$fenceNode.GetIn(prop.name)
+            if(inName==null && prop.required){
+                throw new Error("component \'"+this.$name+"\' need prop \'"+prop.name)
+            }
+            if(inName!=null){
+                if(inName.const){
+                    (this as any)[prop.name]=inName.value
+                }else{
+                    Object.defineProperty(this,prop.name,{
+                        get:()=>{
+                            let newvalue=this.$fenceNode.mvvm.$GetExpOrFunValue(inName.value);
+                            this.$checkProp(prop,newvalue);
+                            return newvalue;
+                        }
+                    })
+                }
+            }
+        })
+
+        
     }
     
     private $checkProp(prop:Prop,value:any){
@@ -41,61 +65,37 @@ export class ComponentMvvm extends Mvvm{
         }
     }
 
-    $SetHirented(hirentedFromParent:boolean){
-        this.hirented=hirentedFromParent
+    $Render():DomStatus{
+        let doms=this.$treeRoot.Render()
+        return doms[0]
     }
-
-    $Render(){
-        if(this.hirented){
-            this.$dataItems.forEach(item=>{
-                this.$fenceNode.mvvm.$Watch(this.$fenceNode,item.name,(newvalue:any,oldvalue:any)=>{
-                    (this as any)[item.name]=newvalue
-                })
-            })
-        }
-        this.$ins.forEach(prop=>{
-            let inName=this.$fenceNode.GetIn(prop.name)
-            if(inName==null && prop.required){
-                throw new Error("component \'"+this.$name+"\' need prop \'"+prop.name)
-            }
-            if(inName!=null){
-                if(inName.const){
-                    (this as any)[prop.name]=inName.value
-                }else{
-                    this.$fenceNode.mvvm.$Watch(this.$fenceNode,inName.value,(newvalue:any,oldvalue:any)=>{
-                        this.$checkProp(prop,newvalue);
-                        (this as any)[prop.name]=newvalue
-                    });
-                    this.$observe.ReactiveKey(this,prop.name,true)
-                }
-            }
-        })
-        
-        this.$treeRoot.Render()
-        return this.$treeRoot.Dom
-    }
-    $Refresh(){
-        this.$treeRoot.Refresh()
-    }
+    
     $Update(){
         this.$treeRoot.Update()
     }
     $SetStatus(status:VNodeStatus){
         this.$treeRoot.SetStatus(status)
     }
-    $RevokeMethod(method:string,...params:any[]){
-        if(this.hirented){
-            this.$fenceNode.mvvm.$RevokeMethod(method,...params)
-        }else{
-            if(typeof (this as any)[method]=="function")
-                (this as any)[method].apply(this,params)
-        }
-    }
+    
     
     $Emit(event:string,...data:any[]){
         if(this.$fenceNode!=null && this.$fenceNode.mvvm!=null){
+            let e=this.$outs.find(out=>{
+                return out.name==event;
+            });
+            if(e==null){
+                throw new Error("no specified event "+event+" at component "+this.$namespace+"::"+this.$name)
+            }
+            if(data.length!=e.paramsType.length){
+                throw new Error("no specified params "+event+" at component "+this.$namespace+"::"+this.$name)
+            }
+            for(let i=0;i<e.paramsType.length;i++){
+                if(TypeOf(data[i])!=e.paramsType[i]){
+                    throw new Error("params expected "+e.paramsType[i]+",but received "+toString.call(data[i])+" at component "+this.$namespace+"::"+this.$name)
+                }
+            }
             let method=this.$fenceNode.GetOut(event)
-            RevokeEvent(method,data,this.$fenceNode.mvvm)
+            this.$fenceNode.mvvm.$RevokeMethod(method,...data)
         }
     };
     
@@ -125,7 +125,7 @@ export class ComponentMvvm extends Mvvm{
     $InitIns():Prop[]{
         throw new Error("Method not implemented.");
     }
-    $InitOuts():string[]{
+    $InitOuts():Event[]{
         throw new Error("Method not implemented.");
     }
     $InitTreeroot(): VNode {

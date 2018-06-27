@@ -26,7 +26,7 @@ export function RevokeEvent(method:string,data:any,mvvm:Mvvm){
                         params.push(n.valueOf())
                     } else {
                         //肯定是本地变量
-                        params.push(mvvm.$GetExpValue(p))
+                        params.push(mvvm.$GetExpOrFunValue(p))
                     }
                 } else {
                     params.push(RegExp.$2)

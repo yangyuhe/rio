@@ -1,4 +1,4 @@
-import { Prop, PropType } from './../models';
+import { ParamType, Prop } from './../models';
 let datas:string[]=[]
 let computes:{name:string,get:()=>any}[]=[]
 let props:Prop[]=[]
@@ -13,7 +13,7 @@ export function Data(target:any,key:string){
 export function Computed(target:any,key:string,descriptor:PropertyDescriptor){
     computes.push({name:key,get:(descriptor as any).get})
 }
-export function Prop(name:string,required:boolean,type?:PropType){
+export function Prop(name:string,required:boolean,type?:ParamType){
     props.push({
         name:name,
         required:required,
@@ -21,6 +21,7 @@ export function Prop(name:string,required:boolean,type?:PropType){
     })
     return function(target:any,key:string){}
 }
+
 export function OnInit(target:any,key:string,descriptor:PropertyDescriptor){
     initFuncs.push(key)
 }

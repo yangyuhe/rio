@@ -1,1 +1,3 @@
-export declare let EvalExp:(context:any,exp:string)=>any;
+import { Mvvm } from "./mvvm/mvvm";
+
+export declare let EvalExp:(context:Mvvm,exp:string,attchObj?:Object)=>any;

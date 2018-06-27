@@ -1,3 +1,4 @@
+import { DomType } from './const';
 import { AppMvvm } from './mvvm/app-mvvm';
 import { ComponentMvvm } from './mvvm/component-mvvm';
 import { DirectiveMVVM } from './mvvm/directive-mvvm';
@@ -9,7 +10,7 @@ interface BaseOption{
     namespace?:string,
 }
 export interface ComponentOption extends BaseOption{
-    events?:string[],
+    events?:Event[],
     name:string,
     template?:string,
     templateUrl?:string,
@@ -25,11 +26,15 @@ export interface DirectiveOption extends BaseOption{
     events?:string[]
 }
 
-export type PropType="array"|"object"|"number"|"string"|"boolean"
+export type ParamType="array"|"object"|"number"|"string"|"boolean"
 export interface Prop{
     name:string
     required:boolean
-    type?:PropType
+    type?:ParamType
+}
+export interface Event{
+    name:string,
+    paramsType:ParamType[]
 }
 export interface OnDataChange {
     (newvalue:any,oldvalue:any):void
@@ -70,3 +75,8 @@ export interface RouterState{
     cur:RouterInfo
 }
 export type RouterChangeCallback=(newrouter:RouterInfo,oldrouter:RouterInfo)=>void
+
+export interface DomStatus{
+    dom:Node,
+    type:DomType
+}

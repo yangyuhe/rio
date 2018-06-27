@@ -53,29 +53,43 @@ export enum Priority{
 export function NewVNode(dom:VDom,mvvm:Mvvm,parent:VNode,priority:Priority=Priority.FOR):VNode{
     if(dom.NodeName.toLowerCase()=="slot"){
         let SlotNode=require("../vnode/slot-node").SlotNode
-        return new SlotNode(dom,mvvm,parent,dom.GetAttr("name"))
+        let vnode=new SlotNode(dom,mvvm,parent,dom.GetAttr("name"))
+        return vnode
     }
 
     if(priority>=Priority.FOR && dom.GetAttr(PRE+"for")!=null){
         let ForNode=require("../vnode/for-node").ForNode
-        return new ForNode(dom,mvvm,parent,dom.GetAttr(PRE+"for"))
+        let vnode= new ForNode(dom,mvvm,parent,dom.GetAttr(PRE+"for"))
+        return vnode
     }
     if(priority>=Priority.IF && dom.GetAttr(PRE+"if")!=null){
         let IfNode=require("../vnode/if-node").IfNode
-        return new IfNode(dom,mvvm,parent,dom.GetAttr(PRE+"if"))              
+        let vnode= new IfNode(dom,mvvm,parent,dom.GetAttr(PRE+"if"))              
+        return vnode
+    }
+    if(dom.NodeName=="r-template"){
+        let TemplateNode=require("../vnode/template-node").TemplateNode
+        let vnode= new TemplateNode(dom,mvvm,parent)
+        return vnode
     }
     if(dom.NodeName=="router-view"){
         let RouterNode=require("../vnode/router-node").RouterNode
-        return new RouterNode(dom,mvvm,parent)
+        let vnode= new RouterNode(dom,mvvm,parent)
+        return vnode
     }
     let ns=GetNS(dom.NodeName)
     if(IsComponentRegistered(ns.value,ns.namespace||"default")){
         let construct=InitComponent(ns.value,ns.namespace||"default")
         let selfmvvm=new construct()
-        selfmvvm.$initialize()
+
         let CustomNode=require("../vnode/custom-node").CustomNode
         let cust= new CustomNode(dom,mvvm,parent,selfmvvm)
         selfmvvm.$SetFenceNode(cust)
+
+        selfmvvm.$initialize()
+        selfmvvm.$AttachChildren()
+        
+        
         return cust
     }
         

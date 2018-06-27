@@ -30,3 +30,12 @@ export enum VNodeStatus{
     /**抛弃 */
     DEPRECATED
 }
+
+export enum DomType{
+    /*没有变化的*/
+    CONSTANT,
+    /**新增的 */
+    NEW,
+    /**删除的 */
+    DELETE
+}

@@ -1,3 +1,4 @@
+import { DomType } from './../const';
 import { VNode } from "./vnode";
 import { Mvvm } from "../mvvm/mvvm";
 import { CustomNode } from "./custom-node";
@@ -5,42 +6,43 @@ import { InitComponent } from "../manager/components-manager";
 import { GetNS } from '../util';
 import { VDom } from '../vdom/vdom';
 import { NextRouter, MoveBack } from "../router/router-manager";
+import { DomStatus } from '../models';
 
 export class RouterNode extends VNode{
-    private dynamicVNode: CustomNode
 
     constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode) {
         super(Vdom,mvvm,Parent)
     }
 
-    Render() :void{
+    Render() :DomStatus[]{
         let router=NextRouter(this)
         if(router!=null){
-            this.instance(router)
-            this.dynamicVNode.Render()
+            let vnode=this.instance(router)
+            this.Children=[vnode]
+            this.DomSet=vnode.Render()
             MoveBack()
-            this.Parent.AddChildren(this, [this.dynamicVNode],0)
-            this.Parent.Refresh()
         }
+        return this.DomSet
         
     }
     OnRouterChange(){
         let router=NextRouter(this)
         if(router!=null){
-            this.Parent.RemoveChildren([this.dynamicVNode])
-            this.instance(router)
-
-            this.dynamicVNode.Render()
+            let vnode=this.instance(router)
+            this.Children=[vnode]
+            this.DomSet.forEach(dom=>dom.type=DomType.DELETE)
+            this.DomSet= this.DomSet.concat(vnode.Render())
+            this.Parent.Reflow();
             MoveBack()
-            this.Parent.AddChildren(this, [this.dynamicVNode],0)
-            this.Parent.Refresh()
         }else{
-            this.Parent.RemoveChildren([this.dynamicVNode])
-            this.Parent.Refresh()
+            this.Children=[]
+            this.DomSet.forEach(dom=>{
+                dom.type=DomType.DELETE
+            })
         }
     }
     
-    private instance(componentStr:string){
+    private instance(componentStr:string):VNode{
 
         let ns=GetNS(componentStr)
         if(ns.namespace==null)
@@ -51,10 +53,17 @@ export class RouterNode extends VNode{
             throw new Error(`router can not find component name:${ns.value},namespace:${ns.namespace}`)
         }
         let mvvm=new construct()
-        mvvm.$initialize()
-        
         let custnode=new CustomNode(null,this.mvvm,null,mvvm)
         mvvm.$SetFenceNode(custnode)
-        this.dynamicVNode=custnode
+
+        mvvm.$initialize()
+        mvvm.$AttachChildren()
+        
+        return custnode
+    }
+    Update(){
+
+    }
+    Reflow(){
     }
 }

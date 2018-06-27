@@ -1,39 +1,24 @@
 import { GetInnerDir } from "../directive/inner-dir";
 import { GetDirectiveCon, IsDirectiveRegistered } from '../manager/directive-manager';
 import { DirectiveMVVM } from '../mvvm/directive-mvvm';
-import { GetNS } from '../util';
-import { REG_ATTR, REG_IN, REG_OUT } from './../const';
+import { GetNS, InsertDomChild, StrToEvalstr } from '../util';
+import { DomType, REG_IN, REG_OUT, REG_ATTR } from './../const';
 import { InnerDirective } from './../directive/inner-dir';
 import { DirectiveNode } from './directive-node';
 import { VNode } from './vnode';
+import { VDom } from "../vdom/vdom";
+import { Mvvm } from "../mvvm/mvvm";
+import { DomStatus } from "../models";
 export class VinallaNode extends VNode{
     
     private directives:DirectiveMVVM[]=[]
-    private innerDirective:{dir:InnerDirective,isconst:boolean,exp:string}[]=[]
+    private innerDirective:{dir:InnerDirective,isconst:boolean,exp:string}[]=[];
     
-    AddProperty(name: string, value: string) {
-        if(REG_ATTR.test(name)){
-            this.Attrs.push({name:name,value:value})
-        }
-    }
-    
-    OnRemoved(){
-        super.OnRemoved()
-        this.directives.forEach(dir=>dir.$OnDestroy())
-    }
-
-    protected directiveBind(){
-        this.directives.forEach(dir=>dir.$Render())
-        this.innerDirective.forEach(item=>{
-            item.dir(item.exp,this,item.isconst)
-        })
-    }
-    
-    /**解析基本信息 */
-    protected basicSet(){
-        this.NodeValue = this.Vdom.NodeValue
-        this.NodeName = this.Vdom.NodeName
-        this.NodeType = this.Vdom.NodeType
+    constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode){
+        super(Vdom,mvvm,Parent);
+        this.nodeValue = this.Vdom.NodeValue
+        this.nodeName = this.Vdom.NodeName
+        this.nodeType = this.Vdom.NodeType
         //保存元素属性
         let vanillaAttrs=this.Vdom.Attrs
         for (let i = 0; i < this.Vdom.Attrs.length; i++) {
@@ -74,7 +59,113 @@ export class VinallaNode extends VNode{
             return true
         })
         vanillaAttrs.forEach(attr=>{
-            this.AddProperty(attr.Name,attr.Value)
+            if(REG_ATTR.test(attr.Name)){
+                this.attrs.push({name:attr.Name,value:attr.Value})
+            }
         })
+    }
+
+    OnRemoved(){
+        super.OnRemoved()
+        this.directives.forEach(dir=>dir.$OnDestroy())
+    }
+
+    protected directiveBind(){
+        this.directives.forEach(dir=>dir.$Render())
+        this.innerDirective.forEach(item=>{
+            item.dir(item.exp,this,item.isconst)
+        })
+    }
+    
+    
+    Render() :DomStatus[]{
+        if (this.nodeType == 1) {
+            let dom = document.createElement(this.nodeName)
+            this.attrs.forEach(prop => {
+                dom.setAttribute(prop.name, prop.value)
+            })
+            
+            this.DomSet = [{type:DomType.NEW,dom:dom}] 
+            
+            this.Children.forEach(child => {
+                let childdomset=child.Render();
+                childdomset.forEach(childdom=>{
+                    this.DomSet[0].dom.appendChild(childdom.dom)
+                });
+                childdomset.forEach(childom=>{
+                    childom.type=DomType.CONSTANT
+                });
+            })
+            this.directiveBind()
+            return this.DomSet
+        }
+        if (this.nodeType == 3) {
+            let dom = document.createTextNode(this.nodeValue)
+            this.DomSet=[{type:DomType.NEW,dom:dom}]
+            let evalexp=StrToEvalstr(this.nodeValue)
+            if (!evalexp.isconst) {
+                dom.textContent=this.mvvm.$GetExpOrFunValue(evalexp.exp)
+                this.mvvm.$CreateWatcher(this,evalexp.exp,(newvalue, oldvalue)=>{
+                    dom.textContent = newvalue
+                })
+            }else{
+                dom.textContent=evalexp.exp
+            }
+            return this.DomSet
+        }
+        if(this.nodeType==8){
+            let dom=document.createComment(this.nodeValue)
+            this.DomSet=[{type:DomType.NEW,dom: dom}]
+            return this.DomSet
+        }
+    }
+    Rerender() {
+        this.DomSet.forEach(dom=>dom.type=DomType.CONSTANT);
+        if(this.nodeType==1){
+            let thedom=this.DomSet[0].dom
+            let childdom:Node=null
+            this.Children.forEach(child=>{
+                child.DomSet.forEach(domstate=>{
+                    if(domstate.type==DomType.CONSTANT){
+                        childdom=domstate.dom
+                        return
+                    }
+                    if(domstate.type==DomType.NEW){
+                        InsertDomChild(thedom,domstate.dom,childdom)
+                        childdom=domstate.dom
+                        return
+                    }
+                    if(domstate.type==DomType.DELETE){
+                        thedom.removeChild(domstate.dom)
+                        return
+                    }
+                })
+            })
+        }
+        this.Children.forEach(child=>child.Rerender())
+    }
+    Update(){
+        //todo 更新属性
+        if (this.nodeType == 1) {
+            let children: VNode[] = []
+            this.Children.forEach(child => {
+                children.push(child)
+            })
+            children.forEach(child => {
+                child.Update()
+            })
+            //todo 设置属性
+            return
+        }
+        if (this.nodeType == 3) {
+            let evalexp=StrToEvalstr(this.nodeValue)
+            if (!evalexp.isconst) {
+                this.DomSet[0].dom.textContent=this.mvvm.$GetExpOrFunValue(evalexp.exp)
+            }else{
+                this.DomSet[0].dom.textContent=evalexp.exp
+            }
+        }
+    }
+    Reflow(){
     }
 }

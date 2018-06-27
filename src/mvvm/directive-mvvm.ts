@@ -1,6 +1,6 @@
 import { Prop } from "../models";
 import { DirectiveNode } from "../vnode/directive-node";
-import { VNode } from "../vnode/vnode";
+import { VinallaNode } from './../vnode/vinalla-node';
 export class DirectiveMVVM {
     
 
@@ -15,7 +15,7 @@ export class DirectiveMVVM {
     $DestroyFuncs:string[]=[]
     
 
-    constructor(private $directive:DirectiveNode,private $vnode:VNode){
+    constructor(private $directive:DirectiveNode,private $vnode:VinallaNode){
     }
     
     
@@ -26,7 +26,7 @@ export class DirectiveMVVM {
     }
     
     $Render(){
-        this.$element=(this.$vnode.Dom as HTMLElement)
+        this.$element=(this.$vnode.DomSet[0].dom as HTMLElement)
         this.$InitFuncs.forEach(init=>{
             (this as any)[init].call(this)
         })
@@ -39,7 +39,11 @@ export class DirectiveMVVM {
                 if(inName.const){
                     (this as any)[prop.name]=inName.value
                 }else{
-                    this.$vnode.mvvm.$Watch(this.$vnode,inName.value,(newvalue:any,oldvalue:any)=>{
+                    let newvalue=this.$vnode.mvvm.$GetExpOrFunValue(inName.value)
+                    this.$checkProp(prop,newvalue);
+                    (this as any)[prop.name]=newvalue
+
+                    this.$vnode.mvvm.$CreateWatcher(this.$vnode,inName.value,(newvalue:any,oldvalue:any)=>{
                         this.$checkProp(prop,newvalue);
                         (this as any)[prop.name]=newvalue
                     });
