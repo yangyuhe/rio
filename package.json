@@ -15,6 +15,10 @@
   "license": "ISC",
   "main": "dist/rio.js",
   "types": "types/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yangyuhe/rio.git"
+  },
   "devDependencies": {
     "clean-webpack-plugin": "^0.1.19",
     "ts-loader": "^4.3.0",
