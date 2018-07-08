@@ -1,6 +1,5 @@
 # ![rio.js](https://github.com/chaojihexiang/rio/blob/master/riojs.png?raw=true)
-# V0.3.1
-<p>riao.js 是一个用于开发webapp的响应式javascript框架。</p>
+<p>riao.js 是一个用于开发webapp的响应式javascript框架,支持vanilla js和typescript。</p>
 
 *注意该框架尚处于初级阶段，暂时不能用于生产*
 
@@ -19,7 +18,7 @@
 2. 简单使用  
 * 普通方式 
 引入  
-<code>&lt;script src="nodemodulespath/@yangyuhe/riojs/dist/rio.umd.min.js"&gt;xx&lt;/script&gt;</code>
+<code>&lt;script src="path/rio.umd.min.js"&gt;&lt;/script&gt;</code>
 * typescript 请下载脚手架项目快速开始
 <code>npm install @yangyuhe/riojs-start --save</code>
 3. API
