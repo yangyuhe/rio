@@ -20,7 +20,7 @@
 引入  
 <code>&lt;script src="path/rio.umd.min.js"&gt;&lt;/script&gt;</code>
 * typescript 请下载脚手架项目快速开始
-<code>npm install @yangyuhe/riojs-start --save</code>
+<a href="https://github.com/yangyuhe/riojs-start">https://github.com/yangyuhe/riojs-start.git</a>
 3. API
     1. <code>Rio.component(name,options)</code>
 
