@@ -61,6 +61,9 @@ export function StrToEvalstr(str:string):{isconst:boolean,exp:string}{
                 exp+="("+RegExp.$1+")+"
                 res=reg.exec(str)
             }
+            if(lastindex!=str.length){
+                exp+="'"+str.substr(lastindex)+"'"
+            }
             if(exp.endsWith("+")){
                 exp=exp.substring(0,exp.length-1)
             }

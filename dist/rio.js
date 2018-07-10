@@ -2135,6 +2135,9 @@ function StrToEvalstr(str) {
                 exp += "(" + RegExp.$1 + ")+";
                 res = reg.exec(str);
             }
+            if (lastindex != str.length) {
+                exp += "'" + str.substr(lastindex) + "'";
+            }
             if (exp.endsWith("+")) {
                 exp = exp.substring(0, exp.length - 1);
             }
@@ -2225,7 +2228,7 @@ function TraverseDom(dom) {
     var root = new VDom();
     root.NodeValue = dom.nodeValue;
     if (root.NodeValue != null) {
-        root.NodeValue = root.NodeValue.replace(/\s+/g, "");
+        root.NodeValue = root.NodeValue.trim().replace(/\s+/g, " ");
     }
     root.NodeName = dom.nodeName.toLowerCase();
     root.NodeType = dom.nodeType;

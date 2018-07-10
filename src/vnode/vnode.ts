@@ -5,8 +5,11 @@ import { DomType, VNodeStatus } from './../const';
 import { AppMvvm } from './../mvvm/app-mvvm';
 import { ComponentMvvm } from './../mvvm/component-mvvm';
 export abstract class VNode {
+    //元素值 只有当nodeType为3时才有用，其他时候为null
     protected nodeValue: string
+    //元素名称 都是小写字母
     protected nodeName: string
+    //元素类型：1 元素 3 文本 8 注释
     protected nodeType: number
     /**普通属性 */
     protected attrs: { name: string, value: string }[] = []
