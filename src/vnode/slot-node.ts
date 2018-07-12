@@ -31,9 +31,9 @@ export class SlotNode extends VNode{
         let template=this.mvvm.$GetFenceNode().GetTemplate(this.name)
         template.SetStatus(status)
     }
-    OnRemoved(){
+    OnDestroy(){
         let template=this.mvvm.$GetFenceNode().GetTemplate(this.name)
-        template.OnRemoved()
+        template.OnDestroy()
     }
     
 }

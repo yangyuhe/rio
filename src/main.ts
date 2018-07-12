@@ -3,7 +3,7 @@ import { Start } from "./manager/start";
 
 export {Component} from "./decorator/component";
 export {App} from "./decorator/app";
-export {Data,Computed,Prop,OnInit,OnDestroy} from "./decorator/property";
+export {Reactive,Computed,Prop,OnInit,OnDestroy,OnMount} from "./decorator/property";
 export {Directive} from "./decorator/directive"
 
 export {ComponentMvvm} from "./mvvm/component-mvvm"

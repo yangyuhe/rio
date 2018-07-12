@@ -2,7 +2,7 @@ import { GetInnerDir } from "../directive/inner-dir";
 import { GetDirectiveCon, IsDirectiveRegistered } from '../manager/directive-manager';
 import { DirectiveMVVM } from '../mvvm/directive-mvvm';
 import { GetNS, InsertDomChild, StrToEvalstr } from '../util';
-import { DomType, REG_IN, REG_OUT, REG_ATTR } from './../const';
+import { DomType, REG_IN, REG_OUT, REG_ATTR, PRE, ANCHOR } from './../const';
 import { InnerDirective } from './../directive/inner-dir';
 import { DirectiveNode } from './directive-node';
 import { VNode } from './vnode';
@@ -13,6 +13,12 @@ export class VinallaNode extends VNode{
     
     private directives:DirectiveMVVM[]=[]
     private innerDirective:{dir:InnerDirective,isconst:boolean,exp:string}[]=[];
+    
+    private isAnchor:boolean=false;
+    private anchorName:string="";
+
+    /**普通属性 */
+    protected attrs: { name: string, value: string }[] = [];
     
     constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode){
         super(Vdom,mvvm,Parent);
@@ -29,7 +35,8 @@ export class VinallaNode extends VNode{
             if(IsDirectiveRegistered(ns.value,ns.namespace)){
                 let dirNode=new DirectiveNode(this.Vdom)
                 let dirCons=GetDirectiveCon(ns.value,ns.namespace)
-                let dirMvvm=new dirCons(dirNode,this)
+                let dirMvvm=new dirCons();
+                dirMvvm.$Initialize(dirNode,this);
                 vanillaAttrs=vanillaAttrs.filter(attr=>{
                     let name=attr.Name
                     if(REG_IN.test(attr.Name) || REG_OUT.test(attr.Name))
@@ -60,13 +67,17 @@ export class VinallaNode extends VNode{
         })
         vanillaAttrs.forEach(attr=>{
             if(REG_ATTR.test(attr.Name)){
-                this.attrs.push({name:attr.Name,value:attr.Value})
+                this.attrs.push({name:attr.Name,value:attr.Value});
+                if(attr.Name==PRE+ANCHOR){
+                    this.isAnchor=true;
+                    this.anchorName=attr.Value;
+                }
             }
         })
     }
 
-    OnRemoved(){
-        super.OnRemoved()
+    OnDestroy(){
+        super.OnDestroy()
         this.directives.forEach(dir=>dir.$OnDestroy())
     }
 
@@ -82,7 +93,20 @@ export class VinallaNode extends VNode{
         if (this.nodeType == 1) {
             let dom = document.createElement(this.nodeName)
             this.attrs.forEach(prop => {
-                dom.setAttribute(prop.name, prop.value)
+                let evalexp=StrToEvalstr(prop.value);
+                if (!evalexp.isconst) {
+                    let watcher=this.mvvm.$CreateWatcher(this,evalexp.exp,(newvalue, oldvalue)=>{
+                        dom.setAttribute(prop.name, newvalue);
+                    });
+                    let value=watcher.GetCurValue();
+                    if(prop.name=='src' && this.nodeName=='img')
+                        (dom as HTMLImageElement).src=value;
+                    else
+                        dom.setAttribute(prop.name, value);
+                }else{
+                    dom.setAttribute(prop.name, evalexp.exp);
+                }
+                
             })
             
             this.DomSet = [{type:DomType.NEW,dom:dom}] 
@@ -104,10 +128,10 @@ export class VinallaNode extends VNode{
             this.DomSet=[{type:DomType.NEW,dom:dom}]
             let evalexp=StrToEvalstr(this.nodeValue)
             if (!evalexp.isconst) {
-                dom.textContent=this.mvvm.$GetExpOrFunValue(evalexp.exp)
-                this.mvvm.$CreateWatcher(this,evalexp.exp,(newvalue, oldvalue)=>{
+                let watcher=this.mvvm.$CreateWatcher(this,evalexp.exp,(newvalue, oldvalue)=>{
                     dom.textContent = newvalue
-                })
+                });
+                dom.textContent=watcher.GetCurValue();
             }else{
                 dom.textContent=evalexp.exp
             }
@@ -119,7 +143,7 @@ export class VinallaNode extends VNode{
             return this.DomSet
         }
     }
-    Rerender() {
+    Refresh() {
         this.DomSet.forEach(dom=>dom.type=DomType.CONSTANT);
         if(this.nodeType==1){
             let thedom=this.DomSet[0].dom
@@ -142,7 +166,7 @@ export class VinallaNode extends VNode{
                 })
             })
         }
-        this.Children.forEach(child=>child.Rerender())
+        this.Children.forEach(child=>child.Refresh())
     }
     Update(){
         //todo 更新属性
@@ -167,5 +191,11 @@ export class VinallaNode extends VNode{
         }
     }
     Reflow(){
+    }
+    GetAnchor(name:string):VinallaNode{
+        if(this.isAnchor && this.anchorName==name){
+            return this;
+        }
+        return super.GetAnchor(name);
     }
 }

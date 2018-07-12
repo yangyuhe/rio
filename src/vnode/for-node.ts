@@ -94,7 +94,7 @@ export class ForNode extends VNode{
             
             moved.forEach(vnode=>vnode.SetStatus(VNodeStatus.DEPRECATED))
             moved.forEach(item=>{
-                item.OnRemoved()
+                item.OnDestroy()
             })
         }
     }
@@ -119,8 +119,8 @@ export class ForNode extends VNode{
         })
         return this.DomSet;
     }
-    OnRemoved(){
-        this.Children.forEach(vnode=>vnode.OnRemoved())
+    OnDestroy(){
+        this.Children.forEach(vnode=>vnode.OnDestroy())
     }
     SetStatus(status:VNodeStatus){
         this.status=status

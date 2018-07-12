@@ -1,8 +1,6 @@
+import { RegisterDirective } from "../manager/directive-manager";
 import { DirectiveOption, IDirectiveConstructor } from "../models";
 import { FetchProperty } from "./property";
-import { RegisterDirective } from "../manager/directive-manager";
-import { VNode } from "../vnode/vnode";
-import { DirectiveNode } from "../vnode/directive-node";
 
 export function Directive(option:DirectiveOption){
     checkDirectiveOption(option)
@@ -14,10 +12,8 @@ export function Directive(option:DirectiveOption){
             $Ins=res.props
             $Out=option.events
             $InitFuncs=res.initFuncs
+            $MountFuncs=res.mountFuncs
             $DestroyFuncs=res.destroyFuncs
-            constructor(directive:DirectiveNode,vnode:VNode){
-                super(directive,vnode)
-            }
         }
         RegisterDirective(option.name,option.namespace,constructor)
     }

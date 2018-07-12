@@ -3,8 +3,6 @@ import { AppMvvm } from './mvvm/app-mvvm';
 import { ComponentMvvm } from './mvvm/component-mvvm';
 import { DirectiveMVVM } from './mvvm/directive-mvvm';
 import { VDom } from './vdom/vdom';
-import { DirectiveNode } from './vnode/directive-node';
-import { VNode } from './vnode/vnode';
 
 interface BaseOption{
     namespace?:string,
@@ -29,6 +27,7 @@ export interface DirectiveOption extends BaseOption{
 export type ParamType="array"|"object"|"number"|"string"|"boolean"
 export interface Prop{
     name:string
+    origin:string
     required:boolean
     type?:ParamType
 }
@@ -53,7 +52,7 @@ export interface IAppMvvm{
     new ():AppMvvm
 }
 export interface IDirectiveConstructor{
-    new (directive:DirectiveNode,vnode:VNode):DirectiveMVVM
+    new ():DirectiveMVVM
 }
 export interface ComponentMvvmFactoryOption {
     $constructor:IComponentMvvm

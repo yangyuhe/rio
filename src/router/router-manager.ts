@@ -1,6 +1,7 @@
 import { VNode } from '../vnode/vnode';
 import { SetActiveRouter } from './router-state';
 import { RefreshApp } from '../manager/start';
+import { LogError } from '../util';
 
 
 let matchedRouter:InnerRouter[]=[]
@@ -8,7 +9,10 @@ let matchedRouter:InnerRouter[]=[]
 let appRouters:InnerRouter[]=[]
 let cursor:number=-1
 let firstVNode:VNode=null
+
+/*注册路由*/
 export function RegisterRouter(routers:Router[]){
+    //将Router转换成InnerRouter
     checkRouter(routers)
     routers.forEach(router=>{
         router.urls=router.urls.map(url=>{
@@ -22,6 +26,7 @@ export function RegisterRouter(routers:Router[]){
         appRouters.push(copyRouter(null,router))
     })
 }
+/**输入合法性检查*/
 function checkRouter(routers:Router[]){
     routers.forEach(router=>{
         router.children=router.children?router.children:[]
@@ -42,6 +47,7 @@ function checkRouter(routers:Router[]){
         checkRouter(router.children)
     })
 }
+/**将Router转换成InnerRouter */
 function copyRouter(parent:InnerRouter,router:Router):InnerRouter{
     let r:InnerRouter= {
         urls:router.urls,
@@ -210,7 +216,8 @@ export function NextRouter(vnode:VNode,name?:string):string{
         cursor++
         return component
     }else{
-        throw new Error("router match failed")
+        LogError("router match wrong")
+        return null;
     }
     
 }

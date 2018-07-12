@@ -1,3 +1,4 @@
+import { DirectiveMVVM } from './../mvvm/directive-mvvm';
 import { VNodeStatus } from '../const';
 import { Mvvm } from '../mvvm/mvvm';
 import { OnDataChange } from './../models';
@@ -9,7 +10,7 @@ export class Watcher{
     private value:any
     private deepRecord:any[]=[]
 
-    constructor(private mvvm:Mvvm,private vnode:VNode,public ExpOrFunc:string|Function,private cb:OnDataChange,private watchingArrayItem?:boolean){
+    constructor(private mvvm:Mvvm|DirectiveMVVM,private vnode:VNode,public ExpOrFunc:string|Function,private cb:OnDataChange,private watchingArrayItem?:boolean){
         this.value=this.getValue()
         if(this.watchingArrayItem && toString.call(this.value)=="[object Array]"){
             for(let i=0;i<this.value.length;i++){
@@ -22,6 +23,10 @@ export class Watcher{
         let res=this.mvvm.$GetExpOrFunValue(this.ExpOrFunc)        
         CleanTarget()
         return res
+    }
+    /**用于返回当前缓存的值，主要针对computed */
+    GetCurValue(){
+        return this.value;
     }
     GetVNode(){
         return this.vnode

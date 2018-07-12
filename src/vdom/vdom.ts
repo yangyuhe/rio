@@ -19,8 +19,8 @@ export class VDom{
         }
         return null
     }
-    AddAttr(attr:string){
-        this.Attrs.push({Name:attr,Value:""})
+    AddAttr(attr:string,value:string=""){
+        this.Attrs.push({Name:attr,Value:value})
     }
 }
 export function TraverseDom(dom:Node):VDom{

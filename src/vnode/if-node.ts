@@ -40,16 +40,22 @@ export class IfNode extends VNode {
             })
             this.Parent.Reflow();
         }else{
+            this.Children.forEach(child=>{
+                child.SetStatus(VNodeStatus.DEPRECATED);
+            });
+            this.Children.forEach(child=>{
+                child.OnDestroy();
+            });
             this.Children=[]
             this.DomSet.forEach(dom=>{
                 dom.type=DomType.DELETE
-            })
+            });
         }
     }
 
-    OnRemoved(){
+    OnDestroy(){
         if(this.Children.length>0)
-            this.Children[0].OnRemoved()
+            this.Children[0].OnDestroy()
     }
     SetStatus(status:VNodeStatus){
         this.status=status

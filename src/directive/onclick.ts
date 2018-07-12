@@ -6,7 +6,7 @@ export function OnClick(exp:string,vnode:VinallaNode,isconst:boolean){
         let paramsStr = RegExp.$2
         if (paramsStr.length > 0) {
             let ps = paramsStr.split(",")
-            vnode.DomSet[0].dom.addEventListener("click", () => {
+            vnode.DomSet[0].dom.addEventListener("click", (event) => {
                 let params: any[] = []
                 ps.forEach(p => {
                     if (!REG_STR.test(p)) {
@@ -15,7 +15,12 @@ export function OnClick(exp:string,vnode:VinallaNode,isconst:boolean){
                             return
                         }
                         if (p === "false") {
-                            params.push(false)
+                            params.push(false);
+                            return;
+                        }
+                        if(p=="$event"){
+                            params.push(event);
+                            return;
                         }
                         let n = new Number(p).valueOf()
                         if (!isNaN(n)) {

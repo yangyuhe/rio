@@ -24,13 +24,13 @@ export class ComponentMvvm extends Mvvm{
         this.$ins.forEach(prop=>{
             let inName=this.$fenceNode.GetIn(prop.name)
             if(inName==null && prop.required){
-                throw new Error("component \'"+this.$name+"\' need prop \'"+prop.name)
+                throw new Error("component \'"+this.$name+"\' need prop \'"+prop.name+"'")
             }
             if(inName!=null){
                 if(inName.const){
-                    (this as any)[prop.name]=inName.value
+                    (this as any)[prop.origin]=inName.value
                 }else{
-                    Object.defineProperty(this,prop.name,{
+                    Object.defineProperty(this,prop.origin,{
                         get:()=>{
                             let newvalue=this.$fenceNode.mvvm.$GetExpOrFunValue(inName.value);
                             this.$checkProp(prop,newvalue);

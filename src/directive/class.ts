@@ -1,27 +1,25 @@
+import { ParseStyle } from '../util';
 import { VinallaNode } from './../vnode/vinalla-node';
-import { LogError } from '../util';
 export function Classes(exp:string,vnode:VinallaNode,isconst:boolean){
     if(isconst){
-        let hacked="var a="+exp+";a";
-        let classes:any;
-        try {
-            classes=eval(hacked);
-        } catch (error) {
-            LogError("json format error:"+exp)
-            return;
+
+        let reg=/^\{([^:,]+:[^:,]+)(,[^:,]+:[^:,]+)*\}$/;
+        if(!reg.test(exp)){
+            throw new Error("exp format error:"+exp);
         }
-        for(let key in classes){
-            let istrue=vnode.mvvm.$GetExpOrFunValue(key);
-            if(istrue){
-                (vnode.DomSet[0].dom as HTMLElement).classList.add(classes[key]);
-            }
-            vnode.mvvm.$CreateWatcher(vnode,key,(newvalue)=>{
+        let classJson=ParseStyle(exp);
+        for(let key in classJson){            
+            let watcher=vnode.mvvm.$CreateWatcher(vnode,classJson[key],(newvalue)=>{
                 if(newvalue){
-                    (vnode.DomSet[0].dom as HTMLElement).classList.add(classes[key]);
+                    (vnode.DomSet[0].dom as HTMLElement).classList.add(key);
                 }else{
-                    (vnode.DomSet[0].dom as HTMLElement).classList.remove(classes[key]);
+                    (vnode.DomSet[0].dom as HTMLElement).classList.remove(key);
                 }
-            })
+            });
+            let value=watcher.GetCurValue();
+            if(value){
+                (vnode.DomSet[0].dom as HTMLElement).classList.add(key);
+            }
         }
     }
 }

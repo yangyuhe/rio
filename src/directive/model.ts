@@ -1,20 +1,22 @@
+import { Watcher } from './../observer/watcher';
 import { VinallaNode } from './../vnode/vinalla-node';
 import { VNode } from "../vnode/vnode"
 export function DirModel(exp: string, vnode: VinallaNode,isconst:boolean) {
     let inputtype=vnode.Vdom.GetAttr("type")
     let input=vnode.Vdom.NodeName.toLowerCase()
 
-    let newvalue=vnode.mvvm.$GetExpOrFunValue(exp);
-    setValue(vnode, newvalue)
+    let watcher:Watcher
     if(input=="input" && inputtype=="checkbox"){
-        vnode.mvvm.$CreateWatcher(vnode,exp, (newvalue) => {
+        watcher=vnode.mvvm.$CreateWatcher(vnode,exp, (newvalue) => {
             setValue(vnode, newvalue)
         },true);
     }else{
-        vnode.mvvm.$CreateWatcher(vnode,exp, (newvalue) => {
+        watcher=vnode.mvvm.$CreateWatcher(vnode,exp, (newvalue) => {
             setValue(vnode, newvalue)
         });
     }
+    setValue(vnode, watcher.GetCurValue());
+
     vnode.DomSet[0].dom.addEventListener("input", (event: any) => {
         //select控件
         if (vnode.GetNodeName() == "select") {
@@ -31,7 +33,7 @@ export function DirModel(exp: string, vnode: VinallaNode,isconst:boolean) {
                 vnode.mvvm.$SetValue(exp, event.target.value)
                 break
             case "checkbox":
-                let cur = vnode.mvvm.$GetExpOrFunValue(exp)
+                let cur = watcher.GetCurValue();
                 if (toString.call(cur) == "[object Array]") {
                     let oldarray = cur as Array<any>;
                     let index = oldarray.indexOf(event.target.value)

@@ -15,12 +15,12 @@ export function CleanTarget(){
 export function ReactiveData(data:any){
     if(data!=null && typeof data=="object"){
         Object.keys(data).forEach(key=>{
-            reactiveKey(data,key)
+            ReactiveKey(data,key)
             ReactiveData(data[key])
         })
     }
 }
-function reactiveKey(data:any,key:string){
+export function ReactiveKey(data:any,key:string){
     let collecter=new WatcherCollecter(key)        
     let value = data[key]
     if(toString.call(value)=="[object Array]"){
@@ -58,7 +58,7 @@ function reactiveArray(array:any[],collecter:WatcherCollecter){
             let old=array.length
             let res=Array.prototype.push.call(array,...params)
             for(let i=old;i<res;i++){
-                reactiveKey(array,""+i)
+                ReactiveKey(array,""+i)
             }
             collecter.Notify()                
             return res
@@ -82,7 +82,7 @@ function reactiveArray(array:any[],collecter:WatcherCollecter){
                 let newitems=params.slice(2)
                 newitems.forEach(item=>{
                     let index=array.indexOf(item)
-                    reactiveKey(array,""+index)
+                    ReactiveKey(array,""+index)
                 })
             }
             collecter.Notify()                
@@ -113,11 +113,11 @@ export function ReactiveComputed(mvvm:Mvvm,vnode:VNode,key:string,func:()=>any){
             if(firstget){
                 let old=$target
                 $target=null
-                value=func.call(mvvm)
-                new Watcher(mvvm,vnode,func,(newval)=>{
+                let watcher=new Watcher(mvvm,vnode,func,(newval)=>{
                     value=newval
                     collecter.Notify()
                 })
+                value=watcher.GetCurValue();
                 $target=old
                 firstget=false
             }

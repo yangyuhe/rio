@@ -1,3 +1,4 @@
+import { VinallaNode } from './vinalla-node';
 import { DomStatus } from './../models';
 import { Mvvm } from '../mvvm/mvvm';
 import { NewVNode, VDom } from '../vdom/vdom';
@@ -11,8 +12,7 @@ export abstract class VNode {
     protected nodeName: string
     //元素类型：1 元素 3 文本 8 注释
     protected nodeType: number
-    /**普通属性 */
-    protected attrs: { name: string, value: string }[] = []
+    
     
     Children: VNode[] = []
     DomSet: {type:DomType,dom:Node}[]=[]
@@ -39,18 +39,18 @@ export abstract class VNode {
         if(this.Parent!=null)
             this.Parent.Reflow()
     }
-    Rerender():void{
+    Refresh():void{
         this.DomSet=this.DomSet.filter(dom=>dom.type!=DomType.DELETE)
-        this.Children.forEach(child=>child.Rerender())
+        this.Children.forEach(child=>child.Refresh())
     }
     
 
     abstract Update():void;
     
     
-    OnRemoved(){
+    OnDestroy(){
         this.Children.forEach(child=>{
-            child.OnRemoved()
+            child.OnDestroy()
         })
     }
     
@@ -91,5 +91,13 @@ export abstract class VNode {
     }
     GetNodeName(){
         return this.nodeName.toLowerCase()
+    }
+    GetAnchor(name:string):VinallaNode{
+        for(let i=0;i<this.Children.length;i++){
+            let anchor=this.Children[i].GetAnchor(name);
+            if(anchor!=null)
+                return anchor;
+        }
+        return null;
     }
 }

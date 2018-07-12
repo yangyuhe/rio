@@ -11,22 +11,20 @@ export function Href(exp:string,vnode:VinallaNode,isconst:boolean){
                 href=streval.exp;
                 (vnode.DomSet[0].dom as HTMLElement).setAttribute(PRE+"href",streval.exp);
             }
-            else{
-                let newvalue=vnode.mvvm.$GetExpOrFunValue(streval.exp);
-                href=newvalue;
-                (vnode.DomSet[0].dom as HTMLElement).setAttribute(PRE+"href",newvalue);
-                vnode.mvvm.$CreateWatcher(vnode,streval.exp,newvalue=>{
+            else{                
+                let watcher=vnode.mvvm.$CreateWatcher(vnode,streval.exp,newvalue=>{
                     href=newvalue;
                     (vnode.DomSet[0].dom as HTMLElement).setAttribute(PRE+"href",newvalue);
-                })                
+                });
+                href=watcher.GetCurValue();
+                (vnode.DomSet[0].dom as HTMLElement).setAttribute(PRE+"href",href);
             }
         }else{
-            let newvalue=vnode.mvvm.$GetExpOrFunValue(exp);
-            href=newvalue;
-            vnode.mvvm.$CreateWatcher(vnode,exp,newvalue=>{
+            let watcher=vnode.mvvm.$CreateWatcher(vnode,exp,newvalue=>{
                 href=newvalue;
                 (vnode.DomSet[0].dom as HTMLElement).setAttribute(PRE+"href",newvalue);
             });
+            href=watcher.GetCurValue();
         }
         
     }

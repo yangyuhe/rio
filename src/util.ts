@@ -1,4 +1,4 @@
-import { REG_SINGLE, REG_MULTI } from "./const";
+import { REG_SINGLE, REG_MULTI ,REG_STR} from "./const";
 import { ParamType } from "./models";
 
 export function LogError(msg:any){
@@ -111,4 +111,20 @@ export function TypeOf(param:any):ParamType{
     if(toString.call(param)=="[object Undefined]"){
         throw new Error("function TypeOf: undefined is not allowed")
     }
+}
+/**解析传入r-class或者r-style的值为json对象 */
+export function ParseStyle(style:string){
+    style=style.substr(1);
+    style=style.substr(0,style.length-1);
+    let styles=style.split(",");
+    let json:{[key:string]:string}={};
+    styles.forEach(s=>{
+        let index=s.indexOf(":");
+        let key=s.substr(0,index);
+        if(REG_STR.test(key)){
+            key=RegExp.$2;
+        }
+        json[key]=s.substr(index+1);
+    })
+    return json;
 }

@@ -1,23 +1,30 @@
-import { Prop } from "../models";
-import { DirectiveNode } from "../vnode/directive-node";
+import { Prop, OnDataChange } from "../models";
+import { DirectiveNode } from './../vnode/directive-node';
 import { VinallaNode } from './../vnode/vinalla-node';
-export class DirectiveMVVM {
+import { Watcher } from "../observer/watcher";
+import { EvalExp } from "../eval";
+export class DirectiveMVVM{
     
-
     $Name:string
     $element:HTMLElement
-
 
     $Ins:Prop[]=[]
     $Outs:string[]=[]
 
     $InitFuncs:string[]=[]
+    $MountFuncs:string[]=[]
     $DestroyFuncs:string[]=[]
     
+    private $directive:DirectiveNode;
+    private $vnode:VinallaNode;
 
-    constructor(private $directive:DirectiveNode,private $vnode:VinallaNode){
+    $Initialize(directive:DirectiveNode,vnode:VinallaNode){
+        this.$directive=directive;
+        this.$vnode=vnode;
+        this.$InitFuncs.forEach(func=>{
+            (this as any)[func].call(this)
+        });
     }
-    
     
     $OnDestroy(){
         this.$DestroyFuncs.forEach(destroy=>{
@@ -26,29 +33,28 @@ export class DirectiveMVVM {
     }
     
     $Render(){
-        this.$element=(this.$vnode.DomSet[0].dom as HTMLElement)
-        this.$InitFuncs.forEach(init=>{
-            (this as any)[init].call(this)
-        })
         this.$Ins.forEach(prop=>{
             let inName=this.$directive.GetIn(prop.name)
             if(inName==null && prop.required){
-                throw new Error("component \'"+this.$Name+"\' need prop \'"+prop.name)
+                throw new Error("component \'"+this.$Name+"\' need prop \'"+prop.name+"'")
             }
             if(inName!=null){
                 if(inName.const){
-                    (this as any)[prop.name]=inName.value
+                    (this as any)[prop.origin]=inName.value
                 }else{
-                    let newvalue=this.$vnode.mvvm.$GetExpOrFunValue(inName.value)
-                    this.$checkProp(prop,newvalue);
-                    (this as any)[prop.name]=newvalue
-
-                    this.$vnode.mvvm.$CreateWatcher(this.$vnode,inName.value,(newvalue:any,oldvalue:any)=>{
-                        this.$checkProp(prop,newvalue);
-                        (this as any)[prop.name]=newvalue
-                    });
+                    Object.defineProperty(this,prop.origin,{
+                        get:()=>{
+                            let newvalue=this.$vnode.mvvm.$GetExpOrFunValue(inName.value);
+                            this.$checkProp(prop,newvalue);
+                            return newvalue;
+                        }
+                    })
                 }
             }
+        })
+        this.$element=(this.$vnode.DomSet[0].dom as HTMLElement)
+        this.$MountFuncs.forEach(func=>{
+            (this as any)[func].call(this)
         })
     }
     private $checkProp(prop:Prop,value:any){
@@ -70,5 +76,18 @@ export class DirectiveMVVM {
         if(prop.type=="string" && toString.call(value)!="[object String]"){
             error(this.$Name,prop.name,prop.type)
         }
+    }
+    $Watch(exp:string|Function,listener:OnDataChange,watchingArrayItem:boolean=false){
+        new Watcher(this,this.$vnode,exp,listener,watchingArrayItem)
+    }
+    $GetExpOrFunValue(expOrFunc:string|Function):any{
+        let res:any;
+        if(typeof expOrFunc == "string"){
+            res=EvalExp(this,expOrFunc)
+        }
+        if(typeof expOrFunc =="function"){
+            res=expOrFunc.call(this)
+        }
+        return res;
     }
 }

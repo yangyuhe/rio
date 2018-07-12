@@ -1,5 +1,5 @@
 import { RegisterApp } from "../manager/app-manager";
-import { AppOption, IAppMvvm } from "../models";
+import { AppOption, IAppMvvm, DomStatus } from "../models";
 import { NewVNode, TraverseDom } from "../vdom/vdom";
 import { VNode } from "../vnode/vnode";
 import { FetchProperty } from "./property";
@@ -13,6 +13,7 @@ export function App(option:AppOption){
         let constructor= class $AppMvvm extends target{
             
             $InitFuncs:string[]=res.initFuncs
+            $MountFuncs:string[]=res.mountFuncs
             $DestroyFuncs:string[]=res.destroyFuncs
             
             $initialize(){
@@ -20,6 +21,13 @@ export function App(option:AppOption){
                 this.$InitFuncs.forEach(init=>{
                     (this as any)[init].call(this)
                 })
+            }
+            $Render():DomStatus{
+                let domstatus=super.$Render();
+                this.$MountFuncs.forEach(func=>{
+                    (this as any)[func].call(this)
+                });
+                return domstatus;
             }
             $OnDestroy(){
                 super.$OnDestroy()

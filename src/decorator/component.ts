@@ -1,4 +1,4 @@
-import { IComponentMvvm, Event } from './../models';
+import { IComponentMvvm, Event, DomStatus } from './../models';
 import { RegisterComponent, GetDomTree } from '../manager/components-manager';
 import { ComponentOption, Prop } from '../models';
 import { FetchProperty } from './property';
@@ -13,6 +13,7 @@ export function Component(option:ComponentOption){
     return function(target:IComponentMvvm){
         let constructor= class $ComponentMvvm extends target{
             $InitFuncs:string[]=res.initFuncs
+            $MountFuncs:string[]=res.mountFuncs
             $DestroyFuncs:string[]=res.destroyFuncs
             
             $initialize(){
@@ -20,6 +21,13 @@ export function Component(option:ComponentOption){
                 this.$InitFuncs.forEach(init=>{
                     (this as any)[init].call(this)
                 })
+            }
+            $Render():DomStatus{
+                let domstatus=super.$Render();
+                this.$MountFuncs.forEach(func=>{
+                    (this as any)[func].call(this)
+                });
+                return domstatus;
             }
             $OnDestroy(){
                 super.$OnDestroy()
@@ -32,6 +40,7 @@ export function Component(option:ComponentOption){
                 if(domtree==null){
                     throw new Error("not found template or templateUrl for component "+this.$InitName()+" in "+this.$InitNamespace())
                 }
+                
                 let vnode=NewVNode(domtree,this,null)
                 return vnode
             }

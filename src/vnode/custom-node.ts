@@ -1,3 +1,4 @@
+import { PRE } from './../const';
 import { REG_IN, REG_OUT, VNodeStatus } from "../const";
 import { DomStatus } from '../models';
 import { Mvvm } from "../mvvm/mvvm";
@@ -5,6 +6,7 @@ import { NewVNode, VDom } from "../vdom/vdom";
 import { ComponentMvvm } from './../mvvm/component-mvvm';
 import { PlugNode } from "./plug-node";
 import { VNode } from "./vnode";
+import { ParseStyle } from '../util';
 
 export class CustomNode extends VNode{
     //输入与输出值
@@ -12,12 +14,20 @@ export class CustomNode extends VNode{
     private ins_exp:{[name:string]:string}={}
     private outs:{[name:string]:string}={}
 
+    /**获取自定义组建上的style 或者r-style属性 */
+    private styles:{[key:string]:string}={};
+
     constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode,public SurroundMvvm:ComponentMvvm) {
         super(Vdom,mvvm,Parent)
         if(this.Vdom){
             for (let i = 0; i < this.Vdom.Attrs.length; i++) {
                 let name=this.Vdom.Attrs[i].Name;
                 let value=this.Vdom.Attrs[i].Value;
+                //是否是样式
+                if(name=="style" ||name==PRE+"style"){
+                    this.styles[name]=value;
+                    continue;
+                }
                 //输入
                 let ins=this.SurroundMvvm.$InitIns()
                 for(let i=0;i<ins.length;i++){
@@ -60,8 +70,38 @@ export class CustomNode extends VNode{
         return null
     }
     Render(): DomStatus[] {
-        let doms=this.SurroundMvvm.$Render()
-        this.DomSet=[doms]
+        let dom=this.SurroundMvvm.$Render()
+        if(this.styles['style']!=null){
+            let exp=this.styles['style'];
+            let styleitems=exp.split(";");
+            styleitems.forEach(item=>{
+                let kv=item.split(":");
+                ((dom.dom as HTMLElement).style as any)[kv[0]]=kv[1];
+            });
+                
+        }
+        if(this.styles[PRE+'style']!=null){
+            let exp=this.styles[PRE+'style'];
+            let reg=/^\{([^:,]+:[^:\?,]+\?[^:,]+:[^:,]+)(,[^:,]+:[^:\?,]+\?[^:,]+:[^:,]+)*\}$/;
+            if(!reg.test(exp)){
+                throw new Error("exp format error:"+exp);
+            }
+            let styleJson=ParseStyle(exp);
+            for(let key in styleJson){
+                let watcher=this.mvvm.$CreateWatcher(this,styleJson[key],(newvalue)=>{
+                    if(toString.call(newvalue)=="[object String]" && newvalue!=""){
+                        ((dom.dom as HTMLElement).style as any)[key]=newvalue;
+                    }else{
+                        ((dom.dom as HTMLElement).style as any)[key]="";
+                    }
+                });
+                let value=watcher.GetCurValue();
+                if(toString.call(value)=="[object String]" && value!=""){
+                    ((dom.dom as HTMLElement).style as any)[key]=value;
+                }
+            }
+        }
+        this.DomSet=[dom]
         return this.DomSet
     }
     
@@ -111,14 +151,14 @@ export class CustomNode extends VNode{
     }
     
     
-    Rerender() {
+    Refresh() {
         this.SurroundMvvm.$Refresh()
     }
     Update(){
         this.SurroundMvvm.$Update()
     }
 
-    OnRemoved(){
+    OnDestroy(){
         this.SurroundMvvm.$OnDestroy()
     }
     SetStatus(status:VNodeStatus){
@@ -127,4 +167,5 @@ export class CustomNode extends VNode{
     }
     Reflow(){
     }
+    
 }
