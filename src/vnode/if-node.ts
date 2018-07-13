@@ -42,8 +42,6 @@ export class IfNode extends VNode {
         }else{
             this.Children.forEach(child=>{
                 child.SetStatus(VNodeStatus.DEPRECATED);
-            });
-            this.Children.forEach(child=>{
                 child.OnDestroy();
             });
             this.Children=[]

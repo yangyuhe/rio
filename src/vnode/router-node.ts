@@ -1,4 +1,4 @@
-import { DomType } from './../const';
+import { DomType, VNodeStatus } from './../const';
 import { VNode } from "./vnode";
 import { Mvvm } from "../mvvm/mvvm";
 import { CustomNode } from "./custom-node";
@@ -26,7 +26,13 @@ export class RouterNode extends VNode{
         
     }
     OnRouterChange(){
-        let router=NextRouter(this)
+        let router=NextRouter(this);
+        //释放旧的资源
+        this.Children.forEach(child=>{
+            child.SetStatus(VNodeStatus.DEPRECATED);
+            child.OnDestroy();
+        });
+        
         if(router!=null){
             let vnode=this.instance(router)
             this.Children=[vnode]
@@ -35,13 +41,13 @@ export class RouterNode extends VNode{
             this.Parent.Reflow();
             MoveBack()
         }else{
+
             this.Children=[]
             this.DomSet.forEach(dom=>{
                 dom.type=DomType.DELETE
             })
         }
     }
-    
     private instance(componentStr:string):VNode{
 
         let ns=GetNS(componentStr)

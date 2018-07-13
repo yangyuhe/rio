@@ -1,8 +1,9 @@
-import { Prop, OnDataChange } from "../models";
+import { EvalExp } from "../eval";
+import { OnDataChange, Prop } from "../models";
+import { NoticeCallback, RegisterNotice, RevokeNotice } from "../observer/notice-center";
+import { Watcher } from "../observer/watcher";
 import { DirectiveNode } from './../vnode/directive-node';
 import { VinallaNode } from './../vnode/vinalla-node';
-import { Watcher } from "../observer/watcher";
-import { EvalExp } from "../eval";
 export class DirectiveMVVM{
     
     $Name:string
@@ -89,5 +90,17 @@ export class DirectiveMVVM{
             res=expOrFunc.call(this)
         }
         return res;
+    }
+    /**注册消息 */
+    $on(notice:string,cb:NoticeCallback){
+        RegisterNotice(notice,this.$vnode,cb);
+    }
+    /**触发消息 */
+    $broadcast(notice:string,...params:any[]){
+        RevokeNotice(notice,...params);
+    }
+    /**动态添加节点 */
+    $AddFragment(html:string,anchor:string){
+        this.$vnode.mvvm.$AddFragment(html,anchor);
     }
 }

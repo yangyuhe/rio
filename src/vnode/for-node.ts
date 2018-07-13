@@ -92,10 +92,10 @@ export class ForNode extends VNode{
                 })
             })
             
-            moved.forEach(vnode=>vnode.SetStatus(VNodeStatus.DEPRECATED))
-            moved.forEach(item=>{
-                item.OnDestroy()
-            })
+            moved.forEach(vnode=>{
+                vnode.SetStatus(VNodeStatus.DEPRECATED);
+                vnode.OnDestroy();
+            });
         }
     }
     

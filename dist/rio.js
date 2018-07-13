@@ -1290,8 +1290,9 @@ exports.ComponentMvvm = ComponentMvvm;
 /***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var watcher_1 = __webpack_require__(/*! ../observer/watcher */ "./src/observer/watcher.ts");
 var eval_1 = __webpack_require__(/*! ../eval */ "./src/eval.js");
+var notice_center_1 = __webpack_require__(/*! ../observer/notice-center */ "./src/observer/notice-center.ts");
+var watcher_1 = __webpack_require__(/*! ../observer/watcher */ "./src/observer/watcher.ts");
 var DirectiveMVVM = /** @class */ (function () {
     function DirectiveMVVM() {
         this.$Ins = [];
@@ -1375,6 +1376,22 @@ var DirectiveMVVM = /** @class */ (function () {
         }
         return res;
     };
+    /**注册消息 */
+    DirectiveMVVM.prototype.$on = function (notice, cb) {
+        notice_center_1.RegisterNotice(notice, this.$vnode, cb);
+    };
+    /**触发消息 */
+    DirectiveMVVM.prototype.$broadcast = function (notice) {
+        var params = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            params[_i - 1] = arguments[_i];
+        }
+        notice_center_1.RevokeNotice.apply(void 0, [notice].concat(params));
+    };
+    /**动态添加节点 */
+    DirectiveMVVM.prototype.$AddFragment = function (html, anchor) {
+        this.$vnode.mvvm.$AddFragment(html, anchor);
+    };
     return DirectiveMVVM;
 }());
 exports.DirectiveMVVM = DirectiveMVVM;
@@ -1390,6 +1407,7 @@ exports.DirectiveMVVM = DirectiveMVVM;
 /***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var notice_center_1 = __webpack_require__(/*! ./../observer/notice-center */ "./src/observer/notice-center.ts");
 var eval_1 = __webpack_require__(/*! ../eval */ "./src/eval.js");
 var observer_1 = __webpack_require__(/*! ../observer/observer */ "./src/observer/observer.ts");
 var watcher_1 = __webpack_require__(/*! ../observer/watcher */ "./src/observer/watcher.ts");
@@ -1514,13 +1532,13 @@ var Mvvm = /** @class */ (function () {
         observer_1.ReactiveKey(this.$data, name);
         observer_1.ReactiveData(value);
     };
-    Mvvm.prototype.getAnchorNode = function (name) {
+    Mvvm.prototype.GetAnchorNode = function (name) {
         return this.$treeRoot.GetAnchor(name);
     };
     /**动态添加节点 */
     Mvvm.prototype.$AddFragment = function (html, anchor) {
         var res = (new DOMParser()).parseFromString(html, "text/html").body;
-        var anchorNode = this.getAnchorNode(anchor);
+        var anchorNode = this.GetAnchorNode(anchor);
         if (anchorNode) {
             for (var i = 0; i < res.childNodes.length; i++) {
                 var domtree = vdom_1.TraverseDom(res.childNodes[i]);
@@ -1534,6 +1552,18 @@ var Mvvm = /** @class */ (function () {
         else {
             throw new Error('anchor node ' + anchor + " not exist");
         }
+    };
+    /**注册消息 */
+    Mvvm.prototype.$on = function (notice, cb) {
+        notice_center_1.RegisterNotice(notice, this.$treeRoot, cb);
+    };
+    /**触发消息 */
+    Mvvm.prototype.$broadcast = function (notice) {
+        var params = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            params[_i - 1] = arguments[_i];
+        }
+        notice_center_1.RevokeNotice.apply(void 0, [notice].concat(params));
     };
     return Mvvm;
 }());
@@ -1578,6 +1608,43 @@ function RevokeWatcher() {
     }
 }
 exports.RevokeWatcher = RevokeWatcher;
+
+
+/***/ }),
+
+/***/ "./src/observer/notice-center.ts":
+/*!***************************************!*\
+  !*** ./src/observer/notice-center.ts ***!
+  \***************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
+var notices = {};
+function RegisterNotice(notice, vnode, cb) {
+    if (notices[notice] == null)
+        notices[notice] = [];
+    notices[notice].push({ vnode: vnode, cb: cb });
+}
+exports.RegisterNotice = RegisterNotice;
+function RevokeNotice(notice) {
+    var params = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        params[_i - 1] = arguments[_i];
+    }
+    if (notices[notice] != null) {
+        notices[notice] = notices[notice].filter(function (item) {
+            return item.vnode.GetStatus() != const_1.VNodeStatus.DEPRECATED;
+        });
+        notices[notice].forEach(function (item) {
+            if (item.vnode.GetStatus() == const_1.VNodeStatus.ACTIVE) {
+                item.cb.apply(item, params);
+            }
+        });
+    }
+}
+exports.RevokeNotice = RevokeNotice;
 
 
 /***/ }),
@@ -2770,9 +2837,9 @@ var ForNode = /** @class */ (function (_super) {
                     }
                 });
             });
-            moved.forEach(function (vnode) { return vnode.SetStatus(const_1.VNodeStatus.DEPRECATED); });
-            moved.forEach(function (item) {
-                item.OnDestroy();
+            moved.forEach(function (vnode) {
+                vnode.SetStatus(const_1.VNodeStatus.DEPRECATED);
+                vnode.OnDestroy();
             });
         }
     };
@@ -2876,8 +2943,6 @@ var IfNode = /** @class */ (function (_super) {
         else {
             this.Children.forEach(function (child) {
                 child.SetStatus(const_2.VNodeStatus.DEPRECATED);
-            });
-            this.Children.forEach(function (child) {
                 child.OnDestroy();
             });
             this.Children = [];
@@ -3000,6 +3065,11 @@ var RouterNode = /** @class */ (function (_super) {
     };
     RouterNode.prototype.OnRouterChange = function () {
         var router = router_manager_1.NextRouter(this);
+        //释放旧的资源
+        this.Children.forEach(function (child) {
+            child.SetStatus(const_1.VNodeStatus.DEPRECATED);
+            child.OnDestroy();
+        });
         if (router != null) {
             var vnode = this.instance(router);
             this.Children = [vnode];
@@ -3204,14 +3274,11 @@ var VinallaNode = /** @class */ (function (_super) {
                     return !(isprop || isevent);
                 });
                 this_1.directives.push(dirMvvm_1);
-                return { value: _this };
             }
         };
         var this_1 = this;
         for (var i = 0; i < _this.Vdom.Attrs.length; i++) {
-            var state_1 = _loop_1(i);
-            if (typeof state_1 === "object")
-                return state_1.value;
+            _loop_1(i);
         }
         vanillaAttrs = vanillaAttrs.filter(function (attr) {
             if (const_1.REG_IN.test(attr.Name)) {

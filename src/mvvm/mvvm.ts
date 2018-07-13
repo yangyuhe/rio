@@ -1,3 +1,4 @@
+import { NoticeCallback, RegisterNotice, RevokeNotice } from './../observer/notice-center';
 import { EvalExp } from "../eval";
 import { ReactiveComputed, ReactiveData, ReactiveKey } from "../observer/observer";
 import { Watcher } from "../observer/watcher";
@@ -125,13 +126,13 @@ export abstract class Mvvm {
         ReactiveKey(this.$data,name);
         ReactiveData(value);
     }
-    private getAnchorNode(name:string):VinallaNode{
+    GetAnchorNode(name:string):VinallaNode{
         return this.$treeRoot.GetAnchor(name);
     }
     /**动态添加节点 */
     $AddFragment(html:string,anchor:string){
         let res=(new DOMParser()).parseFromString(html, "text/html").body;
-        let anchorNode=this.getAnchorNode(anchor);
+        let anchorNode=this.GetAnchorNode(anchor);
         if(anchorNode){
             for(let i=0;i<res.childNodes.length;i++){
                 let domtree=TraverseDom(res.childNodes[i]);
@@ -145,6 +146,14 @@ export abstract class Mvvm {
             throw new Error('anchor node '+anchor+" not exist");
         }
         
+    }
+    /**注册消息 */
+    $on(notice:string,cb:NoticeCallback){
+        RegisterNotice(notice,this.$treeRoot,cb);
+    }
+    /**触发消息 */
+    $broadcast(notice:string,...params:any[]){
+        RevokeNotice(notice,...params);
     }
 
     abstract $InitDataItems():{name:string,value:any}[];

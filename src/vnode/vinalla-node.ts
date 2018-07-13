@@ -47,7 +47,6 @@ export class VinallaNode extends VNode{
                     return !(isprop || isevent)
                 })
                 this.directives.push(dirMvvm)
-                return
             }
         }
         vanillaAttrs= vanillaAttrs.filter(attr=>{
