@@ -69,10 +69,7 @@ export interface RouterInfo{
     }[],
     getParam(name:string):string
 }
-export interface RouterState{
-    active:RouterInfo,
-    cur:RouterInfo
-}
+
 export type RouterChangeCallback=(newrouter:RouterInfo,oldrouter:RouterInfo)=>void
 
 export interface DomStatus{

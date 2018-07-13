@@ -1,14 +1,10 @@
-import { NotifyUrlChange } from '../router/router-manager';
+import { DomStatus } from '../models';
 import { VNode } from '../vnode/vnode';
 import { Mvvm } from './mvvm';
-import { DomStatus } from '../models';
 export class AppMvvm extends Mvvm{
     protected $el:string=""
     
-    $NavigateTo(url:string){
-        window.history.replaceState(null,null,url)
-        NotifyUrlChange()
-    }
+    
     $Render(): DomStatus {
         let doms=this.$treeRoot.Render()
         return doms[0]

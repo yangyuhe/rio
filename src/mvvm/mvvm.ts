@@ -2,11 +2,12 @@ import { NoticeCallback, RegisterNotice, RevokeNotice } from './../observer/noti
 import { EvalExp } from "../eval";
 import { ReactiveComputed, ReactiveData, ReactiveKey } from "../observer/observer";
 import { Watcher } from "../observer/watcher";
-import { GetActiveRouter } from "../router/router-state";
+import { GetActiveRouter, WatchRouterChange } from "../router/router-state";
 import { NewVNode, TraverseDom } from "../vdom/vdom";
 import { VNode } from "../vnode/vnode";
-import { DomStatus, OnDataChange, RouterState } from './../models';
+import { DomStatus, OnDataChange, RouterInfo } from './../models';
 import { VinallaNode } from './../vnode/vinalla-node';
+import { NotifyUrlChange } from '../router/router-manager';
 export abstract class Mvvm {
     private $data:any={}
     protected $namespace="default"
@@ -17,11 +18,8 @@ export abstract class Mvvm {
     protected $computeItems:{name:string,get:()=>any}[]=[]
     private $isroot=false
 
-    protected get $router():RouterState{
-        return {
-            active:GetActiveRouter(),
-            cur:null
-        }
+    protected get $router(){
+        return GetActiveRouter()
     }
 
     constructor(){
@@ -148,12 +146,20 @@ export abstract class Mvvm {
         
     }
     /**注册消息 */
-    $on(notice:string,cb:NoticeCallback){
+    protected $on(notice:string,cb:NoticeCallback){
         RegisterNotice(notice,this.$treeRoot,cb);
     }
     /**触发消息 */
-    $broadcast(notice:string,...params:any[]){
+    protected $broadcast(notice:string,...params:any[]){
         RevokeNotice(notice,...params);
+    }
+    /**监视路由变化 */
+    protected $onRouterChange(callbck:(newrouter:RouterInfo,oldrouter:RouterInfo)=>void){
+        WatchRouterChange(this.$treeRoot,callbck);
+    }
+    $NavigateTo(url:string){
+        window.history.replaceState(null,null,url)
+        NotifyUrlChange()
     }
 
     abstract $InitDataItems():{name:string,value:any}[];

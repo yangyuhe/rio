@@ -17,10 +17,8 @@ let active:RouterInfo=new _RouterInfo("",[])
 let listeners:{cb:RouterChangeCallback,vnode:VNode}[]=[]
 
 export function SetActiveRouter(path:string,params:{name:string,value:any}[]){
-    let old:RouterInfo=new _RouterInfo(path,params)
-    
-    active.path=path
-    active.params=params
+    let old=active;
+    active=new _RouterInfo(path,params)
 
     listeners= listeners.filter(listen=>listen.vnode.GetStatus()!=VNodeStatus.DEPRECATED)
     listeners.forEach(listen=>{

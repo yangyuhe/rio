@@ -163,6 +163,7 @@ function clearMark(router:InnerRouter){
 }
 function matchUrl(){
     appRouters.forEach(r=>clearMark(r))
+    matchedRouter=[];
 
     let routers:InnerRouter[]=[]
 
