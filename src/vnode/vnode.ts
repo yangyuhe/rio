@@ -1,10 +1,8 @@
-import { VinallaNode } from './vinalla-node';
-import { DomStatus } from './../models';
 import { Mvvm } from '../mvvm/mvvm';
 import { NewVNode, VDom } from '../vdom/vdom';
 import { DomType, VNodeStatus } from './../const';
-import { AppMvvm } from './../mvvm/app-mvvm';
-import { ComponentMvvm } from './../mvvm/component-mvvm';
+import { DomStatus } from './../models';
+import { VinallaNode } from './vinalla-node';
 export abstract class VNode {
     //元素值 只有当nodeType为3时才有用，其他时候为null
     protected nodeValue: string
@@ -77,17 +75,6 @@ export abstract class VNode {
     }
     OnRouterChange(){
         this.Children.forEach(child=>child.OnRouterChange())
-    }
-    NavigateTo(url:string):void{
-        if(this.mvvm.$IsRoot()){
-            (this.mvvm as AppMvvm).$NavigateTo(url)
-        }else{
-            if(this.Parent!=null)
-                this.Parent.NavigateTo(url);
-            else{
-                (<ComponentMvvm>this.mvvm).$GetFenceNode().NavigateTo(url);
-            }
-        }
     }
     GetNodeName(){
         return this.nodeName.toLowerCase()

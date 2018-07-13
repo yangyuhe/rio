@@ -497,32 +497,30 @@ var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 function Href(exp, vnode, isconst) {
     var href = "";
-    if (vnode.DomSet[0].dom.nodeName.toLowerCase() == "a") {
-        if (isconst) {
-            var streval = util_1.StrToEvalstr(exp);
-            if (streval.isconst) {
-                href = streval.exp;
-                vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", streval.exp);
-            }
-            else {
-                var watcher = vnode.mvvm.$CreateWatcher(vnode, streval.exp, function (newvalue) {
-                    href = newvalue;
-                    vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", newvalue);
-                });
-                href = watcher.GetCurValue();
-                vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", href);
-            }
+    if (isconst) {
+        var streval = util_1.StrToEvalstr(exp);
+        if (streval.isconst) {
+            href = streval.exp;
+            vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", streval.exp);
         }
         else {
-            var watcher = vnode.mvvm.$CreateWatcher(vnode, exp, function (newvalue) {
+            var watcher = vnode.mvvm.$CreateWatcher(vnode, streval.exp, function (newvalue) {
                 href = newvalue;
                 vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", newvalue);
             });
             href = watcher.GetCurValue();
+            vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", href);
         }
     }
+    else {
+        var watcher = vnode.mvvm.$CreateWatcher(vnode, exp, function (newvalue) {
+            href = newvalue;
+            vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", newvalue);
+        });
+        href = watcher.GetCurValue();
+    }
     vnode.DomSet[0].dom.addEventListener("click", function () {
-        vnode.NavigateTo(href);
+        vnode.mvvm.$NavigateTo(href);
     });
 }
 exports.Href = Href;
@@ -1100,7 +1098,6 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var router_manager_1 = __webpack_require__(/*! ../router/router-manager */ "./src/router/router-manager.ts");
 var mvvm_1 = __webpack_require__(/*! ./mvvm */ "./src/mvvm/mvvm.ts");
 var AppMvvm = /** @class */ (function (_super) {
     __extends(AppMvvm, _super);
@@ -1109,10 +1106,6 @@ var AppMvvm = /** @class */ (function (_super) {
         _this.$el = "";
         return _this;
     }
-    AppMvvm.prototype.$NavigateTo = function (url) {
-        window.history.replaceState(null, null, url);
-        router_manager_1.NotifyUrlChange();
-    };
     AppMvvm.prototype.$Render = function () {
         var doms = this.$treeRoot.Render();
         return doms[0];
@@ -1422,6 +1415,7 @@ var observer_1 = __webpack_require__(/*! ../observer/observer */ "./src/observer
 var watcher_1 = __webpack_require__(/*! ../observer/watcher */ "./src/observer/watcher.ts");
 var router_state_1 = __webpack_require__(/*! ../router/router-state */ "./src/router/router-state.ts");
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
+var router_manager_1 = __webpack_require__(/*! ../router/router-manager */ "./src/router/router-manager.ts");
 var Mvvm = /** @class */ (function () {
     function Mvvm() {
         this.$data = {};
@@ -1432,10 +1426,7 @@ var Mvvm = /** @class */ (function () {
     }
     Object.defineProperty(Mvvm.prototype, "$router", {
         get: function () {
-            return {
-                active: router_state_1.GetActiveRouter(),
-                cur: null
-            };
+            return router_state_1.GetActiveRouter();
         },
         enumerable: true,
         configurable: true
@@ -1573,6 +1564,14 @@ var Mvvm = /** @class */ (function () {
             params[_i - 1] = arguments[_i];
         }
         notice_center_1.RevokeNotice.apply(void 0, [notice].concat(params));
+    };
+    /**监视路由变化 */
+    Mvvm.prototype.$onRouterChange = function (callbck) {
+        router_state_1.WatchRouterChange(this.$treeRoot, callbck);
+    };
+    Mvvm.prototype.$NavigateTo = function (url) {
+        window.history.replaceState(null, null, url);
+        router_manager_1.NotifyUrlChange();
     };
     return Mvvm;
 }());
@@ -1993,21 +1992,12 @@ function copyRouter(parent, router) {
         parent: parent,
         fullUrls: [],
         params: router.params,
-        redirect: router.redirect,
-        marked: false
+        redirect: router.redirect
     };
     if (parent != null) {
         r.urls.forEach(function (url) {
             parent.fullUrls.forEach(function (fullurl) {
-                if (url.indexOf("/") == 0) {
-                    r.fullUrls.push(url);
-                }
-                else {
-                    if (url == "")
-                        r.fullUrls.push(fullurl);
-                    else
-                        r.fullUrls.push(fullurl + "/" + url);
-                }
+                r.fullUrls.push(fullurl + url);
             });
         });
     }
@@ -2081,53 +2071,24 @@ function getSearchParams() {
     }
     return res;
 }
-function getLeaf(router) {
-    if (router.marked)
-        return [];
-    if (router.children.length == 0) {
-        router.marked = true;
-        return [router];
-    }
-    var res = [];
-    router.children.forEach(function (child) {
-        res = res.concat(getLeaf(child));
+function flatRouter(r) {
+    var routers = [r];
+    r.children.forEach(function (child) {
+        routers = routers.concat(flatRouter(child));
     });
-    if (res.length == 0) {
-        router.marked = true;
-        return [router];
-    }
-    return res;
-}
-function clearMark(router) {
-    router.children.forEach(function (child) {
-        clearMark(child);
-    });
-    router.marked = false;
+    return routers;
 }
 function matchUrl() {
-    appRouters.forEach(function (r) { return clearMark(r); });
+    matchedRouter = [];
     var routers = [];
-    var _loop_2 = function () {
-        var res = [];
-        appRouters.forEach(function (r) {
-            res = res.concat(getLeaf(r));
-        });
-        if (res.length == 0) {
-            return "break";
-        }
-        else {
-            routers = routers.concat(res);
-        }
-    };
-    while (true) {
-        var state_2 = _loop_2();
-        if (state_2 === "break")
-            break;
-    }
+    appRouters.forEach(function (r) {
+        routers = routers.concat(flatRouter(r));
+    });
     var redirect = false;
     for (var i = 0; i < routers.length; i++) {
         var router = routers[i];
         if (router.redirect != null) {
+            router_state_1.SetActiveRouter(location.pathname, []);
             window.history.replaceState(null, "", router.redirect);
             redirect = true;
             break;
@@ -2203,20 +2164,20 @@ var _RouterInfo = /** @class */ (function () {
     return _RouterInfo;
 }());
 var active = new _RouterInfo("", []);
+var previous = null;
 var listeners = [];
 function SetActiveRouter(path, params) {
-    var old = new _RouterInfo(path, params);
-    active.path = path;
-    active.params = params;
+    previous = active;
+    active = new _RouterInfo(path, params);
     listeners = listeners.filter(function (listen) { return listen.vnode.GetStatus() != const_1.VNodeStatus.DEPRECATED; });
     listeners.forEach(function (listen) {
         if (listen.vnode.GetStatus() == const_1.VNodeStatus.ACTIVE)
-            listen.cb(active, old);
+            listen.cb(active, previous);
     });
 }
 exports.SetActiveRouter = SetActiveRouter;
 function GetActiveRouter() {
-    return active;
+    return { active: active, previous: previous };
 }
 exports.GetActiveRouter = GetActiveRouter;
 function WatchRouterChange(vnode, listener) {
@@ -3507,18 +3468,6 @@ var VNode = /** @class */ (function () {
     };
     VNode.prototype.OnRouterChange = function () {
         this.Children.forEach(function (child) { return child.OnRouterChange(); });
-    };
-    VNode.prototype.NavigateTo = function (url) {
-        if (this.mvvm.$IsRoot()) {
-            this.mvvm.$NavigateTo(url);
-        }
-        else {
-            if (this.Parent != null)
-                this.Parent.NavigateTo(url);
-            else {
-                this.mvvm.$GetFenceNode().NavigateTo(url);
-            }
-        }
     };
     VNode.prototype.GetNodeName = function () {
         return this.nodeName.toLowerCase();

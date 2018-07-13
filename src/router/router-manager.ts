@@ -57,20 +57,12 @@ function copyRouter(parent:InnerRouter,router:Router):InnerRouter{
         parent:parent,
         fullUrls:[],
         params:router.params,
-        redirect:router.redirect,
-        marked:false
+        redirect:router.redirect
     }
     if(parent!=null){
         r.urls.forEach(url=>{
             parent.fullUrls.forEach(fullurl=>{
-                if(url.indexOf("/")==0){
-                    r.fullUrls.push(url)
-                }else{
-                    if(url=="")
-                        r.fullUrls.push(fullurl)
-                    else
-                        r.fullUrls.push(fullurl+"/"+url)
-                }
+                r.fullUrls.push(fullurl+url)
             })
         })
     }else{
@@ -137,52 +129,29 @@ function getSearchParams():{name:string,value:string}[]{
     }
     return res
 }
-function getLeaf(router:InnerRouter):InnerRouter[]{
-    if(router.marked)
-        return []
-    if(router.children.length==0){
-        router.marked=true
-        return [router];
-    }
-    
-    let res:InnerRouter[]=[]
-    router.children.forEach(child=>{
-        res=res.concat(getLeaf(child))
-    })
-    if(res.length==0){
-        router.marked=true
-        return [router];
-    }
-    return res
-}
-function clearMark(router:InnerRouter){
-    router.children.forEach(child=>{
-        clearMark(child)
-    })
-    router.marked=false
+
+
+function flatRouter(r:InnerRouter):InnerRouter[]{
+    let routers:InnerRouter[]=[r];
+    r.children.forEach(child=>{
+        routers=routers.concat(flatRouter(child));
+    });
+    return routers;
 }
 function matchUrl(){
-    appRouters.forEach(r=>clearMark(r))
     matchedRouter=[];
 
     let routers:InnerRouter[]=[]
 
-    while(true){
-        let res:InnerRouter[]=[]
-        appRouters.forEach(r=>{
-            res=res.concat(getLeaf(r))
-        })
-        if(res.length==0){
-            break
-        }else{
-            routers=routers.concat(res)
-        }
-    }
+    appRouters.forEach(r=>{
+        routers=routers.concat(flatRouter(r))
+    });
 
     let redirect=false
     for(let i=0;i<routers.length;i++){
         let router=routers[i]
         if(router.redirect!=null){
+            SetActiveRouter(location.pathname,[]);
             window.history.replaceState(null,"",router.redirect)
             redirect=true
             break
@@ -239,8 +208,7 @@ export interface _Router{
 interface InnerRouter extends _Router{
     parent:InnerRouter
     children:InnerRouter[]
-    fullUrls:string[],
-    marked:boolean
+    fullUrls:string[]
 }
 
 export function NotifyUrlChange(){

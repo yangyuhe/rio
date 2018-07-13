@@ -12,22 +12,23 @@ class _RouterInfo implements RouterInfo{
     }
 }
 
-let active:RouterInfo=new _RouterInfo("",[])
+let active:RouterInfo=new _RouterInfo("",[]);
+let previous:RouterInfo=null;
 
 let listeners:{cb:RouterChangeCallback,vnode:VNode}[]=[]
 
 export function SetActiveRouter(path:string,params:{name:string,value:any}[]){
-    let old=active;
+    previous=active;
     active=new _RouterInfo(path,params)
 
     listeners= listeners.filter(listen=>listen.vnode.GetStatus()!=VNodeStatus.DEPRECATED)
     listeners.forEach(listen=>{
         if(listen.vnode.GetStatus()==VNodeStatus.ACTIVE)
-            listen.cb(active,old)
+            listen.cb(active,previous)
     })
 }
 export function GetActiveRouter(){
-    return active
+    return {active:active,previous:previous}
 }
 export function WatchRouterChange(vnode:VNode,listener:RouterChangeCallback){
     listeners.push({cb:listener,vnode:vnode})

@@ -27,6 +27,6 @@ export function Href(exp:string,vnode:VinallaNode,isconst:boolean){
     }
         
     vnode.DomSet[0].dom.addEventListener("click",()=>{
-        vnode.NavigateTo(href)
+        vnode.mvvm.$NavigateTo(href);
     })
 }

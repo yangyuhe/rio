@@ -511,7 +511,7 @@ function Href(exp, vnode, isconst) {
         href = watcher.GetCurValue();
     }
     vnode.DomSet[0].dom.addEventListener("click", function () {
-        vnode.NavigateTo(href);
+        vnode.mvvm.$NavigateTo(href);
     });
 }
 exports.Href = Href;
@@ -1983,21 +1983,12 @@ function copyRouter(parent, router) {
         parent: parent,
         fullUrls: [],
         params: router.params,
-        redirect: router.redirect,
-        marked: false
+        redirect: router.redirect
     };
     if (parent != null) {
         r.urls.forEach(function (url) {
             parent.fullUrls.forEach(function (fullurl) {
-                if (url.indexOf("/") == 0) {
-                    r.fullUrls.push(url);
-                }
-                else {
-                    if (url == "")
-                        r.fullUrls.push(fullurl);
-                    else
-                        r.fullUrls.push(fullurl + "/" + url);
-                }
+                r.fullUrls.push(fullurl + url);
             });
         });
     }
@@ -2071,54 +2062,24 @@ function getSearchParams() {
     }
     return res;
 }
-function getLeaf(router) {
-    if (router.marked)
-        return [];
-    if (router.children.length == 0) {
-        router.marked = true;
-        return [router];
-    }
-    var res = [];
-    router.children.forEach(function (child) {
-        res = res.concat(getLeaf(child));
+function flatRouter(r) {
+    var routers = [r];
+    r.children.forEach(function (child) {
+        routers = routers.concat(flatRouter(child));
     });
-    if (res.length == 0) {
-        router.marked = true;
-        return [router];
-    }
-    return res;
-}
-function clearMark(router) {
-    router.children.forEach(function (child) {
-        clearMark(child);
-    });
-    router.marked = false;
+    return routers;
 }
 function matchUrl() {
-    appRouters.forEach(function (r) { return clearMark(r); });
     matchedRouter = [];
     var routers = [];
-    var _loop_2 = function () {
-        var res = [];
-        appRouters.forEach(function (r) {
-            res = res.concat(getLeaf(r));
-        });
-        if (res.length == 0) {
-            return "break";
-        }
-        else {
-            routers = routers.concat(res);
-        }
-    };
-    while (true) {
-        var state_2 = _loop_2();
-        if (state_2 === "break")
-            break;
-    }
+    appRouters.forEach(function (r) {
+        routers = routers.concat(flatRouter(r));
+    });
     var redirect = false;
     for (var i = 0; i < routers.length; i++) {
         var router = routers[i];
         if (router.redirect != null) {
+            router_state_1.SetActiveRouter(location.pathname, []);
             window.history.replaceState(null, "", router.redirect);
             redirect = true;
             break;
@@ -2194,19 +2155,20 @@ var _RouterInfo = /** @class */ (function () {
     return _RouterInfo;
 }());
 var active = new _RouterInfo("", []);
+var previous = null;
 var listeners = [];
 function SetActiveRouter(path, params) {
-    var old = active;
+    previous = active;
     active = new _RouterInfo(path, params);
     listeners = listeners.filter(function (listen) { return listen.vnode.GetStatus() != const_1.VNodeStatus.DEPRECATED; });
     listeners.forEach(function (listen) {
         if (listen.vnode.GetStatus() == const_1.VNodeStatus.ACTIVE)
-            listen.cb(active, old);
+            listen.cb(active, previous);
     });
 }
 exports.SetActiveRouter = SetActiveRouter;
 function GetActiveRouter() {
-    return active;
+    return { active: active, previous: previous };
 }
 exports.GetActiveRouter = GetActiveRouter;
 function WatchRouterChange(vnode, listener) {
@@ -3497,18 +3459,6 @@ var VNode = /** @class */ (function () {
     };
     VNode.prototype.OnRouterChange = function () {
         this.Children.forEach(function (child) { return child.OnRouterChange(); });
-    };
-    VNode.prototype.NavigateTo = function (url) {
-        if (this.mvvm.$IsRoot()) {
-            this.mvvm.$NavigateTo(url);
-        }
-        else {
-            if (this.Parent != null)
-                this.Parent.NavigateTo(url);
-            else {
-                this.mvvm.$GetFenceNode().NavigateTo(url);
-            }
-        }
     };
     VNode.prototype.GetNodeName = function () {
         return this.nodeName.toLowerCase();
