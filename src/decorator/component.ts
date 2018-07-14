@@ -1,9 +1,9 @@
-import { IComponentMvvm, Event, DomStatus } from './../models';
-import { RegisterComponent, GetDomTree } from '../manager/components-manager';
+import { GetDomTree, RegisterComponent, InitComponent, ComponentAutoId } from '../manager/components-manager';
 import { ComponentOption, Prop } from '../models';
-import { FetchProperty } from './property';
-import { VNode } from '../vnode/vnode';
 import { NewVNode } from '../vdom/vdom';
+import { VNode } from '../vnode/vnode';
+import { DomStatus, Event, IComponentMvvm } from './../models';
+import { FetchProperty } from './property';
 
 
 
@@ -15,7 +15,7 @@ export function Component(option:ComponentOption){
             $InitFuncs:string[]=res.initFuncs
             $MountFuncs:string[]=res.mountFuncs
             $DestroyFuncs:string[]=res.destroyFuncs
-            
+            $template=option.template
             $initialize(){
                 super.$initialize()
                 this.$InitFuncs.forEach(init=>{
@@ -36,6 +36,9 @@ export function Component(option:ComponentOption){
                 })
             }
             $InitTreeroot():VNode{
+                //以防页面组件未初始化
+                InitComponent(this.$InitName(),this.$InitNamespace());
+
                 let domtree=GetDomTree(this.$InitName(),this.$InitNamespace())
                 if(domtree==null){
                     throw new Error("not found template or templateUrl for component "+this.$InitName()+" in "+this.$InitNamespace())
@@ -67,7 +70,10 @@ export function Component(option:ComponentOption){
                 return option.events
             }
         }
-        RegisterComponent(option.name,option.namespace,constructor,option)
+        if(option.name==null)
+            option.name=constructor.name+ComponentAutoId();
+        RegisterComponent(option.name,option.namespace,constructor,option);
+        return (constructor as any);
     }
 }
 

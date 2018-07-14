@@ -48,6 +48,7 @@ export class ForExp{
 export interface IComponentMvvm{
     new ():ComponentMvvm
 }
+
 export interface IAppMvvm{
     new ():AppMvvm
 }

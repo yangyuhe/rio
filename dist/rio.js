@@ -236,8 +236,8 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var components_manager_1 = __webpack_require__(/*! ../manager/components-manager */ "./src/manager/components-manager.ts");
-var property_1 = __webpack_require__(/*! ./property */ "./src/decorator/property.ts");
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
+var property_1 = __webpack_require__(/*! ./property */ "./src/decorator/property.ts");
 function Component(option) {
     checkComponentOption(option);
     var res = property_1.FetchProperty();
@@ -249,6 +249,7 @@ function Component(option) {
                 _this.$InitFuncs = res.initFuncs;
                 _this.$MountFuncs = res.mountFuncs;
                 _this.$DestroyFuncs = res.destroyFuncs;
+                _this.$template = option.template;
                 return _this;
             }
             $ComponentMvvm.prototype.$initialize = function () {
@@ -274,6 +275,8 @@ function Component(option) {
                 });
             };
             $ComponentMvvm.prototype.$InitTreeroot = function () {
+                //以防页面组件未初始化
+                components_manager_1.InitComponent(this.$InitName(), this.$InitNamespace());
                 var domtree = components_manager_1.GetDomTree(this.$InitName(), this.$InitNamespace());
                 if (domtree == null) {
                     throw new Error("not found template or templateUrl for component " + this.$InitName() + " in " + this.$InitNamespace());
@@ -306,7 +309,10 @@ function Component(option) {
             };
             return $ComponentMvvm;
         }(target));
+        if (option.name == null)
+            option.name = constructor.name + components_manager_1.ComponentAutoId();
         components_manager_1.RegisterComponent(option.name, option.namespace, constructor, option);
+        return constructor;
     };
 }
 exports.Component = Component;
@@ -878,6 +884,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
 var repository = {};
+var id = 0;
+function ComponentAutoId() {
+    return "" + id++;
+}
+exports.ComponentAutoId = ComponentAutoId;
 function Id(namespace, name) {
     return namespace + "::" + name;
 }
@@ -1956,14 +1967,10 @@ exports.RegisterRouter = RegisterRouter;
 function checkRouter(routers) {
     routers.forEach(function (router) {
         router.children = router.children ? router.children : [];
-        if (router.redirect != null) {
-            router.component = "";
-            router.url = "";
-        }
-        if (router.component == null && router.components == null) {
+        if (router.redirect == null && router.component == null && router.components == null) {
             throw new Error("must specify component or components in router");
         }
-        if (router.url == null && router.urls == null) {
+        if (router.redirect == null && router.url == null && router.urls == null) {
             throw new Error("must specify url or urls in router");
         }
         router.params = router.params ? router.params : [];
@@ -2999,12 +3006,10 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var const_1 = __webpack_require__(/*! ./../const */ "./src/const.ts");
-var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
-var custom_node_1 = __webpack_require__(/*! ./custom-node */ "./src/vnode/custom-node.ts");
-var components_manager_1 = __webpack_require__(/*! ../manager/components-manager */ "./src/manager/components-manager.ts");
-var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 var router_manager_1 = __webpack_require__(/*! ../router/router-manager */ "./src/router/router-manager.ts");
+var const_1 = __webpack_require__(/*! ./../const */ "./src/const.ts");
+var custom_node_1 = __webpack_require__(/*! ./custom-node */ "./src/vnode/custom-node.ts");
+var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var RouterNode = /** @class */ (function (_super) {
     __extends(RouterNode, _super);
     function RouterNode(Vdom, mvvm, Parent) {
@@ -3025,14 +3030,14 @@ var RouterNode = /** @class */ (function (_super) {
         return this.DomSet;
     };
     RouterNode.prototype.OnRouterChange = function () {
-        var router = router_manager_1.NextRouter(this);
+        var constructor = router_manager_1.NextRouter(this);
         //释放旧的资源
         this.Children.forEach(function (child) {
             child.SetStatus(const_1.VNodeStatus.DEPRECATED);
             child.OnDestroy();
         });
-        if (router != null) {
-            var vnode = this.instance(router);
+        if (constructor != null) {
+            var vnode = this.instance(constructor);
             this.Children = [vnode];
             this.DomSet.forEach(function (dom) { return dom.type = const_1.DomType.DELETE; });
             this.DomSet = this.DomSet.concat(vnode.Render());
@@ -3046,14 +3051,7 @@ var RouterNode = /** @class */ (function (_super) {
             });
         }
     };
-    RouterNode.prototype.instance = function (componentStr) {
-        var ns = util_1.GetNS(componentStr);
-        if (ns.namespace == null)
-            ns.namespace = "default";
-        var construct = components_manager_1.InitComponent(ns.value, ns.namespace);
-        if (construct == null) {
-            throw new Error("router can not find component name:" + ns.value + ",namespace:" + ns.namespace);
-        }
+    RouterNode.prototype.instance = function (construct) {
         var mvvm = new construct();
         var custnode = new custom_node_1.CustomNode(null, this.mvvm, null, mvvm);
         mvvm.$SetFenceNode(custnode);

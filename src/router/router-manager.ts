@@ -1,3 +1,4 @@
+import { IComponentMvvm } from './../models';
 import { VNode } from '../vnode/vnode';
 import { SetActiveRouter } from './router-state';
 import { RefreshApp } from '../manager/start';
@@ -30,14 +31,11 @@ export function RegisterRouter(routers:Router[]){
 function checkRouter(routers:Router[]){
     routers.forEach(router=>{
         router.children=router.children?router.children:[]
-        if(router.redirect!=null){
-            router.component=""
-            router.url=""
-        }
-        if(router.component==null && router.components==null){
+        
+        if(router.redirect==null && router.component==null && router.components==null){
             throw new Error("must specify component or components in router")
         }
-        if(router.url==null && router.urls==null){
+        if(router.redirect==null && router.url==null && router.urls==null){
             throw new Error("must specify url or urls in router")
         }
         router.params=router.params?router.params:[]
@@ -172,7 +170,7 @@ function matchUrl(){
         matchUrl()
     }
 }
-export function NextRouter(vnode:VNode,name?:string):string{
+export function NextRouter(vnode:VNode,name?:string):IComponentMvvm{
     if(appRouters==null){
         throw new Error("no router specified")
     }
@@ -199,8 +197,8 @@ export interface Router extends _Router{
 }
 export interface _Router{
     urls?:string[]
-    component?: string
-    components?:{[name:string]:string}
+    component?: IComponentMvvm
+    components?:{[name:string]:IComponentMvvm}
     children?:Router[]
     params?:{name:string,required:boolean}[],
     redirect?:string

@@ -1,12 +1,11 @@
-import { DomType, VNodeStatus } from './../const';
-import { VNode } from "./vnode";
-import { Mvvm } from "../mvvm/mvvm";
-import { CustomNode } from "./custom-node";
-import { InitComponent } from "../manager/components-manager";
-import { GetNS } from '../util';
-import { VDom } from '../vdom/vdom';
-import { NextRouter, MoveBack } from "../router/router-manager";
 import { DomStatus } from '../models';
+import { Mvvm } from "../mvvm/mvvm";
+import { MoveBack, NextRouter } from "../router/router-manager";
+import { VDom } from '../vdom/vdom';
+import { DomType, VNodeStatus } from './../const';
+import { IComponentMvvm } from './../models';
+import { CustomNode } from "./custom-node";
+import { VNode } from "./vnode";
 
 export class RouterNode extends VNode{
 
@@ -26,38 +25,28 @@ export class RouterNode extends VNode{
         
     }
     OnRouterChange(){
-        let router=NextRouter(this);
+        let constructor=NextRouter(this);
         //释放旧的资源
         this.Children.forEach(child=>{
             child.SetStatus(VNodeStatus.DEPRECATED);
             child.OnDestroy();
         });
-        
-        if(router!=null){
-            let vnode=this.instance(router)
+
+        if(constructor!=null){
+            let vnode=this.instance(constructor)
             this.Children=[vnode]
             this.DomSet.forEach(dom=>dom.type=DomType.DELETE)
             this.DomSet= this.DomSet.concat(vnode.Render())
             this.Parent.Reflow();
             MoveBack()
         }else{
-
             this.Children=[]
             this.DomSet.forEach(dom=>{
                 dom.type=DomType.DELETE
             })
         }
     }
-    private instance(componentStr:string):VNode{
-
-        let ns=GetNS(componentStr)
-        if(ns.namespace==null)
-            ns.namespace="default"
-        let construct=InitComponent(ns.value,ns.namespace)
-        
-        if(construct==null){
-            throw new Error(`router can not find component name:${ns.value},namespace:${ns.namespace}`)
-        }
+    private instance(construct:IComponentMvvm):VNode{
         let mvvm=new construct()
         let custnode=new CustomNode(null,this.mvvm,null,mvvm)
         mvvm.$SetFenceNode(custnode)

@@ -7,6 +7,11 @@ import { VDom } from './../vdom/vdom';
 
 let repository:{[id:string]:ComponentMvvmFactoryOption}={}
 
+let id=0;
+export function ComponentAutoId(){
+    return ""+id++;
+}
+
 export function Id(namespace:string,name:string){
     return namespace+"::"+name;
 }
