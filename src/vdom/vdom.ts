@@ -74,7 +74,7 @@ export function NewVNode(dom:VDom,mvvm:Mvvm,parent:VNode,priority:Priority=Prior
     }
     if(dom.NodeName=="router-view"){
         let RouterNode=require("../vnode/router-node").RouterNode
-        let vnode= new RouterNode(dom,mvvm,parent)
+        let vnode= new RouterNode(dom,mvvm,parent,dom.GetAttr("name"))
         return vnode
     }
     let ns=GetNS(dom.NodeName)

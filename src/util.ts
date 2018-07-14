@@ -30,17 +30,23 @@ export function IsStringEmpty(str:string){
         return true
     return false
 }
-export function Trim(str:string,char:string){
+export function Trim(str:string,char:string,direction:"both"|"left"|"right"="both"){
     if(char.length>1)
-        throw new Error("only receve one character")
-    let start=-1
-    while(str[start+1]==char){
-        start++
+        throw new Error("only receve one character");
+    let start=-1;
+    if(direction=="both" || direction=="left"){
+        while(str[start+1]==char){
+            start++
+        }
     }
-    let end=str.length
-    while(str[end-1]==char){
-        end--
+    
+    let end=str.length;
+    if(direction=="both"||direction=="right"){
+        while(str[end-1]==char){
+            end--
+        }
     }
+    
     return str.substring(start+1,end)
 }
 

@@ -2,27 +2,20 @@ import { IComponentMvvm } from './../models';
 import { VNode } from '../vnode/vnode';
 import { SetActiveRouter } from './router-state';
 import { RefreshApp } from '../manager/start';
-import { LogError } from '../util';
+import { LogError, Trim } from '../util';
 
 
 let matchedRouter:InnerRouter[]=[]
 
 let appRouters:InnerRouter[]=[]
-let cursor:number=-1
+let cursor:number=0;
 let firstVNode:VNode=null
 
 /*注册路由*/
 export function RegisterRouter(routers:Router[]){
     //将Router转换成InnerRouter
     checkRouter(routers)
-    routers.forEach(router=>{
-        router.urls=router.urls.map(url=>{
-            if(url.indexOf("/")!=0)
-                return "/"+url
-            else
-                return url
-        })
-    })
+    
     routers.forEach(router=>{
         appRouters.push(copyRouter(null,router))
     })
@@ -35,83 +28,79 @@ function checkRouter(routers:Router[]){
         if(router.redirect==null && router.component==null && router.components==null){
             throw new Error("must specify component or components in router")
         }
-        if(router.redirect==null && router.url==null && router.urls==null){
-            throw new Error("must specify url or urls in router")
-        }
-        router.params=router.params?router.params:[]
-        router.urls=router.urls?router.urls:[]
         if(router.url!=null)
-            router.urls.push(router.url)
+            router.url=Trim(router.url.trim(),"/","right");
+        if(router.redirect==null && (router.url==null || router.url=="")){
+            throw new Error("must specify url in router")
+        }
+        router.params=router.params?router.params:[];
+        if(router.redirect==null){
+            if(router.url.indexOf("/")!=0)
+                router.url= "/"+router.url;
+        }
         checkRouter(router.children)
-    })
+    });
 }
 /**将Router转换成InnerRouter */
 function copyRouter(parent:InnerRouter,router:Router):InnerRouter{
     let r:InnerRouter= {
-        urls:router.urls,
+        url:router.url,
         component:router.component,
         components:router.components,
         children:[],
         parent:parent,
-        fullUrls:[],
+        fullUrl:"",
         params:router.params,
         redirect:router.redirect
     }
     if(parent!=null){
-        r.urls.forEach(url=>{
-            parent.fullUrls.forEach(fullurl=>{
-                r.fullUrls.push(fullurl+url)
-            })
-        })
+        r.fullUrl=parent.fullUrl+router.url;
     }else{
-        r.urls.forEach(url=>r.fullUrls.push(url))
+        r.fullUrl=router.url;
     }
     for(let i=0;i<router.children.length;i++){
         r.children.push(copyRouter(r,router.children[i]))
     }
     return r
 }
-function matchRouter(matchedRouter:InnerRouter):{name:string,value:string}[]{
+/**
+ * matchtype 0 完全匹配  1 matchedRouter是当前location的前缀  2 不匹配
+ */
+function matchRouter(matchedRouter:InnerRouter):{matchtype:number,params:{name:string,value:string}[]}{
     let vinallaUrl=location.pathname
-    while(vinallaUrl.endsWith("/")){
-        vinallaUrl=vinallaUrl.substr(0,vinallaUrl.length-1)
-    }
+    vinallaUrl=Trim(vinallaUrl,"/","right");
     let vinallaSlice=vinallaUrl.split("/");
-    for(let i=0;i<matchedRouter.fullUrls.length;i++){
-        let matchedUrl=matchedRouter.fullUrls[i];
-        let matchedSlice=matchedUrl.split("/");
-        if(vinallaSlice.length!=matchedSlice.length)
+    let matchedSlice=matchedRouter.fullUrl.split("/");
+    let params:{name:string,value:string}[]=[];
+    for(var j=0;j<matchedSlice.length;j++){
+        if(vinallaSlice.length-1<j){
+            return {matchtype:2,params:[]};
+        }
+        if(/^\:(\w+)$/.test(matchedSlice[j]) ){
+            let name=RegExp.$1
+            params.push({name:name,value:vinallaSlice[j]})
             continue;
-        let params:{name:string,value:string}[]=[];
-        for(var j=0;j<matchedSlice.length;j++){
-            if(/^\:(\w+)$/.test(matchedSlice[j]) ){
-                if(vinallaSlice[j]!=""){
-                    let name=RegExp.$1
-                    params.push({name:name,value:vinallaSlice[j]})
-                    continue;
-                }else{
-                    break
-                }
-            }
-            if(matchedSlice[j]==vinallaSlice[j]){
-                continue;
-            }
-            break;
         }
-        if(j==matchedSlice.length){
-            let requireParams=matchedRouter.params;
-            let searchParams=getSearchParams();
-            params=params.concat(searchParams);
-            requireParams.forEach(rp=>{
-                let exist=params.find(p=>p.name==rp.name);
-                if(exist==null && rp.required){
-                    throw new Error("router match failed,no matched params:"+rp.name);
-                }
-            })
-            return params;
+        if(matchedSlice[j]==vinallaSlice[j]){
+            continue;
         }
+        return {matchtype:2,params:[]};
     }
-    return null;
+    
+    let requireParams=matchedRouter.params;
+    let searchParams=getSearchParams();
+    params=params.concat(searchParams);
+    requireParams.forEach(rp=>{
+        let exist=params.find(p=>p.name==rp.name);
+        if(exist==null && rp.required){
+            throw new Error("router match failed,no matched params:"+rp.name);
+        }
+    })
+    if(j==vinallaSlice.length){
+        return {matchtype:0,params:params};
+    }else{
+        return {matchtype:1,params:params};
+    }
 }
 function getSearchParams():{name:string,value:string}[]{
     let searchSlice=location.search.split("?")
@@ -129,55 +118,53 @@ function getSearchParams():{name:string,value:string}[]{
 }
 
 
-function flatRouter(r:InnerRouter):InnerRouter[]{
-    let routers:InnerRouter[]=[r];
-    r.children.forEach(child=>{
-        routers=routers.concat(flatRouter(child));
-    });
-    return routers;
-}
-function matchUrl(){
-    matchedRouter=[];
-
-    let routers:InnerRouter[]=[]
-
-    appRouters.forEach(r=>{
-        routers=routers.concat(flatRouter(r))
-    });
-
-    let redirect=false
+let matchcounter=0;
+export function StartMatchUrl(routers?:InnerRouter[]):boolean{
+    if(matchcounter>10){
+        throw new Error("circular router match");
+    }
+    if(routers==null){
+        routers=appRouters;
+    }
+    if(routers==appRouters){
+        matchcounter++;
+        matchedRouter=[];
+    }
+        
     for(let i=0;i<routers.length;i++){
-        let router=routers[i]
+        let router=routers[i];
         if(router.redirect!=null){
             SetActiveRouter(location.pathname,[]);
-            window.history.replaceState(null,"",router.redirect)
-            redirect=true
-            break
+            window.history.replaceState(null,"",router.redirect);
+            StartMatchUrl(appRouters);
+            return true;
         }
-        let params=matchRouter(router)
-        if(params!=null){
-            SetActiveRouter(location.pathname,params)
-            matchedRouter=[router]
-            let parent=router.parent
-            while(parent!=null){
-                matchedRouter.unshift(parent)
-                parent=parent.parent
+        let res=matchRouter(router);
+        if(res.matchtype==2){
+            continue;
+        }
+        if(res.matchtype==1){
+            matchedRouter.push(router);
+            let find=StartMatchUrl(router.children);
+            if(find){
+                return true;
             }
-            break
+            continue;
+        }
+        if(res.matchtype==0){
+            SetActiveRouter(location.pathname,res.params);
+            matchedRouter.push(router);
+            return true;
         }
     }
-    if(redirect){
-        matchUrl()
-    }
+    return false;
 }
 export function NextRouter(vnode:VNode,name?:string):IComponentMvvm{
     if(appRouters==null){
         throw new Error("no router specified")
     }
-    if(cursor==-1){
-        matchUrl()
+    if(cursor==0){
         firstVNode=vnode
-        cursor=0
     }
     if(cursor<matchedRouter.length){
         let component=name?matchedRouter[cursor].components[name]:matchedRouter[cursor].component
@@ -192,25 +179,27 @@ export function NextRouter(vnode:VNode,name?:string):IComponentMvvm{
 export function MoveBack(){
     cursor--
 }
-export interface Router extends _Router{
-    url?: string
-}
-export interface _Router{
-    urls?:string[]
+
+export interface Router{
+    url?:string
     component?: IComponentMvvm
     components?:{[name:string]:IComponentMvvm}
     children?:Router[]
     params?:{name:string,required:boolean}[],
     redirect?:string
 }
-interface InnerRouter extends _Router{
+interface InnerRouter extends Router{
     parent:InnerRouter
     children:InnerRouter[]
-    fullUrls:string[]
+    fullUrl:string
 }
 
 export function NotifyUrlChange(){
-    matchUrl()
+    matchcounter=0;
+    let matched=StartMatchUrl();
+    if(!matched){
+        throw new Error("no matched router");
+    }
     firstVNode.OnRouterChange()
     RefreshApp()
 }

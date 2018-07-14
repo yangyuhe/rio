@@ -9,12 +9,12 @@ import { VNode } from "./vnode";
 
 export class RouterNode extends VNode{
 
-    constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode) {
+    constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode,private routername:string) {
         super(Vdom,mvvm,Parent)
     }
 
     Render() :DomStatus[]{
-        let router=NextRouter(this)
+        let router=NextRouter(this,this.routername)
         if(router!=null){
             let vnode=this.instance(router)
             this.Children=[vnode]
@@ -25,7 +25,7 @@ export class RouterNode extends VNode{
         
     }
     OnRouterChange(){
-        let constructor=NextRouter(this);
+        let constructor=NextRouter(this,this.routername);
         //释放旧的资源
         this.Children.forEach(child=>{
             child.SetStatus(VNodeStatus.DEPRECATED);

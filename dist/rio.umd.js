@@ -1052,10 +1052,12 @@ exports.IsDirectiveRegistered = IsDirectiveRegistered;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var app_manager_1 = __webpack_require__(/*! ./app-manager */ "./src/manager/app-manager.ts");
+var router_manager_1 = __webpack_require__(/*! ../router/router-manager */ "./src/router/router-manager.ts");
 var apps = [];
 function Start() {
     var appscons = app_manager_1.GetApp();
     appscons.forEach(function (App) {
+        router_manager_1.StartMatchUrl();
         var mvvm = new App();
         mvvm.$initialize();
         mvvm.$AttachChildren();
@@ -1958,20 +1960,12 @@ var start_1 = __webpack_require__(/*! ../manager/start */ "./src/manager/start.t
 var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 var matchedRouter = [];
 var appRouters = [];
-var cursor = -1;
+var cursor = 0;
 var firstVNode = null;
 /*注册路由*/
 function RegisterRouter(routers) {
     //将Router转换成InnerRouter
     checkRouter(routers);
-    routers.forEach(function (router) {
-        router.urls = router.urls.map(function (url) {
-            if (url.indexOf("/") != 0)
-                return "/" + url;
-            else
-                return url;
-        });
-    });
     routers.forEach(function (router) {
         appRouters.push(copyRouter(null, router));
     });
@@ -1984,90 +1978,80 @@ function checkRouter(routers) {
         if (router.redirect == null && router.component == null && router.components == null) {
             throw new Error("must specify component or components in router");
         }
-        if (router.redirect == null && router.url == null && router.urls == null) {
-            throw new Error("must specify url or urls in router");
+        if (router.url != null)
+            router.url = util_1.Trim(router.url.trim(), "/", "right");
+        if (router.redirect == null && (router.url == null || router.url == "")) {
+            throw new Error("must specify url in router");
         }
         router.params = router.params ? router.params : [];
-        router.urls = router.urls ? router.urls : [];
-        if (router.url != null)
-            router.urls.push(router.url);
+        if (router.redirect == null) {
+            if (router.url.indexOf("/") != 0)
+                router.url = "/" + router.url;
+        }
         checkRouter(router.children);
     });
 }
 /**将Router转换成InnerRouter */
 function copyRouter(parent, router) {
     var r = {
-        urls: router.urls,
+        url: router.url,
         component: router.component,
         components: router.components,
         children: [],
         parent: parent,
-        fullUrls: [],
+        fullUrl: "",
         params: router.params,
         redirect: router.redirect
     };
     if (parent != null) {
-        r.urls.forEach(function (url) {
-            parent.fullUrls.forEach(function (fullurl) {
-                r.fullUrls.push(fullurl + url);
-            });
-        });
+        r.fullUrl = parent.fullUrl + router.url;
     }
     else {
-        r.urls.forEach(function (url) { return r.fullUrls.push(url); });
+        r.fullUrl = router.url;
     }
     for (var i = 0; i < router.children.length; i++) {
         r.children.push(copyRouter(r, router.children[i]));
     }
     return r;
 }
+/**
+ * matchtype 0 完全匹配  1 matchedRouter是当前location的前缀  2 不匹配
+ */
 function matchRouter(matchedRouter) {
     var vinallaUrl = location.pathname;
-    while (vinallaUrl.endsWith("/")) {
-        vinallaUrl = vinallaUrl.substr(0, vinallaUrl.length - 1);
-    }
+    vinallaUrl = util_1.Trim(vinallaUrl, "/", "right");
     var vinallaSlice = vinallaUrl.split("/");
-    var _loop_1 = function (i) {
-        var matchedUrl = matchedRouter.fullUrls[i];
-        var matchedSlice = matchedUrl.split("/");
-        if (vinallaSlice.length != matchedSlice.length)
-            return "continue";
-        var params = [];
-        for (var j = 0; j < matchedSlice.length; j++) {
-            if (/^\:(\w+)$/.test(matchedSlice[j])) {
-                if (vinallaSlice[j] != "") {
-                    var name_1 = RegExp.$1;
-                    params.push({ name: name_1, value: vinallaSlice[j] });
-                    continue;
-                }
-                else {
-                    break;
-                }
-            }
-            if (matchedSlice[j] == vinallaSlice[j]) {
-                continue;
-            }
-            break;
+    var matchedSlice = matchedRouter.fullUrl.split("/");
+    var params = [];
+    for (var j = 0; j < matchedSlice.length; j++) {
+        if (vinallaSlice.length - 1 < j) {
+            return { matchtype: 2, params: [] };
         }
-        if (j == matchedSlice.length) {
-            var requireParams = matchedRouter.params;
-            var searchParams = getSearchParams();
-            params = params.concat(searchParams);
-            requireParams.forEach(function (rp) {
-                var exist = params.find(function (p) { return p.name == rp.name; });
-                if (exist == null && rp.required) {
-                    throw new Error("router match failed,no matched params:" + rp.name);
-                }
-            });
-            return { value: params };
+        if (/^\:(\w+)$/.test(matchedSlice[j])) {
+            var name_1 = RegExp.$1;
+            params.push({ name: name_1, value: vinallaSlice[j] });
+            continue;
         }
-    };
-    for (var i = 0; i < matchedRouter.fullUrls.length; i++) {
-        var state_1 = _loop_1(i);
-        if (typeof state_1 === "object")
-            return state_1.value;
+        if (matchedSlice[j] == vinallaSlice[j]) {
+            continue;
+        }
+        return { matchtype: 2, params: [] };
     }
-    return null;
+    var requireParams = matchedRouter.params;
+    var searchParams = getSearchParams();
+    params = params.concat(searchParams);
+    requireParams.forEach(function (rp) {
+        var exist = params.find(function (p) { return p.name == rp.name; });
+        if (exist == null && rp.required) {
+            throw new Error("router match failed,no matched params:" + rp.name);
+        }
+    });
+    if (j == vinallaSlice.length) {
+        return { matchtype: 0, params: params };
+    }
+    else {
+        return { matchtype: 1, params: params };
+    }
 }
 function getSearchParams() {
     var searchSlice = location.search.split("?");
@@ -2083,52 +2067,55 @@ function getSearchParams() {
     }
     return res;
 }
-function flatRouter(r) {
-    var routers = [r];
-    r.children.forEach(function (child) {
-        routers = routers.concat(flatRouter(child));
-    });
-    return routers;
-}
-function matchUrl() {
+function StartMatchUrl() {
     matchedRouter = [];
-    var routers = [];
-    appRouters.forEach(function (r) {
-        routers = routers.concat(flatRouter(r));
-    });
     var redirect = false;
-    for (var i = 0; i < routers.length; i++) {
-        var router = routers[i];
+    var execs = appRouters;
+    var start = 0;
+    var find = false;
+    while (true) {
+        if (start > execs.length - 1) {
+            break;
+        }
+        var router = execs[start];
         if (router.redirect != null) {
             router_state_1.SetActiveRouter(location.pathname, []);
             window.history.replaceState(null, "", router.redirect);
             redirect = true;
             break;
         }
-        var params = matchRouter(router);
-        if (params != null) {
-            router_state_1.SetActiveRouter(location.pathname, params);
-            matchedRouter = [router];
-            var parent_1 = router.parent;
-            while (parent_1 != null) {
-                matchedRouter.unshift(parent_1);
-                parent_1 = parent_1.parent;
-            }
+        var res = matchRouter(router);
+        if (res.matchtype == 2) {
+            start++;
+            continue;
+        }
+        if (res.matchtype == 1) {
+            matchedRouter.push(router);
+            start = 0;
+            execs = router.children;
+            continue;
+        }
+        if (res.matchtype == 0) {
+            router_state_1.SetActiveRouter(location.pathname, res.params);
+            matchedRouter.push(router);
+            find = true;
             break;
         }
     }
     if (redirect) {
-        matchUrl();
+        StartMatchUrl();
+    }
+    if (!find) {
+        throw new Error("router not matched");
     }
 }
+exports.StartMatchUrl = StartMatchUrl;
 function NextRouter(vnode, name) {
     if (appRouters == null) {
         throw new Error("no router specified");
     }
-    if (cursor == -1) {
-        matchUrl();
+    if (cursor == 0) {
         firstVNode = vnode;
-        cursor = 0;
     }
     if (cursor < matchedRouter.length) {
         var component = name ? matchedRouter[cursor].components[name] : matchedRouter[cursor].component;
@@ -2146,7 +2133,7 @@ function MoveBack() {
 }
 exports.MoveBack = MoveBack;
 function NotifyUrlChange() {
-    matchUrl();
+    StartMatchUrl();
     firstVNode.OnRouterChange();
     start_1.RefreshApp();
 }
@@ -2243,16 +2230,21 @@ function IsStringEmpty(str) {
     return false;
 }
 exports.IsStringEmpty = IsStringEmpty;
-function Trim(str, char) {
+function Trim(str, char, direction) {
+    if (direction === void 0) { direction = "both"; }
     if (char.length > 1)
         throw new Error("only receve one character");
     var start = -1;
-    while (str[start + 1] == char) {
-        start++;
+    if (direction == "both" || direction == "left") {
+        while (str[start + 1] == char) {
+            start++;
+        }
     }
     var end = str.length;
-    while (str[end - 1] == char) {
-        end--;
+    if (direction == "both" || direction == "right") {
+        while (str[end - 1] == char) {
+            end--;
+        }
     }
     return str.substring(start + 1, end);
 }
