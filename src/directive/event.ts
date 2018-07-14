@@ -1,12 +1,14 @@
 import { VinallaNode } from './../vnode/vinalla-node';
 import {REG_EVENT, REG_STR} from "../const"
-export function OnClick(exp:string,vnode:VinallaNode){
+export function OnEvent(exp:string,vnode:VinallaNode,options:string[]){
+    if(options==null || options.length==0)
+        throw new Error("r-on need specify event name");
     if (REG_EVENT.test(exp)) {
         let methodStr = RegExp.$1
         let paramsStr = RegExp.$2
         if (paramsStr.length > 0) {
             let ps = paramsStr.split(",")
-            vnode.DomSet[0].dom.addEventListener("click", (event) => {
+            vnode.DomSet[0].dom.addEventListener(options[0], (event) => {
                 let params: any[] = []
                 ps.forEach(p => {
                     if (!REG_STR.test(p)) {
@@ -36,7 +38,7 @@ export function OnClick(exp:string,vnode:VinallaNode){
                 vnode.mvvm.$RevokeMethod(methodStr, ...params)
             })
         }else{
-            vnode.DomSet[0].dom.addEventListener("click", () => {
+            vnode.DomSet[0].dom.addEventListener(options[0], () => {
                 vnode.mvvm.$RevokeMethod(methodStr)  
             })
         }

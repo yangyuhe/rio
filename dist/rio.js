@@ -450,33 +450,93 @@ exports.FetchProperty = FetchProperty;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
-function Classes(exp, vnode, isconst) {
-    if (isconst) {
-        var reg = /^\{([^:,]+:[^:,]+)(,[^:,]+:[^:,]+)*\}$/;
-        if (!reg.test(exp)) {
-            throw new Error("exp format error:" + exp);
-        }
-        var classJson = util_1.ParseStyle(exp);
-        var _loop_1 = function (key) {
-            var watcher = vnode.mvvm.$CreateWatcher(vnode, classJson[key], function (newvalue) {
-                if (newvalue) {
-                    vnode.DomSet[0].dom.classList.add(key);
-                }
-                else {
-                    vnode.DomSet[0].dom.classList.remove(key);
-                }
-            });
-            var value = watcher.GetCurValue();
-            if (value) {
+function Classes(exp, vnode) {
+    var reg = /^\{([^:,]+:[^:,]+)(,[^:,]+:[^:,]+)*\}$/;
+    if (!reg.test(exp)) {
+        throw new Error("exp format error:" + exp);
+    }
+    var classJson = util_1.ParseStyle(exp);
+    var _loop_1 = function (key) {
+        var watcher = vnode.mvvm.$CreateWatcher(vnode, classJson[key], function (newvalue) {
+            if (newvalue) {
                 vnode.DomSet[0].dom.classList.add(key);
             }
-        };
-        for (var key in classJson) {
-            _loop_1(key);
+            else {
+                vnode.DomSet[0].dom.classList.remove(key);
+            }
+        });
+        var value = watcher.GetCurValue();
+        if (value) {
+            vnode.DomSet[0].dom.classList.add(key);
         }
+    };
+    for (var key in classJson) {
+        _loop_1(key);
     }
 }
 exports.Classes = Classes;
+
+
+/***/ }),
+
+/***/ "./src/directive/event.ts":
+/*!********************************!*\
+  !*** ./src/directive/event.ts ***!
+  \********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
+function OnEvent(exp, vnode, options) {
+    if (options == null || options.length == 0)
+        throw new Error("r-on need specify event name");
+    if (const_1.REG_EVENT.test(exp)) {
+        var methodStr_1 = RegExp.$1;
+        var paramsStr = RegExp.$2;
+        if (paramsStr.length > 0) {
+            var ps_1 = paramsStr.split(",");
+            vnode.DomSet[0].dom.addEventListener(options[0], function (event) {
+                var params = [];
+                ps_1.forEach(function (p) {
+                    if (!const_1.REG_STR.test(p)) {
+                        if (p === "true") {
+                            params.push(true);
+                            return;
+                        }
+                        if (p === "false") {
+                            params.push(false);
+                            return;
+                        }
+                        if (p == "$event") {
+                            params.push(event);
+                            return;
+                        }
+                        var n = new Number(p).valueOf();
+                        if (!isNaN(n)) {
+                            params.push(n.valueOf());
+                        }
+                        else {
+                            //肯定是本地变量
+                            params.push(vnode.mvvm.$GetExpOrFunValue(p));
+                        }
+                    }
+                    else {
+                        params.push(RegExp.$2);
+                    }
+                });
+                (_a = vnode.mvvm).$RevokeMethod.apply(_a, [methodStr_1].concat(params));
+                var _a;
+            });
+        }
+        else {
+            vnode.DomSet[0].dom.addEventListener(options[0], function () {
+                vnode.mvvm.$RevokeMethod(methodStr_1);
+            });
+        }
+    }
+}
+exports.OnEvent = OnEvent;
 
 
 /***/ }),
@@ -491,29 +551,20 @@ exports.Classes = Classes;
 Object.defineProperty(exports, "__esModule", { value: true });
 var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
-function Href(exp, vnode, isconst) {
+function Href(exp, vnode) {
     var href = "";
-    if (isconst) {
-        var streval = util_1.StrToEvalstr(exp);
-        if (streval.isconst) {
-            href = streval.exp;
-            vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", streval.exp);
-        }
-        else {
-            var watcher = vnode.mvvm.$CreateWatcher(vnode, streval.exp, function (newvalue) {
-                href = newvalue;
-                vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", newvalue);
-            });
-            href = watcher.GetCurValue();
-            vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", href);
-        }
+    var streval = util_1.StrToEvalstr(exp);
+    if (streval.isconst) {
+        href = streval.exp;
+        vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", streval.exp);
     }
     else {
-        var watcher = vnode.mvvm.$CreateWatcher(vnode, exp, function (newvalue) {
+        var watcher = vnode.mvvm.$CreateWatcher(vnode, streval.exp, function (newvalue) {
             href = newvalue;
             vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", newvalue);
         });
         href = watcher.GetCurValue();
+        vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", href);
     }
     vnode.DomSet[0].dom.addEventListener("click", function () {
         vnode.mvvm.$NavigateTo(href);
@@ -533,20 +584,12 @@ exports.Href = Href;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
-function Html(exp, vnode, noBracket) {
-    if (noBracket) {
-        var strEval = util_1.StrToEvalstr(exp);
-        if (strEval.isconst)
-            vnode.DomSet[0].dom.innerHTML = strEval.exp;
-        else {
-            var watcher = vnode.mvvm.$CreateWatcher(vnode, strEval.exp, function (newvalue) {
-                vnode.DomSet[0].dom.innerHTML = newvalue;
-            });
-            vnode.DomSet[0].dom.innerHTML = watcher.GetCurValue();
-        }
-    }
+function Html(exp, vnode) {
+    var strEval = util_1.StrToEvalstr(exp);
+    if (strEval.isconst)
+        vnode.DomSet[0].dom.innerHTML = strEval.exp;
     else {
-        var watcher = vnode.mvvm.$CreateWatcher(vnode, exp, function (newvalue) {
+        var watcher = vnode.mvvm.$CreateWatcher(vnode, strEval.exp, function (newvalue) {
             vnode.DomSet[0].dom.innerHTML = newvalue;
         });
         vnode.DomSet[0].dom.innerHTML = watcher.GetCurValue();
@@ -568,7 +611,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var href_1 = __webpack_require__(/*! ./href */ "./src/directive/href.ts");
 var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var model_1 = __webpack_require__(/*! ./model */ "./src/directive/model.ts");
-var onclick_1 = __webpack_require__(/*! ./onclick */ "./src/directive/onclick.ts");
+var event_1 = __webpack_require__(/*! ./event */ "./src/directive/event.ts");
 var html_1 = __webpack_require__(/*! ./html */ "./src/directive/html.ts");
 var style_1 = __webpack_require__(/*! ./style */ "./src/directive/style.ts");
 var class_1 = __webpack_require__(/*! ./class */ "./src/directive/class.ts");
@@ -584,7 +627,7 @@ function GetInnerDir(name) {
 exports.GetInnerDir = GetInnerDir;
 RegisterInnerDir(const_1.PRE + "href", href_1.Href);
 RegisterInnerDir(const_1.PRE + "model", model_1.DirModel);
-RegisterInnerDir(const_1.PRE + "click", onclick_1.OnClick);
+RegisterInnerDir(const_1.PRE + "on", event_1.OnEvent);
 RegisterInnerDir(const_1.PRE + "html", html_1.Html);
 RegisterInnerDir(const_1.PRE + "class", class_1.Classes);
 RegisterInnerDir(const_1.PRE + "style", style_1.Style);
@@ -600,7 +643,7 @@ RegisterInnerDir(const_1.PRE + "style", style_1.Style);
 /***/ (function(module, exports) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-function DirModel(exp, vnode, isconst) {
+function DirModel(exp, vnode) {
     var inputtype = vnode.Vdom.GetAttr("type");
     var input = vnode.Vdom.NodeName.toLowerCase();
     var watcher;
@@ -684,66 +727,6 @@ function setValue(vnode, newvalue) {
 
 /***/ }),
 
-/***/ "./src/directive/onclick.ts":
-/*!**********************************!*\
-  !*** ./src/directive/onclick.ts ***!
-  \**********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
-function OnClick(exp, vnode, isconst) {
-    if (const_1.REG_EVENT.test(exp)) {
-        var methodStr_1 = RegExp.$1;
-        var paramsStr = RegExp.$2;
-        if (paramsStr.length > 0) {
-            var ps_1 = paramsStr.split(",");
-            vnode.DomSet[0].dom.addEventListener("click", function (event) {
-                var params = [];
-                ps_1.forEach(function (p) {
-                    if (!const_1.REG_STR.test(p)) {
-                        if (p === "true") {
-                            params.push(true);
-                            return;
-                        }
-                        if (p === "false") {
-                            params.push(false);
-                            return;
-                        }
-                        if (p == "$event") {
-                            params.push(event);
-                            return;
-                        }
-                        var n = new Number(p).valueOf();
-                        if (!isNaN(n)) {
-                            params.push(n.valueOf());
-                        }
-                        else {
-                            //肯定是本地变量
-                            params.push(vnode.mvvm.$GetExpOrFunValue(p));
-                        }
-                    }
-                    else {
-                        params.push(RegExp.$2);
-                    }
-                });
-                (_a = vnode.mvvm).$RevokeMethod.apply(_a, [methodStr_1].concat(params));
-                var _a;
-            });
-        }
-        else {
-            vnode.DomSet[0].dom.addEventListener("click", function () {
-                vnode.mvvm.$RevokeMethod(methodStr_1);
-            });
-        }
-    }
-}
-exports.OnClick = OnClick;
-
-
-/***/ }),
-
 /***/ "./src/directive/style.ts":
 /*!********************************!*\
   !*** ./src/directive/style.ts ***!
@@ -753,30 +736,28 @@ exports.OnClick = OnClick;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
-function Style(exp, vnode, isconst) {
-    if (isconst) {
-        var reg = /^\{([^:,]+:[^:\?,]+\?[^:,]+:[^:,]+)(,[^:,]+:[^:\?,]+\?[^:,]+:[^:,]+)*\}$/;
-        if (!reg.test(exp)) {
-            throw new Error("exp format error:" + exp);
-        }
-        var styleJson = util_1.ParseStyle(exp);
-        var _loop_1 = function (key) {
-            var watcher = vnode.mvvm.$CreateWatcher(vnode, styleJson[key], function (newvalue) {
-                if (toString.call(newvalue) == "[object String]" && newvalue != "") {
-                    vnode.DomSet[0].dom.style[key] = newvalue;
-                }
-                else {
-                    vnode.DomSet[0].dom.style[key] = "";
-                }
-            });
-            var value = watcher.GetCurValue();
-            if (toString.call(value) == "[object String]" && value != "") {
-                vnode.DomSet[0].dom.style[key] = value;
+function Style(exp, vnode) {
+    var reg = /^\{([^:,]+:[^:\?,]+\?[^:,]+:[^:,]+)(,[^:,]+:[^:\?,]+\?[^:,]+:[^:,]+)*\}$/;
+    if (!reg.test(exp)) {
+        throw new Error("exp format error:" + exp);
+    }
+    var styleJson = util_1.ParseStyle(exp);
+    var _loop_1 = function (key) {
+        var watcher = vnode.mvvm.$CreateWatcher(vnode, styleJson[key], function (newvalue) {
+            if (toString.call(newvalue) == "[object String]" && newvalue != "") {
+                vnode.DomSet[0].dom.style[key] = newvalue;
             }
-        };
-        for (var key in styleJson) {
-            _loop_1(key);
+            else {
+                vnode.DomSet[0].dom.style[key] = "";
+            }
+        });
+        var value = watcher.GetCurValue();
+        if (toString.call(value) == "[object String]" && value != "") {
+            vnode.DomSet[0].dom.style[key] = value;
         }
+    };
+    for (var key in styleJson) {
+        _loop_1(key);
     }
 }
 exports.Style = Style;
@@ -3240,16 +3221,10 @@ var VinallaNode = /** @class */ (function (_super) {
             _loop_1(i);
         }
         vanillaAttrs = vanillaAttrs.filter(function (attr) {
-            if (const_1.REG_IN.test(attr.Name)) {
-                var dir_1 = inner_dir_1.GetInnerDir(RegExp.$1);
-                if (dir_1 != null) {
-                    _this.innerDirective.push({ dir: dir_1, isconst: false, exp: attr.Value });
-                    return false;
-                }
-            }
-            var dir = inner_dir_1.GetInnerDir(attr.Name);
+            var slice = attr.Name.split(":");
+            var dir = inner_dir_1.GetInnerDir(slice[0]);
             if (dir != null) {
-                _this.innerDirective.push({ dir: dir, isconst: true, exp: attr.Value });
+                _this.innerDirective.push({ dir: dir, exp: attr.Value, options: slice.slice(1) });
                 return false;
             }
             return true;
@@ -3273,7 +3248,7 @@ var VinallaNode = /** @class */ (function (_super) {
         var _this = this;
         this.directives.forEach(function (dir) { return dir.$Render(); });
         this.innerDirective.forEach(function (item) {
-            item.dir(item.exp, _this, item.isconst);
+            item.dir(item.exp, _this, item.options);
         });
     };
     VinallaNode.prototype.Render = function () {

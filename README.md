@@ -70,8 +70,9 @@
     <input r-model="exp"/>
     ```
     4. {{}} 文字绑定
-    5. 内置事件
-        * r-click，元素点击事件,参数 $event 原始事件对象
+    5. 事件响应 r-on:eventname,回调参数 $event 原始事件对象,示例
+        * r-on:click，点击事件
+        * r-on:scroll, 滚动事件
     6. r-href html内容
     将一段html内容渲染到界面上，使用示例
     ```html

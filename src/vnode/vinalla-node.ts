@@ -12,7 +12,7 @@ import { DomStatus } from "../models";
 export class VinallaNode extends VNode{
     
     private directives:DirectiveMVVM[]=[]
-    private innerDirective:{dir:InnerDirective,isconst:boolean,exp:string}[]=[];
+    private innerDirective:{dir:InnerDirective,exp:string,options:string[]}[]=[];
     
     private isAnchor:boolean=false;
     private anchorName:string="";
@@ -50,16 +50,10 @@ export class VinallaNode extends VNode{
             }
         }
         vanillaAttrs= vanillaAttrs.filter(attr=>{
-            if(REG_IN.test(attr.Name)){
-                let dir=GetInnerDir(RegExp.$1)
-                if(dir!=null){
-                    this.innerDirective.push({dir:dir,isconst:false,exp:attr.Value})
-                    return false
-                }
-            }
-            let dir=GetInnerDir(attr.Name)
+            let slice=attr.Name.split(":");
+            let dir=GetInnerDir(slice[0]);
             if(dir!=null){
-                this.innerDirective.push({dir:dir,isconst:true,exp:attr.Value})
+                this.innerDirective.push({dir:dir,exp:attr.Value,options:slice.slice(1)})
                 return false
             }
             return true
@@ -83,7 +77,7 @@ export class VinallaNode extends VNode{
     protected directiveBind(){
         this.directives.forEach(dir=>dir.$Render())
         this.innerDirective.forEach(item=>{
-            item.dir(item.exp,this,item.isconst)
+            item.dir(item.exp,this,item.options)
         })
     }
     
