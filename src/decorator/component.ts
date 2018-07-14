@@ -15,7 +15,6 @@ export function Component(option:ComponentOption){
             $InitFuncs:string[]=res.initFuncs
             $MountFuncs:string[]=res.mountFuncs
             $DestroyFuncs:string[]=res.destroyFuncs
-            $template=option.template
             $initialize(){
                 super.$initialize()
                 this.$InitFuncs.forEach(init=>{
@@ -71,7 +70,7 @@ export function Component(option:ComponentOption){
             }
         }
         if(option.name==null)
-            option.name=constructor.name+ComponentAutoId();
+            option.name=target.name.toLowerCase()+ComponentAutoId();
         RegisterComponent(option.name,option.namespace,constructor,option);
         return (constructor as any);
     }

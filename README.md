@@ -18,10 +18,8 @@
 <code>npm install @yangyuhe/riojs --save</code>
 * 或者直接编译源码，只要把项目拷贝到本地运行npm run build命令即可
 2. 简单使用  
-* 普通方式 
-引入  
-<code>&lt;script src="path/rio.umd.min.js"&gt;&lt;/script&gt;</code>
-* typescript 请下载脚手架项目快速开始
+* 暂时不支持script标签引入方式 
+* 使用typescript 请下载脚手架项目快速开始
 <a href="https://github.com/yangyuhe/riojs-start">https://github.com/yangyuhe/riojs-start.git</a>
 3. 装饰器介绍
     1. <code>@App</code>
@@ -31,7 +29,7 @@
     2. <code>@Component</code>
     * 用于修饰一个组件类（该类继承自ComponentMvvm）
     * 接受一个选项对象，包括以下选项
-        * name string 组件名称
+        * name? string 组件名称，当一个组件用作页面时name可以没有
         * template string 组件html内容
         * style string 组件的样式
         * events Event[] 组件可以发出的事件

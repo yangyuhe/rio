@@ -9,7 +9,7 @@ interface BaseOption{
 }
 export interface ComponentOption extends BaseOption{
     events?:Event[],
-    name:string,
+    name?:string,
     template?:string,
     templateUrl?:string,
     style?:string,

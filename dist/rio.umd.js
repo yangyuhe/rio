@@ -258,7 +258,6 @@ function Component(option) {
                 _this.$InitFuncs = res.initFuncs;
                 _this.$MountFuncs = res.mountFuncs;
                 _this.$DestroyFuncs = res.destroyFuncs;
-                _this.$template = option.template;
                 return _this;
             }
             $ComponentMvvm.prototype.$initialize = function () {
@@ -319,7 +318,7 @@ function Component(option) {
             return $ComponentMvvm;
         }(target));
         if (option.name == null)
-            option.name = constructor.name + components_manager_1.ComponentAutoId();
+            option.name = target.name.toLowerCase() + components_manager_1.ComponentAutoId();
         components_manager_1.RegisterComponent(option.name, option.namespace, constructor, option);
         return constructor;
     };
@@ -895,7 +894,13 @@ var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
 var repository = {};
 var id = 0;
 function ComponentAutoId() {
-    return "" + id++;
+    var count = id++;
+    var str = "";
+    while (count > 0) {
+        str += "_";
+        count--;
+    }
+    return str;
 }
 exports.ComponentAutoId = ComponentAutoId;
 function Id(namespace, name) {

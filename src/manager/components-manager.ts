@@ -9,7 +9,13 @@ let repository:{[id:string]:ComponentMvvmFactoryOption}={}
 
 let id=0;
 export function ComponentAutoId(){
-    return ""+id++;
+    let count=id++;
+    let str="";
+    while(count>0){
+        str+="_";
+        count--;
+    }
+    return str;
 }
 
 export function Id(namespace:string,name:string){
