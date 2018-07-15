@@ -8,15 +8,27 @@ import { VNode } from "./vnode";
 import { TemplateNode } from "./template-node";
 
 export class ForNode extends VNode{
-    public ForExp:ForExp
+    private forExp:ForExp
+    private indexName:string
     constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode,private originForExp:string) {
         super(Vdom,mvvm,Parent)
-        let forSplit=this.originForExp.trim().split(/\s+/)
-        this.ForExp=new ForExp(forSplit[0],forSplit[2]) 
+        let items=this.originForExp.trim().split(";");
+        let forSplit=items[0].split(/\s+/);
+        this.forExp=new ForExp(forSplit[0],forSplit[2]);
+
+        if(items.length>1){
+            let kvs=items[1].split("=");
+            if(kvs.length==2){
+                if(kvs[1]=="$index")
+                    this.indexName=kvs[0];
+                else
+                    throw new Error("unrecognized variable "+kvs[1]);
+            }
+        }
     }
     private newCopyNode(n:number){
-        let itemexp=this.ForExp.itemExp;
-        let itemexpValue=this.ForExp.arrayExp+"["+n+"]";
+        let itemexp=this.forExp.itemExp;
+        let itemexpValue=this.forExp.arrayExp+"["+n+"]";
         let that=this;
         let mvvm=new (class extends Mvvm{
             $InitDataItems(): { name: string; value: any; }[] {
@@ -48,11 +60,18 @@ export class ForNode extends VNode{
                     enumerable:true,
                     configurable:true
                 });
-                Object.defineProperty(mvvm,"$index",{
-                    value:n,
-                    configurable:true,
-                    enumerable:true
-                })
+                if(that.indexName!=null)
+                    Object.defineProperty(mvvm,that.indexName,{
+                        value:n,
+                        configurable:true,
+                        enumerable:true
+                    });
+                else
+                    Object.defineProperty(mvvm,"$index",{
+                        value:n,
+                        configurable:true,
+                        enumerable:true
+                    });
                 
                 return mvvm
             }
@@ -100,19 +119,19 @@ export class ForNode extends VNode{
     }
     
     Update(){
-        let items=this.mvvm.$GetExpOrFunValue(this.ForExp.arrayExp)
+        let items=this.mvvm.$GetExpOrFunValue(this.forExp.arrayExp)
         if(toString.call(items) === "[object Array]"){
             this.implementForExp(items.length)
         }
     }
     AttachChildren() {
-        let num=this.mvvm.$GetExpOrFunValue(this.ForExp.arrayExp+".length")
+        let num=this.mvvm.$GetExpOrFunValue(this.forExp.arrayExp+".length")
         for(let i=0;i<num;i++){
             this.Children.push(this.newCopyNode(i))
         }
     }
     Render():DomStatus[]{
-        this.mvvm.$CreateWatcher(this,this.ForExp.arrayExp+".length",this.implementForExp.bind(this))
+        this.mvvm.$CreateWatcher(this,this.forExp.arrayExp+".length",this.implementForExp.bind(this))
 
         this.Children.forEach(child=>{
             this.DomSet=this.DomSet.concat(child.Render())

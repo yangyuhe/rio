@@ -2694,13 +2694,23 @@ var ForNode = /** @class */ (function (_super) {
         _this.mvvm = mvvm;
         _this.Parent = Parent;
         _this.originForExp = originForExp;
-        var forSplit = _this.originForExp.trim().split(/\s+/);
-        _this.ForExp = new models_1.ForExp(forSplit[0], forSplit[2]);
+        var items = _this.originForExp.trim().split(";");
+        var forSplit = items[0].split(/\s+/);
+        _this.forExp = new models_1.ForExp(forSplit[0], forSplit[2]);
+        if (items.length > 1) {
+            var kvs = items[1].split("=");
+            if (kvs.length == 2) {
+                if (kvs[1] == "$index")
+                    _this.indexName = kvs[0];
+                else
+                    throw new Error("unrecognized variable " + kvs[1]);
+            }
+        }
         return _this;
     }
     ForNode.prototype.newCopyNode = function (n) {
-        var itemexp = this.ForExp.itemExp;
-        var itemexpValue = this.ForExp.arrayExp + "[" + n + "]";
+        var itemexp = this.forExp.itemExp;
+        var itemexpValue = this.forExp.arrayExp + "[" + n + "]";
         var that = this;
         var mvvm = new (/** @class */ (function (_super) {
             __extends(class_1, _super);
@@ -2737,11 +2747,18 @@ var ForNode = /** @class */ (function (_super) {
                     enumerable: true,
                     configurable: true
                 });
-                Object.defineProperty(mvvm, "$index", {
-                    value: n,
-                    configurable: true,
-                    enumerable: true
-                });
+                if (that.indexName != null)
+                    Object.defineProperty(mvvm, that.indexName, {
+                        value: n,
+                        configurable: true,
+                        enumerable: true
+                    });
+                else
+                    Object.defineProperty(mvvm, "$index", {
+                        value: n,
+                        configurable: true,
+                        enumerable: true
+                    });
                 return mvvm;
             };
             class_1.prototype.$RevokeMethod = function (method) {
@@ -2792,20 +2809,20 @@ var ForNode = /** @class */ (function (_super) {
         }
     };
     ForNode.prototype.Update = function () {
-        var items = this.mvvm.$GetExpOrFunValue(this.ForExp.arrayExp);
+        var items = this.mvvm.$GetExpOrFunValue(this.forExp.arrayExp);
         if (toString.call(items) === "[object Array]") {
             this.implementForExp(items.length);
         }
     };
     ForNode.prototype.AttachChildren = function () {
-        var num = this.mvvm.$GetExpOrFunValue(this.ForExp.arrayExp + ".length");
+        var num = this.mvvm.$GetExpOrFunValue(this.forExp.arrayExp + ".length");
         for (var i = 0; i < num; i++) {
             this.Children.push(this.newCopyNode(i));
         }
     };
     ForNode.prototype.Render = function () {
         var _this = this;
-        this.mvvm.$CreateWatcher(this, this.ForExp.arrayExp + ".length", this.implementForExp.bind(this));
+        this.mvvm.$CreateWatcher(this, this.forExp.arrayExp + ".length", this.implementForExp.bind(this));
         this.Children.forEach(function (child) {
             _this.DomSet = _this.DomSet.concat(child.Render());
         });
