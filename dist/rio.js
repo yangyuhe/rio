@@ -554,23 +554,33 @@ var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 function Href(exp, vnode) {
     var href = "";
     var streval = util_1.StrToEvalstr(exp);
+    var dom = vnode.DomSet[0].dom;
     if (streval.isconst) {
         href = streval.exp;
-        vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", streval.exp);
+        setAttr(dom, href);
     }
     else {
         var watcher = vnode.mvvm.$CreateWatcher(vnode, streval.exp, function (newvalue) {
             href = newvalue;
-            vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", newvalue);
+            setAttr(dom, href);
         });
         href = watcher.GetCurValue();
-        vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", href);
+        setAttr(dom, href);
     }
-    vnode.DomSet[0].dom.addEventListener("click", function () {
+    dom.addEventListener("click", function (event) {
+        if (dom.nodeName == 'A') {
+            event.preventDefault();
+        }
         vnode.mvvm.$NavigateTo(href);
     });
 }
 exports.Href = Href;
+function setAttr(dom, value) {
+    if (dom.nodeName == "A")
+        dom.setAttribute("href", value);
+    else
+        dom.setAttribute(const_1.PRE + "href", value);
+}
 
 
 /***/ }),
@@ -1947,9 +1957,6 @@ exports.RegisterRouter = RegisterRouter;
 function checkRouter(routers) {
     routers.forEach(function (router) {
         router.children = router.children ? router.children : [];
-        if (router.redirect == null && router.component == null && router.components == null) {
-            throw new Error("must specify component or components in router");
-        }
         if (router.url != null)
             router.url = util_1.Trim(router.url.trim(), "/", "right");
         if (router.redirect == null && (router.url == null || router.url == "")) {
@@ -1976,7 +1983,10 @@ function copyRouter(parent, router) {
         redirect: router.redirect
     };
     if (parent != null) {
-        r.fullUrl = parent.fullUrl + router.url;
+        if (router.redirect != null)
+            r.redirect = parent.fullUrl + router.redirect;
+        else
+            r.fullUrl = parent.fullUrl + router.url;
     }
     else {
         r.fullUrl = router.url;
@@ -2064,7 +2074,8 @@ function StartMatchUrl(routers) {
             continue;
         }
         if (res.matchtype == 1) {
-            matchedRouter.push(router);
+            if (router.component != null || router.components != null)
+                matchedRouter.push(router);
             var find = StartMatchUrl(router.children);
             if (find) {
                 return true;
@@ -2073,7 +2084,8 @@ function StartMatchUrl(routers) {
         }
         if (res.matchtype == 0) {
             router_state_1.SetActiveRouter(location.pathname, res.params);
-            matchedRouter.push(router);
+            if (router.component != null || router.components != null)
+                matchedRouter.push(router);
             return true;
         }
     }
@@ -2089,6 +2101,9 @@ function NextRouter(vnode, name) {
     }
     if (cursor < matchedRouter.length) {
         var component = name ? matchedRouter[cursor].components[name] : matchedRouter[cursor].component;
+        if (component == null) {
+            throw new Error("component in router be null?");
+        }
         cursor++;
         return component;
     }

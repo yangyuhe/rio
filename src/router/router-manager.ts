@@ -25,9 +25,6 @@ function checkRouter(routers:Router[]){
     routers.forEach(router=>{
         router.children=router.children?router.children:[]
         
-        if(router.redirect==null && router.component==null && router.components==null){
-            throw new Error("must specify component or components in router")
-        }
         if(router.url!=null)
             router.url=Trim(router.url.trim(),"/","right");
         if(router.redirect==null && (router.url==null || router.url=="")){
@@ -54,7 +51,10 @@ function copyRouter(parent:InnerRouter,router:Router):InnerRouter{
         redirect:router.redirect
     }
     if(parent!=null){
-        r.fullUrl=parent.fullUrl+router.url;
+        if(router.redirect!=null)
+            r.redirect=parent.fullUrl+router.redirect;  
+        else  
+            r.fullUrl=parent.fullUrl+router.url;
     }else{
         r.fullUrl=router.url;
     }
@@ -144,7 +144,8 @@ export function StartMatchUrl(routers?:InnerRouter[]):boolean{
             continue;
         }
         if(res.matchtype==1){
-            matchedRouter.push(router);
+            if(router.component!=null || router.components!=null)
+                matchedRouter.push(router);
             let find=StartMatchUrl(router.children);
             if(find){
                 return true;
@@ -153,7 +154,8 @@ export function StartMatchUrl(routers?:InnerRouter[]):boolean{
         }
         if(res.matchtype==0){
             SetActiveRouter(location.pathname,res.params);
-            matchedRouter.push(router);
+            if(router.component!=null || router.components!=null)
+                matchedRouter.push(router);
             return true;
         }
     }
@@ -167,7 +169,10 @@ export function NextRouter(vnode:VNode,name?:string):IComponentMvvm{
         firstVNode=vnode
     }
     if(cursor<matchedRouter.length){
-        let component=name?matchedRouter[cursor].components[name]:matchedRouter[cursor].component
+        let component=name?matchedRouter[cursor].components[name]:matchedRouter[cursor].component;
+        if(component==null){
+            throw new Error("component in router be null?");
+        }
         cursor++
         return component
     }else{
