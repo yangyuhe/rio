@@ -1,11 +1,11 @@
-import { VinallaNode } from './../vnode/vinalla-node';
-import { Href } from './href';
 import { PRE } from '../const';
-import { DirModel } from './model';
+import { VNode } from '../vnode/vnode';
+import { Classes } from "./class";
 import { OnEvent } from './event';
-import {Html} from "./html"
-import {Style} from "./style"
-import {Classes} from "./class"
+import { Href } from './href';
+import { Html } from "./html";
+import { DirModel } from './model';
+import { Style } from "./style";
 
 let innerDirs:{[name:string]:InnerDirective}={}
 function RegisterInnerDir(name:string,comiple:InnerDirective){
@@ -19,7 +19,7 @@ export function GetInnerDir(name:string){
 }
 
 export interface InnerDirective{
-    (exp:string,vnode:VinallaNode,options?:string[]):void
+    (exp:string,vnode:VNode,options?:string[]):void
 }
 
 

@@ -1,12 +1,12 @@
-import { PRE } from './../const';
 import { REG_IN, REG_OUT, VNodeStatus } from "../const";
+import { GetInnerDir } from '../directive/inner-dir';
 import { DomStatus } from '../models';
 import { Mvvm } from "../mvvm/mvvm";
 import { NewVNode, VDom } from "../vdom/vdom";
+import { PRE } from './../const';
 import { ComponentMvvm } from './../mvvm/component-mvvm';
 import { PlugNode } from "./plug-node";
 import { VNode } from "./vnode";
-import { ParseStyle } from '../util';
 
 export class CustomNode extends VNode{
     //输入与输出值
@@ -16,6 +16,8 @@ export class CustomNode extends VNode{
 
     /**获取自定义组建上的style 或者r-style属性 */
     private styles:{[key:string]:string}={};
+    /**获取自定义组建上的class 或者r-class属性 */
+    private classes:{[key:string]:string}={};
 
     constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode,public SurroundMvvm:ComponentMvvm) {
         super(Vdom,mvvm,Parent)
@@ -26,6 +28,10 @@ export class CustomNode extends VNode{
                 //是否是样式
                 if(name=="style" ||name==PRE+"style"){
                     this.styles[name]=value;
+                    continue;
+                }
+                if(name=="class"||name==PRE+"class"){
+                    this.classes[name]=value;
                     continue;
                 }
                 //输入
@@ -70,7 +76,9 @@ export class CustomNode extends VNode{
         return null
     }
     Render(): DomStatus[] {
-        let dom=this.SurroundMvvm.$Render()
+        let dom=this.SurroundMvvm.$Render();
+        this.DomSet=[dom];
+        
         if(this.styles['style']!=null){
             let exp=this.styles['style'];
             let styleitems=exp.split(";");
@@ -78,30 +86,21 @@ export class CustomNode extends VNode{
                 let kv=item.split(":");
                 ((dom.dom as HTMLElement).style as any)[kv[0]]=kv[1];
             });
-                
         }
         if(this.styles[PRE+'style']!=null){
+            let styledir=GetInnerDir(PRE+"style");
             let exp=this.styles[PRE+'style'];
-            let reg=/^\{([^:,]+:[^:\?,]+\?[^:,]+:[^:,]+)(,[^:,]+:[^:\?,]+\?[^:,]+:[^:,]+)*\}$/;
-            if(!reg.test(exp)){
-                throw new Error("exp format error:"+exp);
-            }
-            let styleJson=ParseStyle(exp);
-            for(let key in styleJson){
-                let watcher=this.mvvm.$CreateWatcher(this,styleJson[key],(newvalue)=>{
-                    if(toString.call(newvalue)=="[object String]" && newvalue!=""){
-                        ((dom.dom as HTMLElement).style as any)[key]=newvalue;
-                    }else{
-                        ((dom.dom as HTMLElement).style as any)[key]="";
-                    }
-                });
-                let value=watcher.GetCurValue();
-                if(toString.call(value)=="[object String]" && value!=""){
-                    ((dom.dom as HTMLElement).style as any)[key]=value;
-                }
-            }
+            styledir(exp,this);
         }
-        this.DomSet=[dom]
+        if(this.classes['class']!=null){
+            let classitem=this.classes['class'].split(/\s+/);
+            (dom.dom as HTMLElement).classList.add(...classitem);
+        }
+        if(this.classes[PRE+"class"]!=null){
+            let classdir=GetInnerDir(PRE+'class');
+            let exp=this.classes[PRE+'class'];
+            classdir(exp,this);
+        }
         return this.DomSet
     }
     

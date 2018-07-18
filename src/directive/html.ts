@@ -1,7 +1,7 @@
-import { VinallaNode } from './../vnode/vinalla-node';
 import { StrToEvalstr } from "../util";
+import { VNode } from '../vnode/vnode';
 
-export function Html(exp:string,vnode:VinallaNode){
+export function Html(exp:string,vnode:VNode){
     let strEval=StrToEvalstr(exp);
     if(strEval.isconst)
         (vnode.DomSet[0].dom as HTMLElement).innerHTML=strEval.exp;

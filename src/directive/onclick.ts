@@ -1,6 +1,6 @@
-import { VinallaNode } from './../vnode/vinalla-node';
-import {REG_EVENT, REG_STR} from "../const"
-export function OnClick(exp:string,vnode:VinallaNode){
+import { REG_EVENT, REG_STR } from "../const";
+import { VNode } from '../vnode/vnode';
+export function OnClick(exp:string,vnode:VNode){
     if (REG_EVENT.test(exp)) {
         let methodStr = RegExp.$1
         let paramsStr = RegExp.$2

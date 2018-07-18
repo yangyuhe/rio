@@ -608,13 +608,13 @@ exports.Html = Html;
 /***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var href_1 = __webpack_require__(/*! ./href */ "./src/directive/href.ts");
 var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
-var model_1 = __webpack_require__(/*! ./model */ "./src/directive/model.ts");
-var event_1 = __webpack_require__(/*! ./event */ "./src/directive/event.ts");
-var html_1 = __webpack_require__(/*! ./html */ "./src/directive/html.ts");
-var style_1 = __webpack_require__(/*! ./style */ "./src/directive/style.ts");
 var class_1 = __webpack_require__(/*! ./class */ "./src/directive/class.ts");
+var event_1 = __webpack_require__(/*! ./event */ "./src/directive/event.ts");
+var href_1 = __webpack_require__(/*! ./href */ "./src/directive/href.ts");
+var html_1 = __webpack_require__(/*! ./html */ "./src/directive/html.ts");
+var model_1 = __webpack_require__(/*! ./model */ "./src/directive/model.ts");
+var style_1 = __webpack_require__(/*! ./style */ "./src/directive/style.ts");
 var innerDirs = {};
 function RegisterInnerDir(name, comiple) {
     if (innerDirs[name] != null)
@@ -2438,12 +2438,12 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var const_1 = __webpack_require__(/*! ./../const */ "./src/const.ts");
-var const_2 = __webpack_require__(/*! ../const */ "./src/const.ts");
+var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
+var inner_dir_1 = __webpack_require__(/*! ../directive/inner-dir */ "./src/directive/inner-dir.ts");
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
+var const_2 = __webpack_require__(/*! ./../const */ "./src/const.ts");
 var plug_node_1 = __webpack_require__(/*! ./plug-node */ "./src/vnode/plug-node.ts");
 var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
-var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 var CustomNode = /** @class */ (function (_super) {
     __extends(CustomNode, _super);
     function CustomNode(Vdom, mvvm, Parent, SurroundMvvm) {
@@ -2458,20 +2458,26 @@ var CustomNode = /** @class */ (function (_super) {
         _this.outs = {};
         /**获取自定义组建上的style 或者r-style属性 */
         _this.styles = {};
+        /**获取自定义组建上的class 或者r-class属性 */
+        _this.classes = {};
         if (_this.Vdom) {
             for (var i = 0; i < _this.Vdom.Attrs.length; i++) {
                 var name_1 = _this.Vdom.Attrs[i].Name;
                 var value = _this.Vdom.Attrs[i].Value;
                 //是否是样式
-                if (name_1 == "style" || name_1 == const_1.PRE + "style") {
+                if (name_1 == "style" || name_1 == const_2.PRE + "style") {
                     _this.styles[name_1] = value;
+                    continue;
+                }
+                if (name_1 == "class" || name_1 == const_2.PRE + "class") {
+                    _this.classes[name_1] = value;
                     continue;
                 }
                 //输入
                 var ins = _this.SurroundMvvm.$InitIns();
                 for (var i_1 = 0; i_1 < ins.length; i_1++) {
                     var prop = ins[i_1];
-                    if (const_2.REG_IN.test(name_1) && prop.name == RegExp.$1) {
+                    if (const_1.REG_IN.test(name_1) && prop.name == RegExp.$1) {
                         _this.ins_exp[RegExp.$1] = value;
                         break;
                     }
@@ -2486,7 +2492,7 @@ var CustomNode = /** @class */ (function (_super) {
                 var outs = _this.SurroundMvvm.$InitOuts();
                 for (var i_2 = 0; i_2 < outs.length; i_2++) {
                     var event_1 = outs[i_2];
-                    if (const_2.REG_OUT.test(name_1) && event_1.name == RegExp.$1) {
+                    if (const_1.REG_OUT.test(name_1) && event_1.name == RegExp.$1) {
                         _this.outs[RegExp.$1] = value;
                         break;
                     }
@@ -2509,6 +2515,7 @@ var CustomNode = /** @class */ (function (_super) {
     };
     CustomNode.prototype.Render = function () {
         var dom = this.SurroundMvvm.$Render();
+        this.DomSet = [dom];
         if (this.styles['style'] != null) {
             var exp = this.styles['style'];
             var styleitems = exp.split(";");
@@ -2517,34 +2524,22 @@ var CustomNode = /** @class */ (function (_super) {
                 dom.dom.style[kv[0]] = kv[1];
             });
         }
-        if (this.styles[const_1.PRE + 'style'] != null) {
-            var exp = this.styles[const_1.PRE + 'style'];
-            var reg = /^\{([^:,]+:[^:\?,]+\?[^:,]+:[^:,]+)(,[^:,]+:[^:\?,]+\?[^:,]+:[^:,]+)*\}$/;
-            if (!reg.test(exp)) {
-                throw new Error("exp format error:" + exp);
-            }
-            var styleJson = util_1.ParseStyle(exp);
-            var _loop_1 = function (key) {
-                var watcher = this_1.mvvm.$CreateWatcher(this_1, styleJson[key], function (newvalue) {
-                    if (toString.call(newvalue) == "[object String]" && newvalue != "") {
-                        dom.dom.style[key] = newvalue;
-                    }
-                    else {
-                        dom.dom.style[key] = "";
-                    }
-                });
-                var value = watcher.GetCurValue();
-                if (toString.call(value) == "[object String]" && value != "") {
-                    dom.dom.style[key] = value;
-                }
-            };
-            var this_1 = this;
-            for (var key in styleJson) {
-                _loop_1(key);
-            }
+        if (this.styles[const_2.PRE + 'style'] != null) {
+            var styledir = inner_dir_1.GetInnerDir(const_2.PRE + "style");
+            var exp = this.styles[const_2.PRE + 'style'];
+            styledir(exp, this);
         }
-        this.DomSet = [dom];
+        if (this.classes['class'] != null) {
+            var classitem = this.classes['class'].split(/\s+/);
+            (_a = dom.dom.classList).add.apply(_a, classitem);
+        }
+        if (this.classes[const_2.PRE + "class"] != null) {
+            var classdir = inner_dir_1.GetInnerDir(const_2.PRE + 'class');
+            var exp = this.classes[const_2.PRE + 'class'];
+            classdir(exp, this);
+        }
         return this.DomSet;
+        var _a;
     };
     CustomNode.prototype.AttachChildren = function () {
         if (this.Vdom != null) {

@@ -1,7 +1,6 @@
+import { VNode } from "../vnode/vnode";
 import { Watcher } from './../observer/watcher';
-import { VinallaNode } from './../vnode/vinalla-node';
-import { VNode } from "../vnode/vnode"
-export function DirModel(exp: string, vnode: VinallaNode) {
+export function DirModel(exp: string, vnode: VNode) {
     let inputtype=vnode.Vdom.GetAttr("type")
     let input=vnode.Vdom.NodeName.toLowerCase()
 

@@ -1,6 +1,6 @@
-import { VinallaNode } from './../vnode/vinalla-node';
-import {REG_EVENT, REG_STR} from "../const"
-export function OnEvent(exp:string,vnode:VinallaNode,options:string[]){
+import { REG_EVENT, REG_STR } from "../const";
+import { VNode } from '../vnode/vnode';
+export function OnEvent(exp:string,vnode:VNode,options:string[]){
     if(options==null || options.length==0)
         throw new Error("r-on need specify event name");
     if (REG_EVENT.test(exp)) {

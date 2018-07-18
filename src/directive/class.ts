@@ -1,6 +1,6 @@
 import { ParseStyle } from '../util';
-import { VinallaNode } from './../vnode/vinalla-node';
-export function Classes(exp:string,vnode:VinallaNode){
+import { VNode } from '../vnode/vnode';
+export function Classes(exp:string,vnode:VNode){
 
     let reg=/^\{([^:,]+:[^:,]+)(,[^:,]+:[^:,]+)*\}$/;
     if(!reg.test(exp)){
