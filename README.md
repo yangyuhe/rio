@@ -37,7 +37,7 @@
     * 接受一个选项对象，包括以下选项
         * name string 指令名称
         * events Event[] 组件可以发出的事件
-    4. <code>@Reactive</code>
+    4. <code>@Reactive</code>
     * 用于修饰响应式的属性
     5. <code>@Prop</code>
     * 用于修饰一个组件的属性（属性值由父组件传递）
