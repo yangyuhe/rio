@@ -9,6 +9,7 @@ export class ComponentMvvm extends Mvvm{
 
     private $fenceNode:CustomNode
     private $name:string=""
+    private $fullname:string=""
     
     private $ins:Prop[]=[]
     private $outs:Event[]=[]
@@ -19,12 +20,13 @@ export class ComponentMvvm extends Mvvm{
 
         this.$ins=this.$InitIns()
         this.$outs=this.$InitOuts()
-        this.$name=this.$InitName()
+        this.$name=this.$InitName();
+        this.$fullname=this.$namespace+":"+this.$name;
 
         this.$ins.forEach(prop=>{
             let inName=this.$fenceNode.GetIn(prop.name)
             if(inName==null && prop.required){
-                throw new Error("component \'"+this.$name+"\' need prop \'"+prop.name+"'")
+                throw new Error("component \'"+this.$fullname+"\' need prop \'"+prop.name+"'")
             }
             if(inName!=null){
                 if(inName.const){
@@ -49,19 +51,19 @@ export class ComponentMvvm extends Mvvm{
             throw new Error("component \'"+name+"\' prop \'"+prop+"\' not receive "+type)
         }
         if(prop.type=="array" && toString.call(value)!="[object Array]"){
-            error(this.$name,prop.name,prop.type)
+            error(this.$fullname,prop.name,prop.type)
         }
         if(prop.type=="object" && toString.call(value)!="[object Object]"){
-            error(this.$name,prop.name,prop.type)
+            error(this.$fullname,prop.name,prop.type)
         }
         if(prop.type=="number" && toString.call(value)!="[object Number]"){
-            error(this.$name,prop.name,prop.type)
+            error(this.$fullname,prop.name,prop.type)
         }
         if(prop.type=="boolean" && toString.call(value)!="[object Boolean]"){
-            error(this.$name,prop.name,prop.type)
+            error(this.$fullname,prop.name,prop.type)
         }
         if(prop.type=="string" && toString.call(value)!="[object String]"){
-            error(this.$name,prop.name,prop.type)
+            error(this.$fullname,prop.name,prop.type)
         }
     }
 
@@ -84,14 +86,14 @@ export class ComponentMvvm extends Mvvm{
                 return out.name==event;
             });
             if(e==null){
-                throw new Error("no specified event "+event+" at component "+this.$namespace+"::"+this.$name)
+                throw new Error("no specified event "+event+" at component "+this.$fullname)
             }
             if(data.length!=e.paramsType.length){
-                throw new Error("no specified params "+event+" at component "+this.$namespace+"::"+this.$name)
+                throw new Error("no specified params "+event+" at component "+this.$fullname)
             }
             for(let i=0;i<e.paramsType.length;i++){
                 if(TypeOf(data[i])!=e.paramsType[i]){
-                    throw new Error("params expected "+e.paramsType[i]+",but received "+toString.call(data[i])+" at component "+this.$namespace+"::"+this.$name)
+                    throw new Error("params expected "+e.paramsType[i]+",but received "+toString.call(data[i])+" at component "+this.$fullname)
                 }
             }
             let method=this.$fenceNode.GetOut(event)

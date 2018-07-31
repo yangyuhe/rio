@@ -1161,6 +1161,7 @@ var ComponentMvvm = /** @class */ (function (_super) {
     function ComponentMvvm() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.$name = "";
+        _this.$fullname = "";
         _this.$ins = [];
         _this.$outs = [];
         return _this;
@@ -1171,10 +1172,11 @@ var ComponentMvvm = /** @class */ (function (_super) {
         this.$ins = this.$InitIns();
         this.$outs = this.$InitOuts();
         this.$name = this.$InitName();
+        this.$fullname = this.$namespace + ":" + this.$name;
         this.$ins.forEach(function (prop) {
             var inName = _this.$fenceNode.GetIn(prop.name);
             if (inName == null && prop.required) {
-                throw new Error("component \'" + _this.$name + "\' need prop \'" + prop.name + "'");
+                throw new Error("component \'" + _this.$fullname + "\' need prop \'" + prop.name + "'");
             }
             if (inName != null) {
                 if (inName.const) {
@@ -1197,19 +1199,19 @@ var ComponentMvvm = /** @class */ (function (_super) {
             throw new Error("component \'" + name + "\' prop \'" + prop + "\' not receive " + type);
         };
         if (prop.type == "array" && toString.call(value) != "[object Array]") {
-            error(this.$name, prop.name, prop.type);
+            error(this.$fullname, prop.name, prop.type);
         }
         if (prop.type == "object" && toString.call(value) != "[object Object]") {
-            error(this.$name, prop.name, prop.type);
+            error(this.$fullname, prop.name, prop.type);
         }
         if (prop.type == "number" && toString.call(value) != "[object Number]") {
-            error(this.$name, prop.name, prop.type);
+            error(this.$fullname, prop.name, prop.type);
         }
         if (prop.type == "boolean" && toString.call(value) != "[object Boolean]") {
-            error(this.$name, prop.name, prop.type);
+            error(this.$fullname, prop.name, prop.type);
         }
         if (prop.type == "string" && toString.call(value) != "[object String]") {
-            error(this.$name, prop.name, prop.type);
+            error(this.$fullname, prop.name, prop.type);
         }
     };
     ComponentMvvm.prototype.$Render = function () {
@@ -1232,14 +1234,14 @@ var ComponentMvvm = /** @class */ (function (_super) {
                 return out.name == event;
             });
             if (e == null) {
-                throw new Error("no specified event " + event + " at component " + this.$namespace + "::" + this.$name);
+                throw new Error("no specified event " + event + " at component " + this.$fullname);
             }
             if (data.length != e.paramsType.length) {
-                throw new Error("no specified params " + event + " at component " + this.$namespace + "::" + this.$name);
+                throw new Error("no specified params " + event + " at component " + this.$fullname);
             }
             for (var i = 0; i < e.paramsType.length; i++) {
                 if (util_1.TypeOf(data[i]) != e.paramsType[i]) {
-                    throw new Error("params expected " + e.paramsType[i] + ",but received " + toString.call(data[i]) + " at component " + this.$namespace + "::" + this.$name);
+                    throw new Error("params expected " + e.paramsType[i] + ",but received " + toString.call(data[i]) + " at component " + this.$fullname);
                 }
             }
             var method = this.$fenceNode.GetOut(event);
@@ -2429,8 +2431,8 @@ function NewVNode(dom, mvvm, parent, priority) {
         return vnode;
     }
     var ns = util_1.GetNS(dom.NodeName);
-    if (components_manager_1.IsComponentRegistered(ns.value, ns.namespace || "default")) {
-        var construct = components_manager_1.InitComponent(ns.value, ns.namespace || "default");
+    if (components_manager_1.IsComponentRegistered(ns.value, ns.namespace || mvvm.$namespace)) {
+        var construct = components_manager_1.InitComponent(ns.value, ns.namespace || mvvm.$namespace);
         var selfmvvm = new construct();
         var CustomNode = __webpack_require__(/*! ../vnode/custom-node */ "./src/vnode/custom-node.ts").CustomNode;
         var cust = new CustomNode(dom, mvvm, parent, selfmvvm);

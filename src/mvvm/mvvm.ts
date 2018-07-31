@@ -10,7 +10,7 @@ import { VinallaNode } from './../vnode/vinalla-node';
 import { NotifyUrlChange } from '../router/router-manager';
 export abstract class Mvvm {
     private $data:any={}
-    protected $namespace="default"
+    public $namespace="default"
 
     protected $treeRoot:VNode
     

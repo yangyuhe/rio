@@ -78,8 +78,8 @@ export function NewVNode(dom:VDom,mvvm:Mvvm,parent:VNode,priority:Priority=Prior
         return vnode
     }
     let ns=GetNS(dom.NodeName)
-    if(IsComponentRegistered(ns.value,ns.namespace||"default")){
-        let construct=InitComponent(ns.value,ns.namespace||"default")
+    if(IsComponentRegistered(ns.value,ns.namespace||mvvm.$namespace)){
+        let construct=InitComponent(ns.value,ns.namespace||mvvm.$namespace)
         let selfmvvm=new construct()
 
         let CustomNode=require("../vnode/custom-node").CustomNode
