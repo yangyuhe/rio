@@ -82,7 +82,7 @@ module.exports =
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DIR_MODEL = "model";
 exports.DIR_EVENT_CLICK = "click";
-exports.ANCHOR = "anchor";
+exports.ANCHOR = "ref";
 exports.PRE = "r-";
 /**花括号数据绑定表达式 */
 exports.REG_SINGLE = /^\{\{([^\{\}]*)\}\}$/;
@@ -1047,6 +1047,10 @@ function Start() {
         apps.push(mvvm);
         var content = mvvm.$Render();
         var target = document.querySelector(mvvm.$InitEl());
+        var rootdom = content.dom;
+        if (rootdom.style.display == "none") {
+            rootdom.style.display = "";
+        }
         target.parentElement.replaceChild(content.dom, target);
     });
 }
@@ -1532,13 +1536,20 @@ var Mvvm = /** @class */ (function () {
         observer_1.ReactiveKey(this.$data, name);
         observer_1.ReactiveData(value);
     };
-    Mvvm.prototype.GetAnchorNode = function (name) {
+    Mvvm.prototype.getAnchorNode = function (name) {
         return this.$treeRoot.GetAnchor(name);
+    };
+    Mvvm.prototype.GetRef = function (ref) {
+        var vnode = this.$treeRoot.GetAnchor(ref);
+        if (vnode != null && vnode.DomSet.length > 0)
+            return vnode.DomSet[0].dom;
+        else
+            return null;
     };
     /**动态添加节点 */
     Mvvm.prototype.$AddFragment = function (html, anchor) {
         var res = (new DOMParser()).parseFromString(html, "text/html").body;
-        var anchorNode = this.GetAnchorNode(anchor);
+        var anchorNode = this.getAnchorNode(anchor);
         if (anchorNode) {
             for (var i = 0; i < res.childNodes.length; i++) {
                 var domtree = vdom_1.TraverseDom(res.childNodes[i]);
@@ -3025,10 +3036,12 @@ var RouterNode = /** @class */ (function (_super) {
         _this.mvvm = mvvm;
         _this.Parent = Parent;
         _this.routername = routername;
+        _this.lastConstructor = null;
         return _this;
     }
     RouterNode.prototype.Render = function () {
         var router = router_manager_1.NextRouter(this, this.routername);
+        this.lastConstructor = router;
         if (router != null) {
             var vnode = this.instance(router);
             this.Children = [vnode];
@@ -3039,24 +3052,30 @@ var RouterNode = /** @class */ (function (_super) {
     };
     RouterNode.prototype.OnRouterChange = function () {
         var constructor = router_manager_1.NextRouter(this, this.routername);
-        //释放旧的资源
-        this.Children.forEach(function (child) {
-            child.SetStatus(const_1.VNodeStatus.DEPRECATED);
-            child.OnDestroy();
-        });
-        if (constructor != null) {
-            var vnode = this.instance(constructor);
-            this.Children = [vnode];
-            this.DomSet.forEach(function (dom) { return dom.type = const_1.DomType.DELETE; });
-            this.DomSet = this.DomSet.concat(vnode.Render());
-            this.Parent.Reflow();
-            router_manager_1.MoveBack();
+        if (this.lastConstructor != constructor) {
+            this.lastConstructor = constructor;
+            //释放旧的资源
+            this.Children.forEach(function (child) {
+                child.SetStatus(const_1.VNodeStatus.DEPRECATED);
+                child.OnDestroy();
+            });
+            if (constructor != null) {
+                var vnode = this.instance(constructor);
+                this.Children = [vnode];
+                this.DomSet.forEach(function (dom) { return dom.type = const_1.DomType.DELETE; });
+                this.DomSet = this.DomSet.concat(vnode.Render());
+                this.Parent.Reflow();
+                router_manager_1.MoveBack();
+            }
+            else {
+                this.Children = [];
+                this.DomSet.forEach(function (dom) {
+                    dom.type = const_1.DomType.DELETE;
+                });
+            }
         }
         else {
-            this.Children = [];
-            this.DomSet.forEach(function (dom) {
-                dom.type = const_1.DomType.DELETE;
-            });
+            this.Children.forEach(function (child) { return child.OnRouterChange(); });
         }
     };
     RouterNode.prototype.instance = function (construct) {

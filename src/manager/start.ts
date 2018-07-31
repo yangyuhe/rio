@@ -13,6 +13,12 @@ export function Start() {
         apps.push(mvvm)
         let content = mvvm.$Render()
         let target=document.querySelector(mvvm.$InitEl())
+        
+        let rootdom=content.dom as HTMLElement;
+        if(rootdom.style.display=="none"){
+            rootdom.style.display="";
+        }
+
         target.parentElement.replaceChild(content.dom, target)
     })
     

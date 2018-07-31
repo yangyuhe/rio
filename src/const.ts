@@ -1,6 +1,6 @@
 export const DIR_MODEL = "model"
 export const DIR_EVENT_CLICK = "click"
-export const ANCHOR="anchor"
+export const ANCHOR="ref"
 export const PRE="r-"
 
 /**花括号数据绑定表达式 */

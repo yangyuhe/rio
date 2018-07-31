@@ -91,7 +91,7 @@ return /******/ (function(modules) { // webpackBootstrap
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DIR_MODEL = "model";
 exports.DIR_EVENT_CLICK = "click";
-exports.ANCHOR = "anchor";
+exports.ANCHOR = "ref";
 exports.PRE = "r-";
 /**花括号数据绑定表达式 */
 exports.REG_SINGLE = /^\{\{([^\{\}]*)\}\}$/;
@@ -563,23 +563,33 @@ var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 function Href(exp, vnode) {
     var href = "";
     var streval = util_1.StrToEvalstr(exp);
+    var dom = vnode.DomSet[0].dom;
     if (streval.isconst) {
         href = streval.exp;
-        vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", streval.exp);
+        setAttr(dom, href);
     }
     else {
         var watcher = vnode.mvvm.$CreateWatcher(vnode, streval.exp, function (newvalue) {
             href = newvalue;
-            vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", newvalue);
+            setAttr(dom, href);
         });
         href = watcher.GetCurValue();
-        vnode.DomSet[0].dom.setAttribute(const_1.PRE + "href", href);
+        setAttr(dom, href);
     }
-    vnode.DomSet[0].dom.addEventListener("click", function () {
+    dom.addEventListener("click", function (event) {
+        if (dom.nodeName == 'A') {
+            event.preventDefault();
+        }
         vnode.mvvm.$NavigateTo(href);
     });
 }
 exports.Href = Href;
+function setAttr(dom, value) {
+    if (dom.nodeName == "A")
+        dom.setAttribute("href", value);
+    else
+        dom.setAttribute(const_1.PRE + "href", value);
+}
 
 
 /***/ }),
@@ -617,13 +627,13 @@ exports.Html = Html;
 /***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var href_1 = __webpack_require__(/*! ./href */ "./src/directive/href.ts");
 var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
-var model_1 = __webpack_require__(/*! ./model */ "./src/directive/model.ts");
-var event_1 = __webpack_require__(/*! ./event */ "./src/directive/event.ts");
-var html_1 = __webpack_require__(/*! ./html */ "./src/directive/html.ts");
-var style_1 = __webpack_require__(/*! ./style */ "./src/directive/style.ts");
 var class_1 = __webpack_require__(/*! ./class */ "./src/directive/class.ts");
+var event_1 = __webpack_require__(/*! ./event */ "./src/directive/event.ts");
+var href_1 = __webpack_require__(/*! ./href */ "./src/directive/href.ts");
+var html_1 = __webpack_require__(/*! ./html */ "./src/directive/html.ts");
+var model_1 = __webpack_require__(/*! ./model */ "./src/directive/model.ts");
+var style_1 = __webpack_require__(/*! ./style */ "./src/directive/style.ts");
 var innerDirs = {};
 function RegisterInnerDir(name, comiple) {
     if (innerDirs[name] != null)
@@ -1046,6 +1056,10 @@ function Start() {
         apps.push(mvvm);
         var content = mvvm.$Render();
         var target = document.querySelector(mvvm.$InitEl());
+        var rootdom = content.dom;
+        if (rootdom.style.display == "none") {
+            rootdom.style.display = "";
+        }
         target.parentElement.replaceChild(content.dom, target);
     });
 }
@@ -1531,13 +1545,20 @@ var Mvvm = /** @class */ (function () {
         observer_1.ReactiveKey(this.$data, name);
         observer_1.ReactiveData(value);
     };
-    Mvvm.prototype.GetAnchorNode = function (name) {
+    Mvvm.prototype.getAnchorNode = function (name) {
         return this.$treeRoot.GetAnchor(name);
+    };
+    Mvvm.prototype.GetRef = function (ref) {
+        var vnode = this.$treeRoot.GetAnchor(ref);
+        if (vnode != null && vnode.DomSet.length > 0)
+            return vnode.DomSet[0].dom;
+        else
+            return null;
     };
     /**动态添加节点 */
     Mvvm.prototype.$AddFragment = function (html, anchor) {
         var res = (new DOMParser()).parseFromString(html, "text/html").body;
-        var anchorNode = this.GetAnchorNode(anchor);
+        var anchorNode = this.getAnchorNode(anchor);
         if (anchorNode) {
             for (var i = 0; i < res.childNodes.length; i++) {
                 var domtree = vdom_1.TraverseDom(res.childNodes[i]);
@@ -1956,9 +1977,6 @@ exports.RegisterRouter = RegisterRouter;
 function checkRouter(routers) {
     routers.forEach(function (router) {
         router.children = router.children ? router.children : [];
-        if (router.redirect == null && router.component == null && router.components == null) {
-            throw new Error("must specify component or components in router");
-        }
         if (router.url != null)
             router.url = util_1.Trim(router.url.trim(), "/", "right");
         if (router.redirect == null && (router.url == null || router.url == "")) {
@@ -1985,7 +2003,10 @@ function copyRouter(parent, router) {
         redirect: router.redirect
     };
     if (parent != null) {
-        r.fullUrl = parent.fullUrl + router.url;
+        if (router.redirect != null)
+            r.redirect = parent.fullUrl + router.redirect;
+        else
+            r.fullUrl = parent.fullUrl + router.url;
     }
     else {
         r.fullUrl = router.url;
@@ -2073,7 +2094,8 @@ function StartMatchUrl(routers) {
             continue;
         }
         if (res.matchtype == 1) {
-            matchedRouter.push(router);
+            if (router.component != null || router.components != null)
+                matchedRouter.push(router);
             var find = StartMatchUrl(router.children);
             if (find) {
                 return true;
@@ -2082,7 +2104,8 @@ function StartMatchUrl(routers) {
         }
         if (res.matchtype == 0) {
             router_state_1.SetActiveRouter(location.pathname, res.params);
-            matchedRouter.push(router);
+            if (router.component != null || router.components != null)
+                matchedRouter.push(router);
             return true;
         }
     }
@@ -2098,6 +2121,9 @@ function NextRouter(vnode, name) {
     }
     if (cursor < matchedRouter.length) {
         var component = name ? matchedRouter[cursor].components[name] : matchedRouter[cursor].component;
+        if (component == null) {
+            throw new Error("component in router be null?");
+        }
         cursor++;
         return component;
     }
@@ -2447,12 +2473,12 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var const_1 = __webpack_require__(/*! ./../const */ "./src/const.ts");
-var const_2 = __webpack_require__(/*! ../const */ "./src/const.ts");
+var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
+var inner_dir_1 = __webpack_require__(/*! ../directive/inner-dir */ "./src/directive/inner-dir.ts");
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
+var const_2 = __webpack_require__(/*! ./../const */ "./src/const.ts");
 var plug_node_1 = __webpack_require__(/*! ./plug-node */ "./src/vnode/plug-node.ts");
 var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
-var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 var CustomNode = /** @class */ (function (_super) {
     __extends(CustomNode, _super);
     function CustomNode(Vdom, mvvm, Parent, SurroundMvvm) {
@@ -2467,20 +2493,26 @@ var CustomNode = /** @class */ (function (_super) {
         _this.outs = {};
         /**获取自定义组建上的style 或者r-style属性 */
         _this.styles = {};
+        /**获取自定义组建上的class 或者r-class属性 */
+        _this.classes = {};
         if (_this.Vdom) {
             for (var i = 0; i < _this.Vdom.Attrs.length; i++) {
                 var name_1 = _this.Vdom.Attrs[i].Name;
                 var value = _this.Vdom.Attrs[i].Value;
                 //是否是样式
-                if (name_1 == "style" || name_1 == const_1.PRE + "style") {
+                if (name_1 == "style" || name_1 == const_2.PRE + "style") {
                     _this.styles[name_1] = value;
+                    continue;
+                }
+                if (name_1 == "class" || name_1 == const_2.PRE + "class") {
+                    _this.classes[name_1] = value;
                     continue;
                 }
                 //输入
                 var ins = _this.SurroundMvvm.$InitIns();
                 for (var i_1 = 0; i_1 < ins.length; i_1++) {
                     var prop = ins[i_1];
-                    if (const_2.REG_IN.test(name_1) && prop.name == RegExp.$1) {
+                    if (const_1.REG_IN.test(name_1) && prop.name == RegExp.$1) {
                         _this.ins_exp[RegExp.$1] = value;
                         break;
                     }
@@ -2495,7 +2527,7 @@ var CustomNode = /** @class */ (function (_super) {
                 var outs = _this.SurroundMvvm.$InitOuts();
                 for (var i_2 = 0; i_2 < outs.length; i_2++) {
                     var event_1 = outs[i_2];
-                    if (const_2.REG_OUT.test(name_1) && event_1.name == RegExp.$1) {
+                    if (const_1.REG_OUT.test(name_1) && event_1.name == RegExp.$1) {
                         _this.outs[RegExp.$1] = value;
                         break;
                     }
@@ -2518,6 +2550,7 @@ var CustomNode = /** @class */ (function (_super) {
     };
     CustomNode.prototype.Render = function () {
         var dom = this.SurroundMvvm.$Render();
+        this.DomSet = [dom];
         if (this.styles['style'] != null) {
             var exp = this.styles['style'];
             var styleitems = exp.split(";");
@@ -2526,34 +2559,22 @@ var CustomNode = /** @class */ (function (_super) {
                 dom.dom.style[kv[0]] = kv[1];
             });
         }
-        if (this.styles[const_1.PRE + 'style'] != null) {
-            var exp = this.styles[const_1.PRE + 'style'];
-            var reg = /^\{([^:,]+:[^:\?,]+\?[^:,]+:[^:,]+)(,[^:,]+:[^:\?,]+\?[^:,]+:[^:,]+)*\}$/;
-            if (!reg.test(exp)) {
-                throw new Error("exp format error:" + exp);
-            }
-            var styleJson = util_1.ParseStyle(exp);
-            var _loop_1 = function (key) {
-                var watcher = this_1.mvvm.$CreateWatcher(this_1, styleJson[key], function (newvalue) {
-                    if (toString.call(newvalue) == "[object String]" && newvalue != "") {
-                        dom.dom.style[key] = newvalue;
-                    }
-                    else {
-                        dom.dom.style[key] = "";
-                    }
-                });
-                var value = watcher.GetCurValue();
-                if (toString.call(value) == "[object String]" && value != "") {
-                    dom.dom.style[key] = value;
-                }
-            };
-            var this_1 = this;
-            for (var key in styleJson) {
-                _loop_1(key);
-            }
+        if (this.styles[const_2.PRE + 'style'] != null) {
+            var styledir = inner_dir_1.GetInnerDir(const_2.PRE + "style");
+            var exp = this.styles[const_2.PRE + 'style'];
+            styledir(exp, this);
         }
-        this.DomSet = [dom];
+        if (this.classes['class'] != null) {
+            var classitem = this.classes['class'].split(/\s+/);
+            (_a = dom.dom.classList).add.apply(_a, classitem);
+        }
+        if (this.classes[const_2.PRE + "class"] != null) {
+            var classdir = inner_dir_1.GetInnerDir(const_2.PRE + 'class');
+            var exp = this.classes[const_2.PRE + 'class'];
+            classdir(exp, this);
+        }
         return this.DomSet;
+        var _a;
     };
     CustomNode.prototype.AttachChildren = function () {
         if (this.Vdom != null) {
@@ -3024,10 +3045,12 @@ var RouterNode = /** @class */ (function (_super) {
         _this.mvvm = mvvm;
         _this.Parent = Parent;
         _this.routername = routername;
+        _this.lastConstructor = null;
         return _this;
     }
     RouterNode.prototype.Render = function () {
         var router = router_manager_1.NextRouter(this, this.routername);
+        this.lastConstructor = router;
         if (router != null) {
             var vnode = this.instance(router);
             this.Children = [vnode];
@@ -3038,24 +3061,30 @@ var RouterNode = /** @class */ (function (_super) {
     };
     RouterNode.prototype.OnRouterChange = function () {
         var constructor = router_manager_1.NextRouter(this, this.routername);
-        //释放旧的资源
-        this.Children.forEach(function (child) {
-            child.SetStatus(const_1.VNodeStatus.DEPRECATED);
-            child.OnDestroy();
-        });
-        if (constructor != null) {
-            var vnode = this.instance(constructor);
-            this.Children = [vnode];
-            this.DomSet.forEach(function (dom) { return dom.type = const_1.DomType.DELETE; });
-            this.DomSet = this.DomSet.concat(vnode.Render());
-            this.Parent.Reflow();
-            router_manager_1.MoveBack();
+        if (this.lastConstructor != constructor) {
+            this.lastConstructor = constructor;
+            //释放旧的资源
+            this.Children.forEach(function (child) {
+                child.SetStatus(const_1.VNodeStatus.DEPRECATED);
+                child.OnDestroy();
+            });
+            if (constructor != null) {
+                var vnode = this.instance(constructor);
+                this.Children = [vnode];
+                this.DomSet.forEach(function (dom) { return dom.type = const_1.DomType.DELETE; });
+                this.DomSet = this.DomSet.concat(vnode.Render());
+                this.Parent.Reflow();
+                router_manager_1.MoveBack();
+            }
+            else {
+                this.Children = [];
+                this.DomSet.forEach(function (dom) {
+                    dom.type = const_1.DomType.DELETE;
+                });
+            }
         }
         else {
-            this.Children = [];
-            this.DomSet.forEach(function (dom) {
-                dom.type = const_1.DomType.DELETE;
-            });
+            this.Children.forEach(function (child) { return child.OnRouterChange(); });
         }
     };
     RouterNode.prototype.instance = function (construct) {

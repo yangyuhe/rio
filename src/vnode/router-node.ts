@@ -8,13 +8,14 @@ import { CustomNode } from "./custom-node";
 import { VNode } from "./vnode";
 
 export class RouterNode extends VNode{
-
+    private lastConstructor:IComponentMvvm=null;
     constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode,private routername:string) {
         super(Vdom,mvvm,Parent)
     }
 
     Render() :DomStatus[]{
-        let router=NextRouter(this,this.routername)
+        let router=NextRouter(this,this.routername);
+        this.lastConstructor=router;
         if(router!=null){
             let vnode=this.instance(router)
             this.Children=[vnode]
@@ -26,25 +27,31 @@ export class RouterNode extends VNode{
     }
     OnRouterChange(){
         let constructor=NextRouter(this,this.routername);
-        //释放旧的资源
-        this.Children.forEach(child=>{
-            child.SetStatus(VNodeStatus.DEPRECATED);
-            child.OnDestroy();
-        });
+        if(this.lastConstructor!=constructor){
+            this.lastConstructor=constructor;
+            //释放旧的资源
+            this.Children.forEach(child=>{
+                child.SetStatus(VNodeStatus.DEPRECATED);
+                child.OnDestroy();
+            });
 
-        if(constructor!=null){
-            let vnode=this.instance(constructor)
-            this.Children=[vnode]
-            this.DomSet.forEach(dom=>dom.type=DomType.DELETE)
-            this.DomSet= this.DomSet.concat(vnode.Render())
-            this.Parent.Reflow();
-            MoveBack()
+            if(constructor!=null){
+                let vnode=this.instance(constructor)
+                this.Children=[vnode]
+                this.DomSet.forEach(dom=>dom.type=DomType.DELETE)
+                this.DomSet= this.DomSet.concat(vnode.Render())
+                this.Parent.Reflow();
+                MoveBack()
+            }else{
+                this.Children=[]
+                this.DomSet.forEach(dom=>{
+                    dom.type=DomType.DELETE
+                })
+            }
         }else{
-            this.Children=[]
-            this.DomSet.forEach(dom=>{
-                dom.type=DomType.DELETE
-            })
+            this.Children.forEach(child=>child.OnRouterChange())
         }
+        
     }
     private instance(construct:IComponentMvvm):VNode{
         let mvvm=new construct()

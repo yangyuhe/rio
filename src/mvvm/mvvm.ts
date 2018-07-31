@@ -124,13 +124,20 @@ export abstract class Mvvm {
         ReactiveKey(this.$data,name);
         ReactiveData(value);
     }
-    GetAnchorNode(name:string):VinallaNode{
+    private getAnchorNode(name:string):VinallaNode{
         return this.$treeRoot.GetAnchor(name);
+    }
+    GetRef(ref:string){
+        let vnode= this.$treeRoot.GetAnchor(ref);
+        if(vnode!=null && vnode.DomSet.length>0)
+            return vnode.DomSet[0].dom;
+        else
+            return null;
     }
     /**动态添加节点 */
     $AddFragment(html:string,anchor:string){
         let res=(new DOMParser()).parseFromString(html, "text/html").body;
-        let anchorNode=this.GetAnchorNode(anchor);
+        let anchorNode=this.getAnchorNode(anchor);
         if(anchorNode){
             for(let i=0;i<res.childNodes.length;i++){
                 let domtree=TraverseDom(res.childNodes[i]);
