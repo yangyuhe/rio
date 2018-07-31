@@ -1,14 +1,13 @@
 # ![rio.js](https://github.com/chaojihexiang/rio/blob/master/riojs.png?raw=true)
-<p>riao.js 是一个用于开发webapp的响应式javascript框架,支持vanilla js和typescript。</p>
+<p>rio.js 是一个用于开发webapp的响应式javascript框架,目前只支持typescript开发模式。</p>
 
-*注意该框架尚处于初级阶段，暂时不能用于生产*
 
 ***
 ### 功能简介
-* 你可以轻易的构建响应式页面
+* 你可以轻易的构建响应式页面
 * 你可以使用书写自定义组件，定义组件的输入输出
 * 你可以使用自定义指令，从而操作dom
-* 你可以轻易的动态添加新的html到界面，这些新添加的html依然是响应式的
+* 你可以轻易的动态添加新的html到界面，这些新添加的html依然是响应式的
 * 你可以给应用和组件，指令添加命名空间，从而用于大规模开发时防止命名重复（实验当中）
 * 合理的配置webpack从而支持高效率的多页面开发
 
@@ -16,7 +15,7 @@
 1. 安装
 * 通过npm 安装
 <code>npm install @yangyuhe/riojs --save</code>
-* 或者直接编译源码，只要把项目拷贝到本地运行npm run build命令即可
+* 或者直接编译源码，只要把项目拷贝到本地运行npm run build命令即可
 2. 简单使用  
 * 暂时不支持script标签引入方式 
 * 使用typescript 请下载脚手架项目快速开始
@@ -38,7 +37,7 @@
     * 接受一个选项对象，包括以下选项
         * name string 指令名称
         * events Event[] 组件可以发出的事件
-    4. <code>@Reactive</code>
+    4. <code>@Reactive</code>
     * 用于修饰响应式的属性
     5. <code>@Prop</code>
     * 用于修饰一个组件的属性（属性值由父组件传递）
