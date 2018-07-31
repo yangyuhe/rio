@@ -49,7 +49,8 @@ export class RouterNode extends VNode{
                 })
             }
         }else{
-            this.Children.forEach(child=>child.OnRouterChange())
+            this.Children.forEach(child=>child.OnRouterChange());
+            MoveBack();
         }
         
     }

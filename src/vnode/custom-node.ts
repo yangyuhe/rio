@@ -166,5 +166,7 @@ export class CustomNode extends VNode{
     }
     Reflow(){
     }
-    
+    OnRouterChange(){
+        this.SurroundMvvm.$OnRouterChange();
+    }
 }

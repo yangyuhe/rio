@@ -2623,6 +2623,9 @@ var CustomNode = /** @class */ (function (_super) {
     };
     CustomNode.prototype.Reflow = function () {
     };
+    CustomNode.prototype.OnRouterChange = function () {
+        this.SurroundMvvm.$OnRouterChange();
+    };
     return CustomNode;
 }(vnode_1.VNode));
 exports.CustomNode = CustomNode;
@@ -3076,6 +3079,7 @@ var RouterNode = /** @class */ (function (_super) {
         }
         else {
             this.Children.forEach(function (child) { return child.OnRouterChange(); });
+            router_manager_1.MoveBack();
         }
     };
     RouterNode.prototype.instance = function (construct) {
