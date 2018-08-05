@@ -22,6 +22,14 @@ export class CustDom {
         else
             return null;
     }
+    AddClass(classname:string){
+        let attr=this.Attrs.find(item=>item.Name=="class");
+        if(attr==null){
+            this.Attrs.push({Name:"class",Value:classname});
+        }else{
+            attr.Value+=" "+classname;
+        }
+    }
 }
 let document:CustDom[]=[];
 let cursor:CustDom=null;

@@ -58,7 +58,6 @@ export interface IDirectiveConstructor{
 export interface ComponentMvvmFactoryOption {
     $constructor:IComponentMvvm
     $preProcess:boolean
-    $id:string,
     $domtree:CustDom,
     $origin:ComponentOption
 }
