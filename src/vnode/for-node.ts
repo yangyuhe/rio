@@ -1,15 +1,17 @@
 import { VNodeStatus } from "../const";
+import { Diff } from "../diff/diff";
 import { EvalExp } from '../eval';
 import { DomStatus, ForExp } from "../models";
 import { Mvvm } from '../mvvm/mvvm';
+import { Watcher } from "../observer/watcher";
 import { NewVNode, Priority, VDom } from '../vdom/vdom';
 import { DomType } from './../const';
 import { VNode } from "./vnode";
-import { TemplateNode } from "./template-node";
 
 export class ForNode extends VNode{
-    private forExp:ForExp
-    private indexName:string
+    private forExp:ForExp;
+    private indexName:string;
+    private arrayExpWatcher:Watcher;
     constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode,private originForExp:string) {
         super(Vdom,mvvm,Parent)
         let items=this.originForExp.trim().split(";");
@@ -26,10 +28,9 @@ export class ForNode extends VNode{
             }
         }
     }
-    private newCopyNode(n:number){
-        let itemexp=this.forExp.itemExp;
-        let itemexpValue=this.forExp.arrayExp+"["+n+"]";
+    private newCopyNode(item:any){
         let that=this;
+        let itemexp=this.forExp.itemExp;
         let mvvm=new (class extends Mvvm{
             $InitDataItems(): { name: string; value: any; }[] {
                 return [];
@@ -53,22 +54,27 @@ export class ForNode extends VNode{
             }
             $ExtendMvvm(){
                 let mvvm=that.mvvm.$ExtendMvvm();
+                
                 Object.defineProperty(mvvm,itemexp,{
-                    get:function(){
-                        return mvvm.$GetExpOrFunValue(itemexpValue);
-                    },
+                    value:item,
                     enumerable:true,
                     configurable:true
                 });
                 if(that.indexName!=null)
                     Object.defineProperty(mvvm,that.indexName,{
-                        value:n,
+                        get:function(){
+                            let items=mvvm.$GetExpOrFunValue(that.forExp.arrayExp);
+                            return items.indexOf(item);
+                        },
                         configurable:true,
                         enumerable:true
                     });
                 else
                     Object.defineProperty(mvvm,"$index",{
-                        value:n,
+                        get:function(){
+                            let items=mvvm.$GetExpOrFunValue(that.forExp.arrayExp);
+                            return items.indexOf(item);
+                        },
                         configurable:true,
                         enumerable:true
                     });
@@ -84,54 +90,75 @@ export class ForNode extends VNode{
         vnode.AttachChildren();
         return vnode;
     }
-    private implementForExp(newcount:number){
-        if(newcount>this.Children.length){
-            let custnodes:TemplateNode[]=[]
-            for(let i=this.Children.length;i<newcount;i++){       
-                let custnode=this.newCopyNode(i)
-                custnodes.push(custnode)
+    private implementForExp(newitems:any[],olditems:any[]){
+        let opers=Diff(olditems,newitems);
+        
+        let childToDeleted:VNode[]=[];
+        opers.forEach(oper=>{
+            if(oper.type=="add"){
+                let custnode=this.newCopyNode(newitems[oper.newSetIndex]);
+                custnode.Render();
+                if(oper.oldSetIndex==-1){
+                    this.Children.unshift(custnode);
+                }else{
+                    this.Children.splice(oper.oldSetIndex+1,0,custnode);
+                }
             }
-            custnodes.forEach(custnode=>{
-                this.Children.push(custnode)                    
-                this.DomSet=this.DomSet.concat(custnode.Render())
-            })
-            this.Parent.Reflow()
-            return
-        }
-        if(newcount<this.Children.length){
-            let moved=this.Children.splice(newcount)
-            moved.forEach(moveditem=>{
-                this.DomSet.forEach(dom=>{
-                    let exist=moveditem.DomSet.some(moveddom=>{
-                        return moveddom.dom==dom.dom
-                    })
-                    if(exist){
-                        dom.type=DomType.DELETE
-                    }
-                })
-            })
-            
-            moved.forEach(vnode=>{
-                vnode.SetStatus(VNodeStatus.DEPRECATED);
-                vnode.OnDestroy();
+            if(oper.type=="remove"){
+                childToDeleted.push(this.Children[oper.oldSetIndex]);
+            }
+            if(oper.type=="replace"){
+                let custnode=this.newCopyNode(newitems[oper.newSetIndex]);
+                custnode.Render();
+                childToDeleted.push(this.Children[oper.oldSetIndex]);
+
+                this.Children.splice(oper.oldSetIndex,0,custnode);
+            }
+        });
+        childToDeleted.forEach(i=>{
+            i.SetStatus(VNodeStatus.DEPRECATED);
+            i.OnDestroy();
+            i.DomSet.forEach(dom=>{
+                dom.type=DomType.DELETE;
             });
-        }
+        });
+        this.DomSet=[];
+        this.Children.forEach(child=>{
+            this.DomSet=this.DomSet.concat(child.DomSet);
+        });
+        this.Children=this.Children.filter(child=>{
+            return !childToDeleted.includes(child);
+        });
+
+        this.Parent.Reflow();
     }
     
+    
+
+    
     Update(){
-        let items=this.mvvm.$GetExpOrFunValue(this.forExp.arrayExp)
-        if(toString.call(items) === "[object Array]"){
-            this.implementForExp(items.length)
+        let olditems=this.arrayExpWatcher.GetCurValue();
+        let newitems=this.mvvm.$GetExpOrFunValue(this.forExp.arrayExp)
+        if(toString.call(newitems) === "[object Array]"){
+            this.implementForExp(newitems,olditems);
+        }else{
+            throw new Error(`${this.forExp.arrayExp} must be an array`);
         }
     }
     AttachChildren() {
-        let num=this.mvvm.$GetExpOrFunValue(this.forExp.arrayExp+".length")
-        for(let i=0;i<num;i++){
-            this.Children.push(this.newCopyNode(i))
+        let array=this.mvvm.$GetExpOrFunValue(this.forExp.arrayExp);
+        if(toString.call(array)=="[object Array]"){
+            for(let value of array){
+                let child=this.newCopyNode(value);
+                this.Children.push(child);
+            }
+        }else{
+            throw new Error(`${this.forExp.arrayExp} must be an array`);
         }
+        
     }
     Render():DomStatus[]{
-        this.mvvm.$CreateWatcher(this,this.forExp.arrayExp+".length",this.implementForExp.bind(this))
+        this.arrayExpWatcher=this.mvvm.$CreateWatcher(this,this.forExp.arrayExp,this.implementForExp.bind(this),true);
 
         this.Children.forEach(child=>{
             this.DomSet=this.DomSet.concat(child.Render())

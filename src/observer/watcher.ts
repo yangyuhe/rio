@@ -8,13 +8,13 @@ import { CleanTarget, SetTarget } from './observer';
 
 export class Watcher{
     private value:any
-    private deepRecord:any[]=[]
+    private oldArray:any[]=[]
 
     constructor(private mvvm:Mvvm|DirectiveMVVM,private vnode:VNode,public ExpOrFunc:string|Function,private cb:OnDataChange,private watchingArrayItem?:boolean){
         this.value=this.getValue()
         if(this.watchingArrayItem && toString.call(this.value)=="[object Array]"){
             for(let i=0;i<this.value.length;i++){
-                this.deepRecord[i]=this.value[i]
+                this.oldArray[i]=this.value[i]
             }
         }
     }
@@ -35,23 +35,35 @@ export class Watcher{
         if(this.vnode.GetStatus()==VNodeStatus.ACTIVE){
             let newval=this.getValue()
             if(this.value!=newval){
-                this.cb(newval,this.value)
-                this.value=newval
+                this.cb(newval,this.value);
+                this.value=newval;
+                if(this.watchingArrayItem && toString.call(this.value)=="[object Array]" ){
+                    this.oldArray=[];
+                    for(let i=0;i<newval.length;i++){
+                        this.oldArray[i]=newval[i];
+                    }
+                }
             }else{
                 //判断数组元素是否有变化
                 if(this.watchingArrayItem && toString.call(this.value)=="[object Array]" ){
-                    let diff=false
-                    for(let i=0;i<newval.length;i++){
-                        if(newval[i]!=this.deepRecord[i]){
-                            this.cb(newval,this.value)
-                            diff=true
-                            break
+                    let diff=false;
+                    if(newval.length!=this.oldArray.length){
+                        diff=true;
+                        this.cb(newval,this.oldArray);
+                    }else{
+                        for(let i=0;i<newval.length;i++){
+                            if(newval[i]!=this.oldArray[i]){
+                                this.cb(newval,this.oldArray);
+                                diff=true
+                                break
+                            }
                         }
                     }
+                    
                     if(diff){
-                        this.deepRecord=[]
+                        this.oldArray=[]
                         for(let i=0;i<newval.length;i++){
-                            this.deepRecord[i]=newval[i]
+                            this.oldArray[i]=newval[i]
                         }
                     }
                 }

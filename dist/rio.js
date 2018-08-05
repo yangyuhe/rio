@@ -441,6 +441,103 @@ exports.FetchProperty = FetchProperty;
 
 /***/ }),
 
+/***/ "./src/diff/diff.ts":
+/*!**************************!*\
+  !*** ./src/diff/diff.ts ***!
+  \**************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+Object.defineProperty(exports, "__esModule", { value: true });
+function Diff(oldset, newset) {
+    var square = initSquare(oldset, newset);
+    findShortest(square, oldset, newset);
+    var opers = getOpers(square, oldset, newset);
+    return opers;
+}
+exports.Diff = Diff;
+function findShortest(square, oldset, newset) {
+    var target = square[oldset.length][newset.length];
+    if (target.value != -1)
+        return target.value;
+    var lastnum = 0;
+    if (oldset[oldset.length - 1] == newset[newset.length - 1])
+        lastnum = 0;
+    else
+        lastnum = 1;
+    var p1 = findShortest(square, oldset.slice(0, oldset.length - 1), newset) + 1;
+    var p2 = findShortest(square, oldset, newset.slice(0, newset.length - 1)) + 1;
+    var p3 = findShortest(square, oldset.slice(0, oldset.length - 1), newset.slice(0, newset.length - 1)) + lastnum;
+    var min = Math.min(p1, p2, p3);
+    target.value = min;
+    if (min == p1) {
+        target.fromRow = oldset.length - 1;
+        target.fromColumn = newset.length;
+    }
+    else {
+        if (min == p2) {
+            target.fromRow = oldset.length;
+            target.fromColumn = newset.length - 1;
+        }
+        else {
+            target.fromRow = oldset.length - 1;
+            target.fromColumn = newset.length - 1;
+        }
+    }
+    return target.value;
+}
+function initSquare(oldset, newset) {
+    var square = [];
+    for (var i = 0; i <= oldset.length; i++) {
+        square.push([]);
+        for (var j = 0; j <= newset.length; j++) {
+            if (i == 0) {
+                square[i].push({ value: j, fromRow: 0, fromColumn: j - 1 });
+                continue;
+            }
+            if (j == 0) {
+                square[i].push({ value: i, fromRow: i - 1, fromColumn: 0 });
+                continue;
+            }
+            square[i].push({ value: -1, fromRow: -1, fromColumn: -1 });
+        }
+    }
+    return square;
+}
+function getOpers(square, oldset, newset) {
+    var column = newset.length;
+    var row = oldset.length;
+    var opers = [];
+    while (true) {
+        if (row == 0 && column == 0) {
+            break;
+        }
+        var unit = square[row][column];
+        if (unit.fromColumn == column - 1 && unit.fromRow == row - 1) {
+            if (oldset[row - 1] != newset[column - 1]) {
+                opers.push({ type: "replace", newSetIndex: column - 1, oldSetIndex: row - 1 });
+            }
+            row--;
+            column--;
+            continue;
+        }
+        if (unit.fromColumn == column && unit.fromRow == row - 1) {
+            opers.push({ type: "remove", oldSetIndex: row - 1 });
+            row--;
+            continue;
+        }
+        if (unit.fromColumn == column - 1 && unit.fromRow == row) {
+            opers.push({ type: "add", newSetIndex: column - 1, oldSetIndex: row - 1 });
+            column--;
+            continue;
+        }
+    }
+    return opers;
+}
+
+
+/***/ }),
+
 /***/ "./src/directive/class.ts":
 /*!********************************!*\
   !*** ./src/directive/class.ts ***!
@@ -1690,11 +1787,19 @@ function CleanTarget() {
 }
 exports.CleanTarget = CleanTarget;
 function ReactiveData(data) {
-    if (data != null && typeof data == "object") {
+    if (toString.call(data) == "[object Array]") {
+        for (var _i = 0, data_1 = data; _i < data_1.length; _i++) {
+            var value = data_1[_i];
+            ReactiveData(value);
+        }
+        return;
+    }
+    if (toString.call(data) == "[object Object]") {
         Object.keys(data).forEach(function (key) {
             ReactiveKey(data, key);
             ReactiveData(data[key]);
         });
+        return;
     }
 }
 exports.ReactiveData = ReactiveData;
@@ -1727,8 +1832,6 @@ function ReactiveKey(data, key) {
 }
 exports.ReactiveKey = ReactiveKey;
 function reactiveArray(array, collecter) {
-    if (array.push != Array.prototype.push)
-        return;
     Object.defineProperty(array, "push", {
         enumerable: false,
         configurable: true,
@@ -1737,11 +1840,7 @@ function reactiveArray(array, collecter) {
             for (var _i = 0; _i < arguments.length; _i++) {
                 params[_i] = arguments[_i];
             }
-            var old = array.length;
             var res = (_a = Array.prototype.push).call.apply(_a, [array].concat(params));
-            for (var i = old; i < res; i++) {
-                ReactiveKey(array, "" + i);
-            }
             collecter.Notify();
             return res;
             var _a;
@@ -1770,13 +1869,6 @@ function reactiveArray(array, collecter) {
                 params[_i] = arguments[_i];
             }
             var res = (_a = Array.prototype.splice).call.apply(_a, [array].concat(params));
-            if (params.length > 2) {
-                var newitems = params.slice(2);
-                newitems.forEach(function (item) {
-                    var index = array.indexOf(item);
-                    ReactiveKey(array, "" + index);
-                });
-            }
             collecter.Notify();
             return res;
             var _a;
@@ -1791,6 +1883,20 @@ function reactiveArray(array, collecter) {
                 params[_i] = arguments[_i];
             }
             var res = (_a = Array.prototype.shift).call.apply(_a, [array].concat(params));
+            collecter.Notify();
+            return res;
+            var _a;
+        }
+    });
+    Object.defineProperty(array, "sort", {
+        enumerable: false,
+        configurable: true,
+        value: function () {
+            var params = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                params[_i] = arguments[_i];
+            }
+            var res = (_a = Array.prototype.sort).call.apply(_a, [array].concat(params));
             collecter.Notify();
             return res;
             var _a;
@@ -1886,11 +1992,11 @@ var Watcher = /** @class */ (function () {
         this.ExpOrFunc = ExpOrFunc;
         this.cb = cb;
         this.watchingArrayItem = watchingArrayItem;
-        this.deepRecord = [];
+        this.oldArray = [];
         this.value = this.getValue();
         if (this.watchingArrayItem && toString.call(this.value) == "[object Array]") {
             for (var i = 0; i < this.value.length; i++) {
-                this.deepRecord[i] = this.value[i];
+                this.oldArray[i] = this.value[i];
             }
         }
     }
@@ -1913,22 +2019,34 @@ var Watcher = /** @class */ (function () {
             if (this.value != newval) {
                 this.cb(newval, this.value);
                 this.value = newval;
+                if (this.watchingArrayItem && toString.call(this.value) == "[object Array]") {
+                    this.oldArray = [];
+                    for (var i = 0; i < newval.length; i++) {
+                        this.oldArray[i] = newval[i];
+                    }
+                }
             }
             else {
                 //判断数组元素是否有变化
                 if (this.watchingArrayItem && toString.call(this.value) == "[object Array]") {
                     var diff = false;
-                    for (var i = 0; i < newval.length; i++) {
-                        if (newval[i] != this.deepRecord[i]) {
-                            this.cb(newval, this.value);
-                            diff = true;
-                            break;
+                    if (newval.length != this.oldArray.length) {
+                        diff = true;
+                        this.cb(newval, this.oldArray);
+                    }
+                    else {
+                        for (var i = 0; i < newval.length; i++) {
+                            if (newval[i] != this.oldArray[i]) {
+                                this.cb(newval, this.oldArray);
+                                diff = true;
+                                break;
+                            }
                         }
                     }
                     if (diff) {
-                        this.deepRecord = [];
+                        this.oldArray = [];
                         for (var i = 0; i < newval.length; i++) {
-                            this.deepRecord[i] = newval[i];
+                            this.oldArray[i] = newval[i];
                         }
                     }
                 }
@@ -2706,6 +2824,7 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
+var diff_1 = __webpack_require__(/*! ../diff/diff */ "./src/diff/diff.ts");
 var eval_1 = __webpack_require__(/*! ../eval */ "./src/eval.js");
 var models_1 = __webpack_require__(/*! ../models */ "./src/models.ts");
 var mvvm_1 = __webpack_require__(/*! ../mvvm/mvvm */ "./src/mvvm/mvvm.ts");
@@ -2734,10 +2853,9 @@ var ForNode = /** @class */ (function (_super) {
         }
         return _this;
     }
-    ForNode.prototype.newCopyNode = function (n) {
-        var itemexp = this.forExp.itemExp;
-        var itemexpValue = this.forExp.arrayExp + "[" + n + "]";
+    ForNode.prototype.newCopyNode = function (item, items) {
         var that = this;
+        var itemexp = this.forExp.itemExp;
         var mvvm = new (/** @class */ (function (_super) {
             __extends(class_1, _super);
             function class_1() {
@@ -2767,21 +2885,25 @@ var ForNode = /** @class */ (function (_super) {
             class_1.prototype.$ExtendMvvm = function () {
                 var mvvm = that.mvvm.$ExtendMvvm();
                 Object.defineProperty(mvvm, itemexp, {
-                    get: function () {
-                        return mvvm.$GetExpOrFunValue(itemexpValue);
-                    },
+                    value: item,
                     enumerable: true,
                     configurable: true
                 });
                 if (that.indexName != null)
                     Object.defineProperty(mvvm, that.indexName, {
-                        value: n,
+                        get: function () {
+                            // let items=mvvm.$GetExpOrFunValue(that.forExp.arrayExp);
+                            return items.indexOf(item);
+                        },
                         configurable: true,
                         enumerable: true
                     });
                 else
                     Object.defineProperty(mvvm, "$index", {
-                        value: n,
+                        get: function () {
+                            var items = mvvm.$GetExpOrFunValue(that.forExp.arrayExp);
+                            return items.indexOf(item);
+                        },
                         configurable: true,
                         enumerable: true
                     });
@@ -2801,54 +2923,73 @@ var ForNode = /** @class */ (function (_super) {
         vnode.AttachChildren();
         return vnode;
     };
-    ForNode.prototype.implementForExp = function (newcount) {
+    ForNode.prototype.implementForExp = function (newitems, olditems) {
         var _this = this;
-        if (newcount > this.Children.length) {
-            var custnodes = [];
-            for (var i = this.Children.length; i < newcount; i++) {
-                var custnode = this.newCopyNode(i);
-                custnodes.push(custnode);
+        var opers = diff_1.Diff(olditems, newitems);
+        var childToDeleted = [];
+        opers.forEach(function (oper) {
+            if (oper.type == "add") {
+                var custnode = _this.newCopyNode(newitems[oper.newSetIndex], newitems);
+                custnode.Render();
+                if (oper.oldSetIndex == -1) {
+                    _this.Children.unshift(custnode);
+                }
+                else {
+                    _this.Children.splice(oper.oldSetIndex + 1, 0, custnode);
+                }
             }
-            custnodes.forEach(function (custnode) {
-                _this.Children.push(custnode);
-                _this.DomSet = _this.DomSet.concat(custnode.Render());
+            if (oper.type == "remove") {
+                childToDeleted.push(_this.Children[oper.oldSetIndex]);
+            }
+            if (oper.type == "replace") {
+                var custnode = _this.newCopyNode(newitems[oper.newSetIndex], newitems);
+                custnode.Render();
+                childToDeleted.push(_this.Children[oper.oldSetIndex]);
+                _this.Children.splice(oper.oldSetIndex, 0, custnode);
+            }
+        });
+        childToDeleted.forEach(function (i) {
+            i.SetStatus(const_1.VNodeStatus.DEPRECATED);
+            i.OnDestroy();
+            i.DomSet.forEach(function (dom) {
+                dom.type = const_2.DomType.DELETE;
             });
-            this.Parent.Reflow();
-            return;
-        }
-        if (newcount < this.Children.length) {
-            var moved = this.Children.splice(newcount);
-            moved.forEach(function (moveditem) {
-                _this.DomSet.forEach(function (dom) {
-                    var exist = moveditem.DomSet.some(function (moveddom) {
-                        return moveddom.dom == dom.dom;
-                    });
-                    if (exist) {
-                        dom.type = const_2.DomType.DELETE;
-                    }
-                });
-            });
-            moved.forEach(function (vnode) {
-                vnode.SetStatus(const_1.VNodeStatus.DEPRECATED);
-                vnode.OnDestroy();
-            });
-        }
+        });
+        this.DomSet = [];
+        this.Children.forEach(function (child) {
+            _this.DomSet = _this.DomSet.concat(child.DomSet);
+        });
+        this.Children = this.Children.filter(function (child) {
+            return !childToDeleted.includes(child);
+        });
+        this.Parent.Reflow();
     };
     ForNode.prototype.Update = function () {
-        var items = this.mvvm.$GetExpOrFunValue(this.forExp.arrayExp);
-        if (toString.call(items) === "[object Array]") {
-            this.implementForExp(items.length);
+        var olditems = this.arrayExpWatcher.GetCurValue();
+        var newitems = this.mvvm.$GetExpOrFunValue(this.forExp.arrayExp);
+        if (toString.call(newitems) === "[object Array]") {
+            this.implementForExp(newitems, olditems);
+        }
+        else {
+            throw new Error(this.forExp.arrayExp + " must be an array");
         }
     };
     ForNode.prototype.AttachChildren = function () {
-        var num = this.mvvm.$GetExpOrFunValue(this.forExp.arrayExp + ".length");
-        for (var i = 0; i < num; i++) {
-            this.Children.push(this.newCopyNode(i));
+        var array = this.mvvm.$GetExpOrFunValue(this.forExp.arrayExp);
+        if (toString.call(array) == "[object Array]") {
+            for (var _i = 0, array_1 = array; _i < array_1.length; _i++) {
+                var value = array_1[_i];
+                var child = this.newCopyNode(value, array);
+                this.Children.push(child);
+            }
+        }
+        else {
+            throw new Error(this.forExp.arrayExp + " must be an array");
         }
     };
     ForNode.prototype.Render = function () {
         var _this = this;
-        this.mvvm.$CreateWatcher(this, this.forExp.arrayExp + ".length", this.implementForExp.bind(this));
+        this.arrayExpWatcher = this.mvvm.$CreateWatcher(this, this.forExp.arrayExp, this.implementForExp.bind(this), true);
         this.Children.forEach(function (child) {
             _this.DomSet = _this.DomSet.concat(child.Render());
         });

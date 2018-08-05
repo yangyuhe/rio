@@ -13,12 +13,21 @@ export function CleanTarget(){
 }
     
 export function ReactiveData(data:any){
-    if(data!=null && typeof data=="object"){
+    if(toString.call(data)=="[object Array]"){
+        
+        for(let value of data){
+            ReactiveData(value);
+        }
+        return;
+    }
+    if(toString.call(data)=="[object Object]"){
         Object.keys(data).forEach(key=>{
             ReactiveKey(data,key)
             ReactiveData(data[key])
-        })
+        });
+        return;
     }
+    
 }
 export function ReactiveKey(data:any,key:string){
     let collecter=new WatcherCollecter(key)        
@@ -49,43 +58,31 @@ export function ReactiveKey(data:any,key:string){
 }
     
 function reactiveArray(array:any[],collecter:WatcherCollecter){
-    if(array.push!=Array.prototype.push)
-        return
+    
     Object.defineProperty(array,"push",{
         enumerable:false,
         configurable:true,
         value:(...params:any[])=>{
-            let old=array.length
-            let res=Array.prototype.push.call(array,...params)
-            for(let i=old;i<res;i++){
-                ReactiveKey(array,""+i)
-            }
-            collecter.Notify()                
-            return res
+            let res=Array.prototype.push.call(array,...params);
+            collecter.Notify();
+            return res;
         }
     })
     Object.defineProperty(array,"pop",{
         enumerable:false,
         configurable:true,
         value:(...params:any[])=>{
-            let res=Array.prototype.pop.call(array,...params)
-            collecter.Notify()                
-            return res
+            let res=Array.prototype.pop.call(array,...params);
+            collecter.Notify();
+            return res;
         }
     })
     Object.defineProperty(array,"splice",{
         enumerable:false,
         configurable:true,
         value:(...params:any[])=>{
-            let res=Array.prototype.splice.call(array,...params)
-            if(params.length>2){
-                let newitems=params.slice(2)
-                newitems.forEach(item=>{
-                    let index=array.indexOf(item)
-                    ReactiveKey(array,""+index)
-                })
-            }
-            collecter.Notify()                
+            let res=Array.prototype.splice.call(array,...params);
+            collecter.Notify();
             return res
         }
     })
@@ -97,7 +94,16 @@ function reactiveArray(array:any[],collecter:WatcherCollecter){
             collecter.Notify()                
             return res
         }
-    })
+    });
+    Object.defineProperty(array,"sort",{
+        enumerable:false,
+        configurable:true,
+        value:(...params:any[])=>{
+            let res=Array.prototype.sort.call(array,...params)
+            collecter.Notify()                
+            return res
+        }
+    });
 }
     
 export function ReactiveComputed(mvvm:Mvvm,vnode:VNode,key:string,func:()=>any){
