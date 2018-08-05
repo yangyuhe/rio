@@ -1,5 +1,5 @@
 import { REG_IN, REG_OUT } from '../const';
-import { VDom } from '../vdom/vdom';
+import { CustDom } from '../vdom/parser';
 
 export class DirectiveNode {
     //输入与输出值
@@ -7,7 +7,7 @@ export class DirectiveNode {
     protected ins_exp: { [name: string]: string } = {}
     protected outs: { [name: string]: string } = {}
 
-    constructor(private vdom:VDom) {
+    constructor(private vdom:CustDom) {
         this.vdom.Attrs.forEach(attr=>{
             this.addProperty(attr.Name,attr.Value)
         })

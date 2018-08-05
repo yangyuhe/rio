@@ -20,6 +20,7 @@
     "url": "https://github.com/yangyuhe/rio.git"
   },
   "devDependencies": {
+    "@types/htmlparser2": "^3.7.31",
     "clean-webpack-plugin": "^0.1.19",
     "ts-loader": "^4.3.0",
     "typescript": "^2.8.1",
@@ -28,5 +29,7 @@
     "webpack-cli": "^2.1.4",
     "webpack-merge": "^4.1.3"
   },
-  "dependencies": {}
+  "dependencies": {
+    "htmlparser2": "^3.9.2"
+  }
 }

@@ -1,15 +1,16 @@
 import { Mvvm } from '../mvvm/mvvm';
-import { NewVNode, VDom } from '../vdom/vdom';
+import { NewVNode } from '../vdom/vdom';
 import { DomType, VNodeStatus } from './../const';
 import { DomStatus } from './../models';
 import { VinallaNode } from './vinalla-node';
+import { CustDom } from '../vdom/parser';
 export abstract class VNode {
-    //元素值 只有当nodeType为3时才有用，其他时候为null
+    //元素值 只有当nodeType为text时才有用，其他时候为null
     protected nodeValue: string
     //元素名称 都是小写字母
     protected nodeName: string
-    //元素类型：1 元素 3 文本 8 注释
-    protected nodeType: number
+
+    protected nodeType: "element"|"text"|"comment"
     
     
     Children: VNode[] = []
@@ -18,11 +19,11 @@ export abstract class VNode {
     
     protected status:VNodeStatus=VNodeStatus.ACTIVE
 
-    constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode) {
+    constructor(public Vdom:CustDom,public mvvm: Mvvm,public Parent:VNode) {
         if(this.Vdom!=null){
-            this.nodeValue = this.Vdom.NodeValue
-            this.nodeName = this.Vdom.NodeName
-            this.nodeType = this.Vdom.NodeType
+            this.nodeValue = this.Vdom.Text
+            this.nodeName = this.Vdom.Name
+            this.nodeType = this.Vdom.Type
         }
     }
 

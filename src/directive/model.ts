@@ -2,7 +2,7 @@ import { VNode } from "../vnode/vnode";
 import { Watcher } from './../observer/watcher';
 export function DirModel(exp: string, vnode: VNode) {
     let inputtype=vnode.Vdom.GetAttr("type")
-    let input=vnode.Vdom.NodeName.toLowerCase()
+    let input=vnode.Vdom.Name.toLowerCase()
 
     let watcher:Watcher
     if(input=="input" && inputtype=="checkbox"){

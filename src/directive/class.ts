@@ -2,7 +2,7 @@ import { ParseStyle } from '../util';
 import { VNode } from '../vnode/vnode';
 export function Classes(exp:string,vnode:VNode){
 
-    let reg=/^\{([^:,]+:[^:,]+)(,[^:,]+:[^:,]+)*\}$/;
+    let reg=/^([^:,]+:[^:,]+)(,[^:,]+:[^:,]+)*$/;
     if(!reg.test(exp)){
         throw new Error("exp format error:"+exp);
     }

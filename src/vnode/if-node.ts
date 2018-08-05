@@ -1,12 +1,13 @@
 import { DomType } from './../const';
 import { Mvvm } from "../mvvm/mvvm";
 import { VNode } from "./vnode";
-import { VDom, NewVNode, Priority } from "../vdom/vdom";
+import {  NewVNode, Priority } from "../vdom/vdom";
 import { VNodeStatus } from "../const";
 import { DomStatus } from '../models';
+import { CustDom } from '../vdom/parser';
 
 export class IfNode extends VNode {
-    constructor(public Vdom:VDom,public mvvm: Mvvm, public Parent: VNode, private ifExp: string) {
+    constructor(public Vdom:CustDom,public mvvm: Mvvm, public Parent: VNode, private ifExp: string) {
         super(Vdom,mvvm, Parent)
     }
     

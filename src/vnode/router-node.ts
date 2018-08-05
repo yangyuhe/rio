@@ -1,15 +1,15 @@
 import { DomStatus } from '../models';
 import { Mvvm } from "../mvvm/mvvm";
 import { MoveBack, NextRouter } from "../router/router-manager";
-import { VDom } from '../vdom/vdom';
 import { DomType, VNodeStatus } from './../const';
 import { IComponentMvvm } from './../models';
 import { CustomNode } from "./custom-node";
 import { VNode } from "./vnode";
+import { CustDom } from '../vdom/parser';
 
 export class RouterNode extends VNode{
     private lastConstructor:IComponentMvvm=null;
-    constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode,private routername:string) {
+    constructor(public Vdom:CustDom,public mvvm: Mvvm,public Parent:VNode,private routername:string) {
         super(Vdom,mvvm,Parent)
     }
 

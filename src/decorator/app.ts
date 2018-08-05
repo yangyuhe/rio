@@ -1,8 +1,9 @@
 import { RegisterApp } from "../manager/app-manager";
 import { AppOption, IAppMvvm, DomStatus } from "../models";
-import { NewVNode, TraverseDom } from "../vdom/vdom";
+import { NewVNode } from "../vdom/vdom";
 import { VNode } from "../vnode/vnode";
 import { FetchProperty } from "./property";
+import { Parse } from "../vdom/parser";
 
 
 
@@ -40,8 +41,8 @@ export function App(option:AppOption){
                 if(dom==null){
                     throw new Error("no specified element "+option.el)
                 }
-                let vdom=TraverseDom(dom)
-                let vnode=NewVNode(vdom,this,null)
+                let vdom=Parse(dom.outerHTML)
+                let vnode=NewVNode(vdom[0],this,null)
                 return vnode
             }
             $InitNamespace(): string {

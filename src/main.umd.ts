@@ -1,6 +1,7 @@
 import { AppMvvm } from './mvvm/app-mvvm';
-import { NewVNode, TraverseDom } from './vdom/vdom';
+import { NewVNode } from './vdom/vdom';
 import { VNode } from './vnode/vnode';
+import { Parse } from './vdom/parser';
 
 interface BaseOption{
     data?:{[key:string]:object},
@@ -46,8 +47,8 @@ function Rio(option:AppOption){
             if(dom==null){
                 throw new Error("no specified element "+option.el)
             }
-            let vdom=TraverseDom(dom)
-            let vnode=NewVNode(vdom,this,null)
+            let vdom=Parse(dom.outerHTML);
+            let vnode=NewVNode(vdom[0],this,null)
             return vnode
         }
         $InitNamespace(): string {

@@ -1,22 +1,10 @@
-import { IComponentMvvm } from './../models';
-import { ComponentOption, ComponentMvvmFactoryOption } from '../models';
+import { ComponentMvvmFactoryOption, ComponentOption } from '../models';
 import { HttpGet, LogError } from "../util";
-import { TraverseDom } from "../vdom/vdom";
-import { VDom } from './../vdom/vdom';
-
+import { Parse } from '../vdom/parser';
+import { IComponentMvvm } from './../models';
 
 let repository:{[id:string]:ComponentMvvmFactoryOption}={}
 
-let id=0;
-export function ComponentAutoId(){
-    let count=id++;
-    let str="";
-    while(count>0){
-        str+="_";
-        count--;
-    }
-    return str;
-}
 
 export function Id(namespace:string,name:string){
     return namespace+"::"+name;
@@ -81,16 +69,15 @@ function preProcess(option: ComponentMvvmFactoryOption) {
         }
     }
 
-    let res=(new DOMParser()).parseFromString(option.$origin.template, "text/html").body
-    if(res.children.length>1)
-        throw new Error(option.$origin.name+"::"+option.$origin.namespace+" template should have only one root")
-    if(res.children.length==1)
-        option.$domtree = TraverseDom(res.children[0])
+    
+
+    let res=Parse(option.$origin.template);
+    if(res.length>1)
+        throw new Error(option.$origin.namespace+":"+option.$origin.name+" template should have only one root")
+    if(res.length==1)
+        option.$domtree = res[0];
     else{
-        if(res.childNodes.length==1)
-            option.$domtree = TraverseDom(res.childNodes[0])
-        else
-            throw new Error("template should not be empty")
+        throw new Error("template should not be empty")
     }
     //样式
     if (option.$origin.styleUrl != null) {
@@ -104,14 +91,5 @@ function preProcess(option: ComponentMvvmFactoryOption) {
         style.type = 'text/css';
         style.innerHTML = option.$origin.style;
         document.getElementsByTagName('head')[0].appendChild(style);
-        addAttr(option.$domtree, option.$id)
-    }
-}
-function addAttr(dom: VDom, attr: string) {
-    dom.AddAttr(attr)
-    if (dom.NodeType == 1) {
-        dom.Children.forEach(child => {
-            addAttr(child, attr)
-        })
     }
 }

@@ -4,15 +4,16 @@ import { EvalExp } from '../eval';
 import { DomStatus, ForExp } from "../models";
 import { Mvvm } from '../mvvm/mvvm';
 import { Watcher } from "../observer/watcher";
-import { NewVNode, Priority, VDom } from '../vdom/vdom';
+import { NewVNode, Priority } from '../vdom/vdom';
 import { DomType } from './../const';
 import { VNode } from "./vnode";
+import { CustDom } from "../vdom/parser";
 
 export class ForNode extends VNode{
     private forExp:ForExp;
     private indexName:string;
     private arrayExpWatcher:Watcher;
-    constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode,private originForExp:string) {
+    constructor(public Vdom:CustDom,public mvvm: Mvvm,public Parent:VNode,private originForExp:string) {
         super(Vdom,mvvm,Parent)
         let items=this.originForExp.trim().split(";");
         let forSplit=items[0].split(/\s+/);

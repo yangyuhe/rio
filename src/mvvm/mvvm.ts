@@ -3,11 +3,12 @@ import { EvalExp } from "../eval";
 import { ReactiveComputed, ReactiveData, ReactiveKey } from "../observer/observer";
 import { Watcher } from "../observer/watcher";
 import { GetActiveRouter, WatchRouterChange } from "../router/router-state";
-import { NewVNode, TraverseDom } from "../vdom/vdom";
+import { NewVNode } from "../vdom/vdom";
 import { VNode } from "../vnode/vnode";
 import { DomStatus, OnDataChange, RouterInfo } from './../models';
 import { VinallaNode } from './../vnode/vinalla-node';
 import { NotifyUrlChange } from '../router/router-manager';
+import { Parse } from '../vdom/parser';
 export abstract class Mvvm {
     public $namespace="default"
 
@@ -119,11 +120,11 @@ export abstract class Mvvm {
     }
     /**动态添加节点 */
     $AddFragment(html:string,anchor:string){
-        let res=(new DOMParser()).parseFromString(html, "text/html").body;
+        let res=Parse(html);
         let anchorNode=this.getAnchorNode(anchor);
         if(anchorNode){
-            for(let i=0;i<res.childNodes.length;i++){
-                let domtree=TraverseDom(res.childNodes[i]);
+            for(let i=0;i<res.length;i++){
+                let domtree=res[i];
                 let vnode=NewVNode(domtree,this,anchorNode);
                 vnode.AttachChildren();
                 anchorNode.Children.push(vnode);

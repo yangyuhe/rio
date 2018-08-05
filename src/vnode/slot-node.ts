@@ -1,11 +1,11 @@
 import { VNodeStatus } from "../const";
 import { DomStatus } from '../models';
-import { VDom } from "../vdom/vdom";
 import { ComponentMvvm } from './../mvvm/component-mvvm';
 import { VNode } from "./vnode";
+import { CustDom } from "../vdom/parser";
 
 export class SlotNode extends VNode{
-    constructor(protected vdom:VDom,public mvvm: ComponentMvvm, public Parent: VNode, private name: string) {
+    constructor(protected vdom:CustDom,public mvvm: ComponentMvvm, public Parent: VNode, private name: string) {
         super(vdom,mvvm,Parent)
         if(this.name==null || this.name=="")
             this.name="default"

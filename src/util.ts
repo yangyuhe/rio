@@ -51,6 +51,8 @@ export function Trim(str:string,char:string,direction:"both"|"left"|"right"="bot
 }
 
 export function StrToEvalstr(str:string):{isconst:boolean,exp:string}{
+    str=str.trim();
+    str=str.replace(/\n+/g," ");
     if (REG_SINGLE.test(str)) {
         return {isconst:false,exp:RegExp.$1}
     }else{
@@ -120,8 +122,6 @@ export function TypeOf(param:any):ParamType{
 }
 /**解析传入r-class或者r-style的值为json对象 */
 export function ParseStyle(style:string){
-    style=style.substr(1);
-    style=style.substr(0,style.length-1);
     let styles=style.split(",");
     let json:{[key:string]:string}={};
     styles.forEach(s=>{

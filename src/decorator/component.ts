@@ -1,11 +1,21 @@
-import { GetDomTree, RegisterComponent, InitComponent, ComponentAutoId } from '../manager/components-manager';
+import { GetDomTree, RegisterComponent, InitComponent } from '../manager/components-manager';
 import { ComponentOption, Prop } from '../models';
 import { NewVNode } from '../vdom/vdom';
 import { VNode } from '../vnode/vnode';
 import { DomStatus, Event, IComponentMvvm } from './../models';
 import { FetchProperty } from './property';
 
-
+let id=0;
+function ComponentAutoId(){
+    let str="";
+    let count=id;
+    id++;
+    while(count>0){
+        str+="_";
+        count--;
+    }
+    return str;
+}
 
 export function Component(option:ComponentOption){
     checkComponentOption(option)

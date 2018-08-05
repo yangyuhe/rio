@@ -6,9 +6,9 @@ import { DomType, REG_IN, REG_OUT, REG_ATTR, PRE, ANCHOR } from './../const';
 import { InnerDirective } from './../directive/inner-dir';
 import { DirectiveNode } from './directive-node';
 import { VNode } from './vnode';
-import { VDom } from "../vdom/vdom";
 import { Mvvm } from "../mvvm/mvvm";
 import { DomStatus } from "../models";
+import { CustDom } from "../vdom/parser";
 export class VinallaNode extends VNode{
     
     private directives:DirectiveMVVM[]=[]
@@ -20,11 +20,11 @@ export class VinallaNode extends VNode{
     /**普通属性 */
     protected attrs: { name: string, value: string }[] = [];
     
-    constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode){
+    constructor(public Vdom:CustDom,public mvvm: Mvvm,public Parent:VNode){
         super(Vdom,mvvm,Parent);
-        this.nodeValue = this.Vdom.NodeValue
-        this.nodeName = this.Vdom.NodeName
-        this.nodeType = this.Vdom.NodeType
+        this.nodeValue = this.Vdom.Text
+        this.nodeName = this.Vdom.Name
+        this.nodeType = this.Vdom.Type
         //保存元素属性
         let vanillaAttrs=this.Vdom.Attrs
         for (let i = 0; i < this.Vdom.Attrs.length; i++) {
@@ -83,7 +83,7 @@ export class VinallaNode extends VNode{
     
     
     Render() :DomStatus[]{
-        if (this.nodeType == 1) {
+        if (this.nodeType == "element") {
             let dom = document.createElement(this.nodeName)
             this.attrs.forEach(prop => {
                 let evalexp=StrToEvalstr(prop.value);
@@ -116,7 +116,7 @@ export class VinallaNode extends VNode{
             this.directiveBind()
             return this.DomSet
         }
-        if (this.nodeType == 3) {
+        if (this.nodeType == "text") {
             let dom = document.createTextNode(this.nodeValue)
             this.DomSet=[{type:DomType.NEW,dom:dom}]
             let evalexp=StrToEvalstr(this.nodeValue)
@@ -130,7 +130,7 @@ export class VinallaNode extends VNode{
             }
             return this.DomSet
         }
-        if(this.nodeType==8){
+        if(this.nodeType=="comment"){
             let dom=document.createComment(this.nodeValue)
             this.DomSet=[{type:DomType.NEW,dom: dom}]
             return this.DomSet
@@ -138,7 +138,7 @@ export class VinallaNode extends VNode{
     }
     Refresh() {
         this.DomSet.forEach(dom=>dom.type=DomType.CONSTANT);
-        if(this.nodeType==1){
+        if(this.nodeType=="element"){
             let thedom=this.DomSet[0].dom
             let childdom:Node=null
             this.Children.forEach(child=>{
@@ -163,7 +163,7 @@ export class VinallaNode extends VNode{
     }
     Update(){
         //todo 更新属性
-        if (this.nodeType == 1) {
+        if (this.nodeType == "element") {
             let children: VNode[] = []
             this.Children.forEach(child => {
                 children.push(child)
@@ -174,7 +174,7 @@ export class VinallaNode extends VNode{
             //todo 设置属性
             return
         }
-        if (this.nodeType == 3) {
+        if (this.nodeType == "text") {
             let evalexp=StrToEvalstr(this.nodeValue)
             if (!evalexp.isconst) {
                 this.DomSet[0].dom.textContent=this.mvvm.$GetExpOrFunValue(evalexp.exp)

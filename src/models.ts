@@ -2,7 +2,7 @@ import { DomType } from './const';
 import { AppMvvm } from './mvvm/app-mvvm';
 import { ComponentMvvm } from './mvvm/component-mvvm';
 import { DirectiveMVVM } from './mvvm/directive-mvvm';
-import { VDom } from './vdom/vdom';
+import { CustDom } from './vdom/parser';
 
 interface BaseOption{
     namespace?:string,
@@ -59,7 +59,7 @@ export interface ComponentMvvmFactoryOption {
     $constructor:IComponentMvvm
     $preProcess:boolean
     $id:string,
-    $domtree:VDom,
+    $domtree:CustDom,
     $origin:ComponentOption
 }
 export interface RouterInfo{

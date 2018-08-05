@@ -2,11 +2,12 @@ import { REG_IN, REG_OUT, VNodeStatus } from "../const";
 import { GetInnerDir } from '../directive/inner-dir';
 import { DomStatus } from '../models';
 import { Mvvm } from "../mvvm/mvvm";
-import { NewVNode, VDom } from "../vdom/vdom";
+import { NewVNode } from "../vdom/vdom";
 import { PRE } from './../const';
 import { ComponentMvvm } from './../mvvm/component-mvvm';
 import { PlugNode } from "./plug-node";
 import { VNode } from "./vnode";
+import { CustDom } from "../vdom/parser";
 
 export class CustomNode extends VNode{
     //输入与输出值
@@ -19,7 +20,7 @@ export class CustomNode extends VNode{
     /**获取自定义组建上的class 或者r-class属性 */
     private classes:{[key:string]:string}={};
 
-    constructor(public Vdom:VDom,public mvvm: Mvvm,public Parent:VNode,public SurroundMvvm:ComponentMvvm) {
+    constructor(public Vdom:CustDom,public mvvm: Mvvm,public Parent:VNode,public SurroundMvvm:ComponentMvvm) {
         super(Vdom,mvvm,Parent)
         if(this.Vdom){
             for (let i = 0; i < this.Vdom.Attrs.length; i++) {
