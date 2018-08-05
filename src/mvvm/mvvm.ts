@@ -9,7 +9,6 @@ import { DomStatus, OnDataChange, RouterInfo } from './../models';
 import { VinallaNode } from './../vnode/vinalla-node';
 import { NotifyUrlChange } from '../router/router-manager';
 export abstract class Mvvm {
-    private $data:any={}
     public $namespace="default"
 
     protected $treeRoot:VNode
@@ -31,17 +30,9 @@ export abstract class Mvvm {
         this.$namespace=this.$InitNamespace()
 
         this.$dataItems.forEach(item=>{
-            this.$data[item.name]=item.value
-            Object.defineProperty(this,item.name,{
-                get:()=>{
-                    return this.$data[item.name]
-                },
-                set:(value:any)=>{
-                    this.$data[item.name]=value
-                }
-            })
+            ReactiveKey(this,item.name);
+            ReactiveData(item.value);
         })
-        ReactiveData(this.$data)
 
         this.$computeItems.forEach(item=>{
             ReactiveComputed(this,this.$treeRoot,item.name,item.get)
@@ -65,9 +56,9 @@ export abstract class Mvvm {
     $ExtendMvvm():Mvvm{return this;}
     
     $SetValue(exp:string,value:any){
-        let keys=exp.split(".")
-        let target=this.$data
-        let hasTraget=true
+        let keys=exp.split(".");
+        let target:any=this;
+        let hasTraget=true;
         for(let i=0;i<keys.length-1;i++){
             if(target!=null)
                 target=target[keys[i]]
@@ -112,16 +103,8 @@ export abstract class Mvvm {
     }
     /**动态的增加响应式数据 */
     $AddReactiveData(name:string,value:any){
-        this.$data[name]=value;
-        Object.defineProperty(this,name,{
-            get:()=>{
-                return this.$data[name]
-            },
-            set:(value:any)=>{
-                this.$data[name]=value
-            }
-        });
-        ReactiveKey(this.$data,name);
+        (this as any)[name]=value;
+        ReactiveKey(this,name);
         ReactiveData(value);
     }
     private getAnchorNode(name:string):VinallaNode{

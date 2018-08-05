@@ -1521,7 +1521,6 @@ var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
 var router_manager_1 = __webpack_require__(/*! ../router/router-manager */ "./src/router/router-manager.ts");
 var Mvvm = /** @class */ (function () {
     function Mvvm() {
-        this.$data = {};
         this.$namespace = "default";
         this.$dataItems = [];
         this.$computeItems = [];
@@ -1541,17 +1540,9 @@ var Mvvm = /** @class */ (function () {
         this.$treeRoot = this.$InitTreeroot();
         this.$namespace = this.$InitNamespace();
         this.$dataItems.forEach(function (item) {
-            _this.$data[item.name] = item.value;
-            Object.defineProperty(_this, item.name, {
-                get: function () {
-                    return _this.$data[item.name];
-                },
-                set: function (value) {
-                    _this.$data[item.name] = value;
-                }
-            });
+            observer_1.ReactiveKey(_this, item.name);
+            observer_1.ReactiveData(item.value);
         });
-        observer_1.ReactiveData(this.$data);
         this.$computeItems.forEach(function (item) {
             observer_1.ReactiveComputed(_this, _this.$treeRoot, item.name, item.get);
         });
@@ -1572,7 +1563,7 @@ var Mvvm = /** @class */ (function () {
     Mvvm.prototype.$ExtendMvvm = function () { return this; };
     Mvvm.prototype.$SetValue = function (exp, value) {
         var keys = exp.split(".");
-        var target = this.$data;
+        var target = this;
         var hasTraget = true;
         for (var i = 0; i < keys.length - 1; i++) {
             if (target != null)
@@ -1622,17 +1613,8 @@ var Mvvm = /** @class */ (function () {
     };
     /**动态的增加响应式数据 */
     Mvvm.prototype.$AddReactiveData = function (name, value) {
-        var _this = this;
-        this.$data[name] = value;
-        Object.defineProperty(this, name, {
-            get: function () {
-                return _this.$data[name];
-            },
-            set: function (value) {
-                _this.$data[name] = value;
-            }
-        });
-        observer_1.ReactiveKey(this.$data, name);
+        this[name] = value;
+        observer_1.ReactiveKey(this, name);
         observer_1.ReactiveData(value);
     };
     Mvvm.prototype.getAnchorNode = function (name) {
@@ -2853,7 +2835,7 @@ var ForNode = /** @class */ (function (_super) {
         }
         return _this;
     }
-    ForNode.prototype.newCopyNode = function (item, items) {
+    ForNode.prototype.newCopyNode = function (item) {
         var that = this;
         var itemexp = this.forExp.itemExp;
         var mvvm = new (/** @class */ (function (_super) {
@@ -2892,7 +2874,7 @@ var ForNode = /** @class */ (function (_super) {
                 if (that.indexName != null)
                     Object.defineProperty(mvvm, that.indexName, {
                         get: function () {
-                            // let items=mvvm.$GetExpOrFunValue(that.forExp.arrayExp);
+                            var items = mvvm.$GetExpOrFunValue(that.forExp.arrayExp);
                             return items.indexOf(item);
                         },
                         configurable: true,
@@ -2929,7 +2911,7 @@ var ForNode = /** @class */ (function (_super) {
         var childToDeleted = [];
         opers.forEach(function (oper) {
             if (oper.type == "add") {
-                var custnode = _this.newCopyNode(newitems[oper.newSetIndex], newitems);
+                var custnode = _this.newCopyNode(newitems[oper.newSetIndex]);
                 custnode.Render();
                 if (oper.oldSetIndex == -1) {
                     _this.Children.unshift(custnode);
@@ -2942,7 +2924,7 @@ var ForNode = /** @class */ (function (_super) {
                 childToDeleted.push(_this.Children[oper.oldSetIndex]);
             }
             if (oper.type == "replace") {
-                var custnode = _this.newCopyNode(newitems[oper.newSetIndex], newitems);
+                var custnode = _this.newCopyNode(newitems[oper.newSetIndex]);
                 custnode.Render();
                 childToDeleted.push(_this.Children[oper.oldSetIndex]);
                 _this.Children.splice(oper.oldSetIndex, 0, custnode);
@@ -2979,7 +2961,7 @@ var ForNode = /** @class */ (function (_super) {
         if (toString.call(array) == "[object Array]") {
             for (var _i = 0, array_1 = array; _i < array_1.length; _i++) {
                 var value = array_1[_i];
-                var child = this.newCopyNode(value, array);
+                var child = this.newCopyNode(value);
                 this.Children.push(child);
             }
         }
