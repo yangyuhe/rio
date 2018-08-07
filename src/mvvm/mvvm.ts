@@ -62,7 +62,7 @@ export abstract class Mvvm {
         let hasTraget=true;
         for(let i=0;i<keys.length-1;i++){
             if(target!=null)
-                target=target[keys[i]]
+                target=target.$GetExpOrFunValue(keys[i]);
             else{
                 hasTraget=false
                 break

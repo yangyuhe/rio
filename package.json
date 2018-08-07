@@ -1,6 +1,6 @@
 {
   "name": "@yangyuhe/riojs",
-  "version": "1.2.9",
+  "version": "1.3.0",
   "description": "a javascript framework to build reactive webapp",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

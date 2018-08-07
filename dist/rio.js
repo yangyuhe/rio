@@ -12904,7 +12904,7 @@ var Mvvm = /** @class */ (function () {
         var hasTraget = true;
         for (var i = 0; i < keys.length - 1; i++) {
             if (target != null)
-                target = target[keys[i]];
+                target = target.$GetExpOrFunValue(keys[i]);
             else {
                 hasTraget = false;
                 break;
