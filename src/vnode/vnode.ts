@@ -1,10 +1,11 @@
 import { Mvvm } from '../mvvm/mvvm';
 import { NewVNode } from '../vdom/vdom';
-import { DomType, VNodeStatus } from './../const';
-import { DomStatus } from './../models';
+import { DomType, VNodeStatus } from '../const';
+import { DomStatus } from '../models';
 import { VinallaNode } from './vinalla-node';
 import { CustDom } from '../vdom/parser';
-export abstract class VNode {
+import { IONode } from './io-node';
+export abstract class VNode extends IONode{
     //元素值 只有当nodeType为text时才有用，其他时候为null
     protected nodeValue: string
     //元素名称 都是小写字母
@@ -20,6 +21,7 @@ export abstract class VNode {
     protected status:VNodeStatus=VNodeStatus.ACTIVE
 
     constructor(public Vdom:CustDom,public mvvm: Mvvm,public Parent:VNode) {
+        super(Vdom);
         if(this.Vdom!=null){
             this.nodeValue = this.Vdom.Text
             this.nodeName = this.Vdom.Name
@@ -87,5 +89,15 @@ export abstract class VNode {
                 return anchor;
         }
         return null;
+    }
+    OnMount(){
+        this.Children.forEach(child=>{
+            child.OnMount();
+        });
+    }
+    OnNextTick(){
+        this.Children.forEach(child=>{
+            child.OnNextTick();
+        });
     }
 }

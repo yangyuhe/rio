@@ -11469,11 +11469,7 @@ function App(option) {
                 });
             };
             $AppMvvm.prototype.$Render = function () {
-                var _this = this;
                 var domstatus = _super.prototype.$Render.call(this);
-                this.$MountFuncs.forEach(function (func) {
-                    _this[func].call(_this);
-                });
                 return domstatus;
             };
             $AppMvvm.prototype.$OnDestroy = function () {
@@ -11508,6 +11504,13 @@ function App(option) {
             };
             $AppMvvm.prototype.$InitEl = function () {
                 return option.el;
+            };
+            $AppMvvm.prototype.$OnMount = function () {
+                var _this = this;
+                _super.prototype.$OnMount.call(this);
+                this.$MountFuncs.forEach(function (func) {
+                    _this[func].call(_this);
+                });
             };
             return $AppMvvm;
         }(target));
@@ -11575,11 +11578,7 @@ function Component(option) {
                 });
             };
             $ComponentMvvm.prototype.$Render = function () {
-                var _this = this;
                 var domstatus = _super.prototype.$Render.call(this);
-                this.$MountFuncs.forEach(function (func) {
-                    _this[func].call(_this);
-                });
                 return domstatus;
             };
             $ComponentMvvm.prototype.$OnDestroy = function () {
@@ -11621,6 +11620,13 @@ function Component(option) {
             };
             $ComponentMvvm.prototype.$InitOuts = function () {
                 return option.events;
+            };
+            $ComponentMvvm.prototype.$OnMount = function () {
+                var _this = this;
+                _super.prototype.$OnMount.call(this);
+                this.$MountFuncs.forEach(function (func) {
+                    _this[func].call(_this);
+                });
             };
             return $ComponentMvvm;
         }(target));
@@ -12485,6 +12491,7 @@ function Start() {
             rootdom.style.display = "";
         }
         target.parentElement.replaceChild(content.dom, target);
+        mvvm.$OnMount();
     });
 }
 exports.Start = Start;
@@ -12492,6 +12499,10 @@ function RefreshApp() {
     apps.forEach(function (app) { return app.$Refresh(); });
 }
 exports.RefreshApp = RefreshApp;
+function NextTick() {
+    apps.forEach(function (app) { return app.$NoticeNextTickListener(); });
+}
+exports.NextTick = NextTick;
 
 
 /***/ }),
@@ -12589,6 +12600,7 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
 var mvvm_1 = __webpack_require__(/*! ./mvvm */ "./src/mvvm/mvvm.ts");
+var observer_1 = __webpack_require__(/*! ../observer/observer */ "./src/observer/observer.ts");
 var ComponentMvvm = /** @class */ (function (_super) {
     __extends(ComponentMvvm, _super);
     function ComponentMvvm() {
@@ -12613,7 +12625,14 @@ var ComponentMvvm = /** @class */ (function (_super) {
             }
             if (inName != null) {
                 if (inName.const) {
-                    _this[prop.origin] = inName.value;
+                    Object.defineProperty(_this, prop.origin, {
+                        get: function () {
+                            return inName.value;
+                        },
+                        set: function () {
+                            throw new Error("can not change prop of component");
+                        }
+                    });
                 }
                 else {
                     Object.defineProperty(_this, prop.origin, {
@@ -12621,9 +12640,24 @@ var ComponentMvvm = /** @class */ (function (_super) {
                             var newvalue = _this.$fenceNode.mvvm.$GetExpOrFunValue(inName.value);
                             _this.$checkProp(prop, newvalue);
                             return newvalue;
+                        },
+                        set: function () {
+                            throw new Error("can not change prop of component");
                         }
                     });
                 }
+            }
+            else {
+                var value_1 = _this[prop.origin];
+                observer_1.ReactiveData(value_1);
+                Object.defineProperty(_this, prop.origin, {
+                    get: function () {
+                        return value_1;
+                    },
+                    set: function () {
+                        throw new Error("can not change prop of component");
+                    }
+                });
             }
         });
     };
@@ -12742,9 +12776,8 @@ var DirectiveMVVM = /** @class */ (function () {
         this.$MountFuncs = [];
         this.$DestroyFuncs = [];
     }
-    DirectiveMVVM.prototype.$Initialize = function (directive, vnode) {
+    DirectiveMVVM.prototype.$Initialize = function (vnode) {
         var _this = this;
-        this.$directive = directive;
         this.$vnode = vnode;
         this.$InitFuncs.forEach(function (func) {
             _this[func].call(_this);
@@ -12759,7 +12792,7 @@ var DirectiveMVVM = /** @class */ (function () {
     DirectiveMVVM.prototype.$Render = function () {
         var _this = this;
         this.$Ins.forEach(function (prop) {
-            var inName = _this.$directive.GetIn(prop.name);
+            var inName = _this.$vnode.GetIn(prop.name);
             if (inName == null && prop.required) {
                 throw new Error("component \'" + _this.$Name + "\' need prop \'" + prop.name + "'");
             }
@@ -12848,7 +12881,7 @@ exports.DirectiveMVVM = DirectiveMVVM;
 /***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var notice_center_1 = __webpack_require__(/*! ./../observer/notice-center */ "./src/observer/notice-center.ts");
+var notice_center_1 = __webpack_require__(/*! ../observer/notice-center */ "./src/observer/notice-center.ts");
 var eval_1 = __webpack_require__(/*! ../eval */ "./src/eval.js");
 var observer_1 = __webpack_require__(/*! ../observer/observer */ "./src/observer/observer.ts");
 var watcher_1 = __webpack_require__(/*! ../observer/watcher */ "./src/observer/watcher.ts");
@@ -12862,6 +12895,7 @@ var Mvvm = /** @class */ (function () {
         this.$dataItems = [];
         this.$computeItems = [];
         this.$isroot = false;
+        this.nextTicksCbs = [];
     }
     Object.defineProperty(Mvvm.prototype, "$router", {
         get: function () {
@@ -13002,6 +13036,17 @@ var Mvvm = /** @class */ (function () {
         window.history.replaceState(null, null, url);
         router_manager_1.NotifyUrlChange();
     };
+    Mvvm.prototype.$OnMount = function () {
+        this.$treeRoot.OnMount();
+    };
+    Mvvm.prototype.$NoticeNextTickListener = function () {
+        this.nextTicksCbs.forEach(function (cb) { return cb(); });
+        this.nextTicksCbs = [];
+        this.$treeRoot.OnNextTick();
+    };
+    Mvvm.prototype.$OnNextTick = function (cb) {
+        this.nextTicksCbs.push(cb);
+    };
     return Mvvm;
 }());
 exports.Mvvm = Mvvm;
@@ -13042,6 +13087,7 @@ function RevokeWatcher() {
     }
     else {
         start_1.RefreshApp();
+        start_1.NextTick();
     }
 }
 exports.RevokeWatcher = RevokeWatcher;
@@ -13955,10 +14001,9 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var inner_dir_1 = __webpack_require__(/*! ../directive/inner-dir */ "./src/directive/inner-dir.ts");
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
-var const_2 = __webpack_require__(/*! ./../const */ "./src/const.ts");
+var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var plug_node_1 = __webpack_require__(/*! ./plug-node */ "./src/vnode/plug-node.ts");
 var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var CustomNode = /** @class */ (function (_super) {
@@ -13969,10 +14014,6 @@ var CustomNode = /** @class */ (function (_super) {
         _this.mvvm = mvvm;
         _this.Parent = Parent;
         _this.SurroundMvvm = SurroundMvvm;
-        //输入与输出值
-        _this.ins_pure = {};
-        _this.ins_exp = {};
-        _this.outs = {};
         /**获取自定义组建上的style 或者r-style属性 */
         _this.styles = {};
         /**获取自定义组建上的class 或者r-class属性 */
@@ -13982,45 +14023,18 @@ var CustomNode = /** @class */ (function (_super) {
                 var name_1 = _this.Vdom.Attrs[i].Name;
                 var value = _this.Vdom.Attrs[i].Value;
                 //是否是样式
-                if (name_1 == "style" || name_1 == const_2.PRE + "style") {
+                if (name_1 == "style" || name_1 == const_1.PRE + "style") {
                     _this.styles[name_1] = value;
                     continue;
                 }
-                if (name_1 == "class" || name_1 == const_2.PRE + "class") {
+                if (name_1 == "class" || name_1 == const_1.PRE + "class") {
                     _this.classes[name_1] = value;
                     continue;
-                }
-                //输入
-                var ins = _this.SurroundMvvm.$InitIns();
-                for (var i_1 = 0; i_1 < ins.length; i_1++) {
-                    var prop = ins[i_1];
-                    if (const_1.REG_IN.test(name_1) && prop.name == RegExp.$1) {
-                        _this.ins_exp[RegExp.$1] = value;
-                        break;
-                    }
-                    else {
-                        if (prop.name == name_1) {
-                            _this.ins_pure[name_1] = value;
-                            break;
-                        }
-                    }
-                }
-                //输出
-                var outs = _this.SurroundMvvm.$InitOuts();
-                for (var i_2 = 0; i_2 < outs.length; i_2++) {
-                    var event_1 = outs[i_2];
-                    if (const_1.REG_OUT.test(name_1) && event_1.name == RegExp.$1) {
-                        _this.outs[RegExp.$1] = value;
-                        break;
-                    }
                 }
             }
         }
         return _this;
     }
-    CustomNode.prototype.AddIns = function (name, exp) {
-        this.ins_exp[name] = exp;
-    };
     /**获取跟slot匹配的模版内容 */
     CustomNode.prototype.GetTemplate = function (name) {
         for (var i = 0; i < this.Children.length; i++) {
@@ -14041,18 +14055,18 @@ var CustomNode = /** @class */ (function (_super) {
                 dom.dom.style[kv[0]] = kv[1];
             });
         }
-        if (this.styles[const_2.PRE + 'style'] != null) {
-            var styledir = inner_dir_1.GetInnerDir(const_2.PRE + "style");
-            var exp = this.styles[const_2.PRE + 'style'];
+        if (this.styles[const_1.PRE + 'style'] != null) {
+            var styledir = inner_dir_1.GetInnerDir(const_1.PRE + "style");
+            var exp = this.styles[const_1.PRE + 'style'];
             styledir(exp, this);
         }
         if (this.classes['class'] != null) {
             var classitem = this.classes['class'].split(/\s+/);
             (_a = dom.dom.classList).add.apply(_a, classitem);
         }
-        if (this.classes[const_2.PRE + "class"] != null) {
-            var classdir = inner_dir_1.GetInnerDir(const_2.PRE + 'class');
-            var exp = this.classes[const_2.PRE + 'class'];
+        if (this.classes[const_1.PRE + "class"] != null) {
+            var classdir = inner_dir_1.GetInnerDir(const_1.PRE + 'class');
+            var exp = this.classes[const_1.PRE + 'class'];
             classdir(exp, this);
         }
         return this.DomSet;
@@ -14089,16 +14103,6 @@ var CustomNode = /** @class */ (function (_super) {
             return this.mvvm.$GetExpOrFunValue(this.ins_exp[prop]);
         return null;
     };
-    CustomNode.prototype.GetIn = function (prop) {
-        if (this.ins_pure[prop] != null)
-            return { value: this.ins_pure[prop], const: true };
-        if (this.ins_exp[prop] != null)
-            return { value: this.ins_exp[prop], const: false };
-        return null;
-    };
-    CustomNode.prototype.GetOut = function (prop) {
-        return this.outs[prop];
-    };
     CustomNode.prototype.Refresh = function () {
         this.SurroundMvvm.$Refresh();
     };
@@ -14117,61 +14121,17 @@ var CustomNode = /** @class */ (function (_super) {
     CustomNode.prototype.OnRouterChange = function () {
         this.SurroundMvvm.$OnRouterChange();
     };
+    CustomNode.prototype.OnMount = function () {
+        _super.prototype.OnMount.call(this);
+        this.SurroundMvvm.$OnMount();
+    };
+    CustomNode.prototype.OnNextTick = function () {
+        _super.prototype.OnNextTick.call(this);
+        this.SurroundMvvm.$NoticeNextTickListener();
+    };
     return CustomNode;
 }(vnode_1.VNode));
 exports.CustomNode = CustomNode;
-
-
-/***/ }),
-
-/***/ "./src/vnode/directive-node.ts":
-/*!*************************************!*\
-  !*** ./src/vnode/directive-node.ts ***!
-  \*************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
-var DirectiveNode = /** @class */ (function () {
-    function DirectiveNode(vdom) {
-        var _this = this;
-        this.vdom = vdom;
-        //输入与输出值
-        this.ins_pure = {};
-        this.ins_exp = {};
-        this.outs = {};
-        this.vdom.Attrs.forEach(function (attr) {
-            _this.addProperty(attr.Name, attr.Value);
-        });
-    }
-    DirectiveNode.prototype.addProperty = function (name, value) {
-        //输入
-        if (const_1.REG_IN.test(name)) {
-            this.ins_exp[RegExp.$1] = value;
-            return;
-        }
-        //输出
-        if (const_1.REG_OUT.test(name)) {
-            this.outs[RegExp.$1] = value;
-            return;
-        }
-        this.ins_pure[name] = value;
-        return;
-    };
-    DirectiveNode.prototype.GetIn = function (prop) {
-        if (this.ins_pure[prop] != null)
-            return { value: this.ins_pure[prop], const: true };
-        if (this.ins_exp[prop] != null)
-            return { value: this.ins_exp[prop], const: false };
-        return null;
-    };
-    DirectiveNode.prototype.GetOut = function (prop) {
-        return this.outs[prop];
-    };
-    return DirectiveNode;
-}());
-exports.DirectiveNode = DirectiveNode;
 
 
 /***/ }),
@@ -14200,7 +14160,7 @@ var eval_1 = __webpack_require__(/*! ../eval */ "./src/eval.js");
 var models_1 = __webpack_require__(/*! ../models */ "./src/models.ts");
 var mvvm_1 = __webpack_require__(/*! ../mvvm/mvvm */ "./src/mvvm/mvvm.ts");
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
-var const_2 = __webpack_require__(/*! ./../const */ "./src/const.ts");
+var const_2 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var ForNode = /** @class */ (function (_super) {
     __extends(ForNode, _super);
@@ -14398,7 +14358,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var const_1 = __webpack_require__(/*! ./../const */ "./src/const.ts");
+var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
 var const_2 = __webpack_require__(/*! ../const */ "./src/const.ts");
@@ -14470,6 +14430,60 @@ exports.IfNode = IfNode;
 
 /***/ }),
 
+/***/ "./src/vnode/io-node.ts":
+/*!******************************!*\
+  !*** ./src/vnode/io-node.ts ***!
+  \******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
+var IONode = /** @class */ (function () {
+    function IONode(vdom) {
+        var _this = this;
+        this.vdom = vdom;
+        //输入与输出值
+        this.ins_pure = {};
+        this.ins_exp = {};
+        this.outs = {};
+        if (this.vdom != null) {
+            this.vdom.Attrs.forEach(function (attr) {
+                _this.addProperty(attr.Name, attr.Value);
+            });
+        }
+    }
+    IONode.prototype.addProperty = function (name, value) {
+        //输入
+        if (const_1.REG_IN.test(name)) {
+            this.ins_exp[RegExp.$1] = value;
+            return;
+        }
+        //输出
+        if (const_1.REG_OUT.test(name)) {
+            this.outs[RegExp.$1] = value;
+            return;
+        }
+        this.ins_pure[name] = value;
+        return;
+    };
+    IONode.prototype.GetIn = function (prop) {
+        if (this.ins_pure[prop] != null)
+            return { value: this.ins_pure[prop], const: true };
+        if (this.ins_exp[prop] != null)
+            return { value: this.ins_exp[prop], const: false };
+        return null;
+    };
+    IONode.prototype.GetOut = function (prop) {
+        return this.outs[prop];
+    };
+    return IONode;
+}());
+exports.IONode = IONode;
+
+
+/***/ }),
+
 /***/ "./src/vnode/plug-node.ts":
 /*!********************************!*\
   !*** ./src/vnode/plug-node.ts ***!
@@ -14493,7 +14507,6 @@ var PlugNode = /** @class */ (function (_super) {
     __extends(PlugNode, _super);
     function PlugNode(vdom, mvvm, Parent, templatename) {
         var _this = _super.call(this, vdom, mvvm, Parent) || this;
-        _this.vdom = vdom;
         _this.mvvm = mvvm;
         _this.Parent = Parent;
         _this.templatename = templatename;
@@ -14542,7 +14555,7 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var router_manager_1 = __webpack_require__(/*! ../router/router-manager */ "./src/router/router-manager.ts");
-var const_1 = __webpack_require__(/*! ./../const */ "./src/const.ts");
+var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var custom_node_1 = __webpack_require__(/*! ./custom-node */ "./src/vnode/custom-node.ts");
 var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var RouterNode = /** @class */ (function (_super) {
@@ -14638,7 +14651,6 @@ var SlotNode = /** @class */ (function (_super) {
     __extends(SlotNode, _super);
     function SlotNode(vdom, mvvm, Parent, name) {
         var _this = _super.call(this, vdom, mvvm, Parent) || this;
-        _this.vdom = vdom;
         _this.mvvm = mvvm;
         _this.Parent = Parent;
         _this.name = name;
@@ -14735,11 +14747,10 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var inner_dir_1 = __webpack_require__(/*! ../directive/inner-dir */ "./src/directive/inner-dir.ts");
 var directive_manager_1 = __webpack_require__(/*! ../manager/directive-manager */ "./src/manager/directive-manager.ts");
 var util_1 = __webpack_require__(/*! ../util */ "./src/util.ts");
-var const_1 = __webpack_require__(/*! ./../const */ "./src/const.ts");
-var directive_node_1 = __webpack_require__(/*! ./directive-node */ "./src/vnode/directive-node.ts");
 var vnode_1 = __webpack_require__(/*! ./vnode */ "./src/vnode/vnode.ts");
 var VinallaNode = /** @class */ (function (_super) {
     __extends(VinallaNode, _super);
@@ -14765,10 +14776,9 @@ var VinallaNode = /** @class */ (function (_super) {
             if (ns.namespace == null)
                 ns.namespace = this_1.mvvm.$InitNamespace();
             if (directive_manager_1.IsDirectiveRegistered(ns.value, ns.namespace)) {
-                var dirNode = new directive_node_1.DirectiveNode(this_1.Vdom);
                 var dirCons = directive_manager_1.GetDirectiveCon(ns.value, ns.namespace);
                 var dirMvvm_1 = new dirCons();
-                dirMvvm_1.$Initialize(dirNode, this_1);
+                dirMvvm_1.$Initialize(this_1);
                 vanillaAttrs = vanillaAttrs.filter(function (attr) {
                     var name = attr.Name;
                     if (const_1.REG_IN.test(attr.Name) || const_1.REG_OUT.test(attr.Name))
@@ -14939,22 +14949,36 @@ exports.VinallaNode = VinallaNode;
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
-var const_1 = __webpack_require__(/*! ./../const */ "./src/const.ts");
-var VNode = /** @class */ (function () {
+var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
+var io_node_1 = __webpack_require__(/*! ./io-node */ "./src/vnode/io-node.ts");
+var VNode = /** @class */ (function (_super) {
+    __extends(VNode, _super);
     function VNode(Vdom, mvvm, Parent) {
-        this.Vdom = Vdom;
-        this.mvvm = mvvm;
-        this.Parent = Parent;
-        this.Children = [];
-        this.DomSet = [];
-        this.status = const_1.VNodeStatus.ACTIVE;
-        if (this.Vdom != null) {
-            this.nodeValue = this.Vdom.Text;
-            this.nodeName = this.Vdom.Name;
-            this.nodeType = this.Vdom.Type;
+        var _this = _super.call(this, Vdom) || this;
+        _this.Vdom = Vdom;
+        _this.mvvm = mvvm;
+        _this.Parent = Parent;
+        _this.Children = [];
+        _this.DomSet = [];
+        _this.status = const_1.VNodeStatus.ACTIVE;
+        if (_this.Vdom != null) {
+            _this.nodeValue = _this.Vdom.Text;
+            _this.nodeName = _this.Vdom.Name;
+            _this.nodeType = _this.Vdom.Type;
         }
+        return _this;
     }
     VNode.prototype.Reflow = function () {
         var _this = this;
@@ -15008,8 +15032,18 @@ var VNode = /** @class */ (function () {
         }
         return null;
     };
+    VNode.prototype.OnMount = function () {
+        this.Children.forEach(function (child) {
+            child.OnMount();
+        });
+    };
+    VNode.prototype.OnNextTick = function () {
+        this.Children.forEach(function (child) {
+            child.OnNextTick();
+        });
+    };
     return VNode;
-}());
+}(io_node_1.IONode));
 exports.VNode = VNode;
 
 

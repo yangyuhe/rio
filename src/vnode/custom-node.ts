@@ -1,19 +1,16 @@
-import { REG_IN, REG_OUT, VNodeStatus } from "../const";
+import { VNodeStatus } from "../const";
 import { GetInnerDir } from '../directive/inner-dir';
 import { DomStatus } from '../models';
 import { Mvvm } from "../mvvm/mvvm";
+import { CustDom } from "../vdom/parser";
 import { NewVNode } from "../vdom/vdom";
-import { PRE } from './../const';
-import { ComponentMvvm } from './../mvvm/component-mvvm';
+import { PRE } from '../const';
+import { ComponentMvvm } from '../mvvm/component-mvvm';
 import { PlugNode } from "./plug-node";
 import { VNode } from "./vnode";
-import { CustDom } from "../vdom/parser";
 
 export class CustomNode extends VNode{
-    //输入与输出值
-    private ins_pure:{[name:string]:any}={}
-    private ins_exp:{[name:string]:string}={}
-    private outs:{[name:string]:string}={}
+    
 
     /**获取自定义组建上的style 或者r-style属性 */
     private styles:{[key:string]:string}={};
@@ -35,38 +32,11 @@ export class CustomNode extends VNode{
                     this.classes[name]=value;
                     continue;
                 }
-                //输入
-                let ins=this.SurroundMvvm.$InitIns()
-                for(let i=0;i<ins.length;i++){
-                    let prop=ins[i]
-                    
-                    if(REG_IN.test(name) && prop.name==RegExp.$1){
-                        this.ins_exp[RegExp.$1]=value
-                        break
-                    }else{
-                        if(prop.name==name){
-                            this.ins_pure[name]=value
-                            break
-                        }
-                    }
-                }
-                //输出
-                let outs=this.SurroundMvvm.$InitOuts()
-                for(let i=0;i<outs.length;i++){
-                    let event=outs[i]
-                    
-                    if(REG_OUT.test(name) && event.name==RegExp.$1){
-                        this.outs[RegExp.$1]=value
-                        break
-                    }
-                }
             }
         }
         
     }
-    AddIns(name:string,exp:string){
-        this.ins_exp[name]=exp
-    }
+    
     /**获取跟slot匹配的模版内容 */
     GetTemplate(name:string):PlugNode{
         for(let i=0;i<this.Children.length;i++){
@@ -139,16 +109,6 @@ export class CustomNode extends VNode{
             return this.mvvm.$GetExpOrFunValue(this.ins_exp[prop])
         return null
     }
-    GetIn(prop:string){
-        if(this.ins_pure[prop]!=null)
-            return {value:this.ins_pure[prop],const:true} 
-        if(this.ins_exp[prop]!=null)
-            return {value:this.ins_exp[prop],const:false}
-        return null
-    }
-    GetOut(prop:string){
-        return this.outs[prop]
-    }
     
     
     Refresh() {
@@ -169,5 +129,13 @@ export class CustomNode extends VNode{
     }
     OnRouterChange(){
         this.SurroundMvvm.$OnRouterChange();
+    }
+    OnMount(){
+        super.OnMount();
+        this.SurroundMvvm.$OnMount();
+    }
+    OnNextTick(){
+        super.OnNextTick();
+        this.SurroundMvvm.$NoticeNextTickListener();
     }
 }

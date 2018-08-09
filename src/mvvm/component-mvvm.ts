@@ -2,8 +2,9 @@ import { DomStatus, Event, Prop } from "../models";
 import { TypeOf } from "../util";
 import { CustomNode } from "../vnode/custom-node";
 import { VNode } from "../vnode/vnode";
-import { VNodeStatus } from './../const';
+import { VNodeStatus } from '../const';
 import { Mvvm } from './mvvm';
+import { ReactiveData } from "../observer/observer";
 export class ComponentMvvm extends Mvvm{
     
 
@@ -30,16 +31,37 @@ export class ComponentMvvm extends Mvvm{
             }
             if(inName!=null){
                 if(inName.const){
-                    (this as any)[prop.origin]=inName.value
+                    Object.defineProperty(this,prop.origin,{
+                        get:()=>{
+                            return inName.value;
+                        },
+                        set:()=>{
+                            throw new Error("can not change prop of component");
+                        }
+                    });
                 }else{
                     Object.defineProperty(this,prop.origin,{
                         get:()=>{
                             let newvalue=this.$fenceNode.mvvm.$GetExpOrFunValue(inName.value);
                             this.$checkProp(prop,newvalue);
                             return newvalue;
+                        },
+                        set:()=>{
+                            throw new Error("can not change prop of component");
                         }
-                    })
+                    });
                 }
+            }else{
+                let value=(this as any)[prop.origin];
+                ReactiveData(value);
+                Object.defineProperty(this,prop.origin,{
+                    get:()=>{
+                        return value;
+                    },
+                    set:()=>{
+                        throw new Error("can not change prop of component");
+                    }
+                });
             }
         })
 

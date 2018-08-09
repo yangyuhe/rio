@@ -25,9 +25,7 @@ export function App(option:AppOption){
             }
             $Render():DomStatus{
                 let domstatus=super.$Render();
-                this.$MountFuncs.forEach(func=>{
-                    (this as any)[func].call(this)
-                });
+                
                 return domstatus;
             }
             $OnDestroy(){
@@ -61,7 +59,12 @@ export function App(option:AppOption){
             $InitEl(){
                 return option.el
             }
-            
+            $OnMount(){
+                super.$OnMount();
+                this.$MountFuncs.forEach(func=>{
+                    (this as any)[func].call(this)
+                });
+            }
         }
         RegisterApp(constructor)
     }

@@ -4,7 +4,7 @@ import { VNode } from "./vnode";
 import { CustDom } from '../vdom/parser';
 
 export class PlugNode extends VNode{
-    constructor(protected vdom:CustDom,public mvvm: Mvvm,public Parent:VNode,public templatename:string) {
+    constructor(vdom:CustDom,public mvvm: Mvvm,public Parent:VNode,public templatename:string) {
         super(vdom,mvvm,Parent)
     }
     

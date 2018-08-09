@@ -1,4 +1,4 @@
-import { AppMvvm } from './../mvvm/app-mvvm';
+import { AppMvvm } from '../mvvm/app-mvvm';
 import { GetApp } from "./app-manager";
 import {StartMatchUrl} from "../router/router-manager"
 let apps:AppMvvm[]=[]
@@ -19,10 +19,14 @@ export function Start() {
             rootdom.style.display="";
         }
 
-        target.parentElement.replaceChild(content.dom, target)
+        target.parentElement.replaceChild(content.dom, target);
+        mvvm.$OnMount();
     })
     
 }
 export function RefreshApp(){
     apps.forEach(app=>app.$Refresh())
+}
+export function NextTick(){
+    apps.forEach(app=>app.$NoticeNextTickListener());
 }

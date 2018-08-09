@@ -1,16 +1,18 @@
 import { REG_IN, REG_OUT } from '../const';
 import { CustDom } from '../vdom/parser';
 
-export class DirectiveNode {
+export class IONode {
     //输入与输出值
     protected ins_pure: { [name: string]: any } = {}
     protected ins_exp: { [name: string]: string } = {}
     protected outs: { [name: string]: string } = {}
 
     constructor(private vdom:CustDom) {
-        this.vdom.Attrs.forEach(attr=>{
-            this.addProperty(attr.Name,attr.Value)
-        })
+        if(this.vdom!=null){
+            this.vdom.Attrs.forEach(attr=>{
+                this.addProperty(attr.Name,attr.Value)
+            });
+        }
     }
     private addProperty(name: string, value: string):boolean{
         //输入

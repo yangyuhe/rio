@@ -1,5 +1,5 @@
 import { Watcher } from './watcher';
-import {RefreshApp} from "../manager/start"
+import {RefreshApp, NextTick} from "../manager/start"
 
 let queue:Watcher[]=[]
 let settimeout=false
@@ -23,6 +23,7 @@ export function RevokeWatcher(){
     if(queue.length>0){
         RevokeWatcher()
     }else{
-        RefreshApp()
+        RefreshApp();
+        NextTick();
     }
 }

@@ -1,4 +1,4 @@
-import { DomStatus } from './../models';
+import { DomStatus } from '../models';
 import { VNode } from "./vnode";
 
 export class TemplateNode extends VNode{

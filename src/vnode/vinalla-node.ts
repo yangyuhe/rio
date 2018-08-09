@@ -1,14 +1,12 @@
-import { GetInnerDir } from "../directive/inner-dir";
+import { ANCHOR, DomType, PRE, REG_ATTR, REG_IN, REG_OUT } from '../const';
+import { GetInnerDir, InnerDirective } from "../directive/inner-dir";
 import { GetDirectiveCon, IsDirectiveRegistered } from '../manager/directive-manager';
-import { DirectiveMVVM } from '../mvvm/directive-mvvm';
-import { GetNS, InsertDomChild, StrToEvalstr } from '../util';
-import { DomType, REG_IN, REG_OUT, REG_ATTR, PRE, ANCHOR } from './../const';
-import { InnerDirective } from './../directive/inner-dir';
-import { DirectiveNode } from './directive-node';
-import { VNode } from './vnode';
-import { Mvvm } from "../mvvm/mvvm";
 import { DomStatus } from "../models";
+import { DirectiveMVVM } from '../mvvm/directive-mvvm';
+import { Mvvm } from "../mvvm/mvvm";
+import { GetNS, InsertDomChild, StrToEvalstr } from '../util';
 import { CustDom } from "../vdom/parser";
+import { VNode } from './vnode';
 export class VinallaNode extends VNode{
     
     private directives:DirectiveMVVM[]=[]
@@ -33,10 +31,9 @@ export class VinallaNode extends VNode{
             if(ns.namespace==null)
                 ns.namespace=this.mvvm.$InitNamespace()
             if(IsDirectiveRegistered(ns.value,ns.namespace)){
-                let dirNode=new DirectiveNode(this.Vdom)
                 let dirCons=GetDirectiveCon(ns.value,ns.namespace)
                 let dirMvvm=new dirCons();
-                dirMvvm.$Initialize(dirNode,this);
+                dirMvvm.$Initialize(this);
                 vanillaAttrs=vanillaAttrs.filter(attr=>{
                     let name=attr.Name
                     if(REG_IN.test(attr.Name) || REG_OUT.test(attr.Name))

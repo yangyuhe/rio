@@ -5,7 +5,7 @@ import { DomStatus, ForExp } from "../models";
 import { Mvvm } from '../mvvm/mvvm';
 import { Watcher } from "../observer/watcher";
 import { NewVNode, Priority } from '../vdom/vdom';
-import { DomType } from './../const';
+import { DomType } from '../const';
 import { VNode } from "./vnode";
 import { CustDom } from "../vdom/parser";
 

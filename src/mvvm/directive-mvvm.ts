@@ -2,7 +2,6 @@ import { EvalExp } from "../eval";
 import { OnDataChange, Prop } from "../models";
 import { NoticeCallback, RegisterNotice, RevokeNotice } from "../observer/notice-center";
 import { Watcher } from "../observer/watcher";
-import { DirectiveNode } from './../vnode/directive-node';
 import { VinallaNode } from './../vnode/vinalla-node';
 export class DirectiveMVVM{
     
@@ -16,11 +15,9 @@ export class DirectiveMVVM{
     $MountFuncs:string[]=[]
     $DestroyFuncs:string[]=[]
     
-    private $directive:DirectiveNode;
     private $vnode:VinallaNode;
 
-    $Initialize(directive:DirectiveNode,vnode:VinallaNode){
-        this.$directive=directive;
+    $Initialize(vnode:VinallaNode){
         this.$vnode=vnode;
         this.$InitFuncs.forEach(func=>{
             (this as any)[func].call(this)
@@ -35,7 +32,7 @@ export class DirectiveMVVM{
     
     $Render(){
         this.$Ins.forEach(prop=>{
-            let inName=this.$directive.GetIn(prop.name)
+            let inName=this.$vnode.GetIn(prop.name)
             if(inName==null && prop.required){
                 throw new Error("component \'"+this.$Name+"\' need prop \'"+prop.name+"'")
             }

@@ -1,4 +1,4 @@
-import { DomType } from './../const';
+import { DomType } from '../const';
 import { Mvvm } from "../mvvm/mvvm";
 import { VNode } from "./vnode";
 import {  NewVNode, Priority } from "../vdom/vdom";

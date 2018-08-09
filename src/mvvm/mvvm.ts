@@ -1,12 +1,12 @@
-import { NoticeCallback, RegisterNotice, RevokeNotice } from './../observer/notice-center';
+import { NoticeCallback, RegisterNotice, RevokeNotice } from '../observer/notice-center';
 import { EvalExp } from "../eval";
 import { ReactiveComputed, ReactiveData, ReactiveKey } from "../observer/observer";
 import { Watcher } from "../observer/watcher";
 import { GetActiveRouter, WatchRouterChange } from "../router/router-state";
 import { NewVNode } from "../vdom/vdom";
 import { VNode } from "../vnode/vnode";
-import { DomStatus, OnDataChange, RouterInfo } from './../models';
-import { VinallaNode } from './../vnode/vinalla-node';
+import { DomStatus, OnDataChange, RouterInfo } from '../models';
+import { VinallaNode } from '../vnode/vinalla-node';
 import { NotifyUrlChange } from '../router/router-manager';
 import { Parse } from '../vdom/parser';
 export abstract class Mvvm {
@@ -17,6 +17,8 @@ export abstract class Mvvm {
     protected $dataItems:{name:string,value:any}[]=[]
     protected $computeItems:{name:string,get:()=>any}[]=[]
     private $isroot=false
+
+    private nextTicksCbs:(()=>void)[]=[]
 
     protected get $router(){
         return GetActiveRouter()
@@ -114,7 +116,7 @@ export abstract class Mvvm {
     GetRef(ref:string){
         let vnode= this.$treeRoot.GetAnchor(ref);
         if(vnode!=null && vnode.DomSet.length>0)
-            return vnode.DomSet[0].dom;
+            return vnode.DomSet[0].dom as HTMLElement;
         else
             return null;
     }
@@ -151,6 +153,18 @@ export abstract class Mvvm {
     $NavigateTo(url:string){
         window.history.replaceState(null,null,url)
         NotifyUrlChange()
+    }
+
+    $OnMount(){
+        this.$treeRoot.OnMount();
+    }
+    $NoticeNextTickListener(){
+        this.nextTicksCbs.forEach(cb=>cb());
+        this.nextTicksCbs=[];
+        this.$treeRoot.OnNextTick();
+    }
+    $OnNextTick(cb:()=>void){
+        this.nextTicksCbs.push(cb);
     }
 
     abstract $InitDataItems():{name:string,value:any}[];

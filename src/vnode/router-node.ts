@@ -1,8 +1,8 @@
 import { DomStatus } from '../models';
 import { Mvvm } from "../mvvm/mvvm";
 import { MoveBack, NextRouter } from "../router/router-manager";
-import { DomType, VNodeStatus } from './../const';
-import { IComponentMvvm } from './../models';
+import { DomType, VNodeStatus } from '../const';
+import { IComponentMvvm } from '../models';
 import { CustomNode } from "./custom-node";
 import { VNode } from "./vnode";
 import { CustDom } from '../vdom/parser';

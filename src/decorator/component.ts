@@ -2,7 +2,7 @@ import { GetDomTree, RegisterComponent, InitComponent } from '../manager/compone
 import { ComponentOption, Prop } from '../models';
 import { NewVNode } from '../vdom/vdom';
 import { VNode } from '../vnode/vnode';
-import { DomStatus, Event, IComponentMvvm } from './../models';
+import { DomStatus, Event, IComponentMvvm } from '../models';
 import { FetchProperty } from './property';
 
 let id=0;
@@ -33,9 +33,6 @@ export function Component(option:ComponentOption){
             }
             $Render():DomStatus{
                 let domstatus=super.$Render();
-                this.$MountFuncs.forEach(func=>{
-                    (this as any)[func].call(this)
-                });
                 return domstatus;
             }
             $OnDestroy(){
@@ -77,6 +74,12 @@ export function Component(option:ComponentOption){
             }
             $InitOuts():Event[]{
                 return option.events
+            }
+            $OnMount(){
+                super.$OnMount();
+                this.$MountFuncs.forEach(func=>{
+                    (this as any)[func].call(this)
+                });
             }
         }
         if(option.name==null)
