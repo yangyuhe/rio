@@ -200,13 +200,16 @@ interface InnerRouter extends Router{
 }
 
 export function NotifyUrlChange(){
-    matchcounter=0;
-    let matched=StartMatchUrl();
-    if(!matched){
-        throw new Error("no matched router");
-    }
-    firstVNode.OnRouterChange()
-    RefreshApp()
+    setTimeout(() => {
+        matchcounter=0;
+        let matched=StartMatchUrl();
+        if(!matched){
+            throw new Error("no matched router");
+        }
+        firstVNode.OnRouterChange()
+        RefreshApp()
+    }, 0);
+    
 }
 
 

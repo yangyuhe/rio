@@ -13614,13 +13614,15 @@ function MoveBack() {
 }
 exports.MoveBack = MoveBack;
 function NotifyUrlChange() {
-    matchcounter = 0;
-    var matched = StartMatchUrl();
-    if (!matched) {
-        throw new Error("no matched router");
-    }
-    firstVNode.OnRouterChange();
-    start_1.RefreshApp();
+    setTimeout(function () {
+        matchcounter = 0;
+        var matched = StartMatchUrl();
+        if (!matched) {
+            throw new Error("no matched router");
+        }
+        firstVNode.OnRouterChange();
+        start_1.RefreshApp();
+    }, 0);
 }
 exports.NotifyUrlChange = NotifyUrlChange;
 
