@@ -1,4 +1,4 @@
-import { DomStatus, Event, Prop } from "../models";
+import { DomStatus, Event, Prop, State } from "../models";
 import { TypeOf } from "../util";
 import { CustomNode } from "../vnode/custom-node";
 import { VNode } from "../vnode/vnode";
@@ -157,5 +157,8 @@ export class ComponentMvvm extends Mvvm{
     }
     $GetIns(){
         return this.$ins
+    }
+    $DecoratorStates():State[]{
+        throw new Error("Method not implemented.");   
     }
 }

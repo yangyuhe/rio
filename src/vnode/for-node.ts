@@ -1,7 +1,7 @@
 import { VNodeStatus } from "../const";
 import { Diff } from "../diff/diff";
 import { EvalExp } from '../eval';
-import { DomStatus, ForExp } from "../models";
+import { DomStatus, ForExp, Prop } from "../models";
 import { Mvvm } from '../mvvm/mvvm';
 import { Watcher } from "../observer/watcher";
 import { NewVNode, Priority } from '../vdom/vdom';
@@ -86,6 +86,7 @@ export class ForNode extends VNode{
                 let mvvm=this.$ExtendMvvm();
                 mvvm.$RevokeMethod(method,...params);
             }
+            $DecoratorStates():Prop[]{return []}
         });
         let vnode=NewVNode(this.Vdom,mvvm,this,Priority.IF);
         vnode.AttachChildren();

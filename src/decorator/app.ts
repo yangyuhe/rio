@@ -1,9 +1,9 @@
 import { RegisterApp } from "../manager/app-manager";
-import { AppOption, IAppMvvm, DomStatus } from "../models";
+import { AppOption, DomStatus, IAppMvvm, State } from "../models";
+import { Parse } from "../vdom/parser";
 import { NewVNode } from "../vdom/vdom";
 import { VNode } from "../vnode/vnode";
 import { FetchProperty } from "./property";
-import { Parse } from "../vdom/parser";
 
 
 
@@ -64,6 +64,9 @@ export function App(option:AppOption){
                 this.$MountFuncs.forEach(func=>{
                     (this as any)[func].call(this)
                 });
+            }
+            $DecoratorStates():State[]{
+                return res.states;
             }
         }
         RegisterApp(constructor)

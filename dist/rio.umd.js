@@ -11454,9 +11454,9 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var app_manager_1 = __webpack_require__(/*! ../manager/app-manager */ "./src/manager/app-manager.ts");
+var parser_1 = __webpack_require__(/*! ../vdom/parser */ "./src/vdom/parser.ts");
 var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
 var property_1 = __webpack_require__(/*! ./property */ "./src/decorator/property.ts");
-var parser_1 = __webpack_require__(/*! ../vdom/parser */ "./src/vdom/parser.ts");
 function App(option) {
     checkAppOption(option);
     var res = property_1.FetchProperty();
@@ -11520,6 +11520,9 @@ function App(option) {
                 this.$MountFuncs.forEach(function (func) {
                     _this[func].call(_this);
                 });
+            };
+            $AppMvvm.prototype.$DecoratorStates = function () {
+                return res.states;
             };
             return $AppMvvm;
         }(target));
@@ -11627,6 +11630,9 @@ function Component(option) {
             $ComponentMvvm.prototype.$InitIns = function () {
                 return res.props;
             };
+            $ComponentMvvm.prototype.$DecoratorStates = function () {
+                return res.states;
+            };
             $ComponentMvvm.prototype.$InitOuts = function () {
                 return option.events;
             };
@@ -11716,6 +11722,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var datas = [];
 var computes = [];
 var props = [];
+var states = [];
 var initFuncs = [];
 var mountFuncs = [];
 var destroyFuncs = [];
@@ -11738,6 +11745,16 @@ function Prop(name, required, type) {
     };
 }
 exports.Prop = Prop;
+function State(name, type) {
+    return function (target, key) {
+        states.push({
+            name: name,
+            type: type,
+            origin: key
+        });
+    };
+}
+exports.State = State;
 function OnInit(target, key, descriptor) {
     initFuncs.push(key);
 }
@@ -11754,6 +11771,7 @@ function FetchProperty() {
     var res = {
         computes: computes,
         props: props,
+        states: states,
         initFuncs: initFuncs,
         mountFuncs: mountFuncs,
         destroyFuncs: destroyFuncs,
@@ -11761,6 +11779,7 @@ function FetchProperty() {
     };
     computes = [];
     props = [];
+    states = [];
     initFuncs = [];
     mountFuncs = [];
     destroyFuncs = [];
@@ -12254,6 +12273,7 @@ exports.Prop = property_1.Prop;
 exports.OnInit = property_1.OnInit;
 exports.OnDestroy = property_1.OnDestroy;
 exports.OnMount = property_1.OnMount;
+exports.State = property_1.State;
 var directive_1 = __webpack_require__(/*! ./decorator/directive */ "./src/decorator/directive.ts");
 exports.Directive = directive_1.Directive;
 var component_mvvm_1 = __webpack_require__(/*! ./mvvm/component-mvvm */ "./src/mvvm/component-mvvm.ts");
@@ -12264,6 +12284,8 @@ var directive_mvvm_1 = __webpack_require__(/*! ./mvvm/directive-mvvm */ "./src/m
 exports.DirectiveMVVM = directive_mvvm_1.DirectiveMVVM;
 var router_manager_1 = __webpack_require__(/*! ./router/router-manager */ "./src/router/router-manager.ts");
 exports.RegisterRouter = router_manager_1.RegisterRouter;
+var root_mvvm_1 = __webpack_require__(/*! ./mvvm/root-mvvm */ "./src/mvvm/root-mvvm.ts");
+exports.CreateState = root_mvvm_1.CreateState;
 document.addEventListener("DOMContentLoaded", function () {
     start_1.Start();
 });
@@ -12582,6 +12604,9 @@ var AppMvvm = /** @class */ (function (_super) {
     AppMvvm.prototype.$InitEl = function () {
         throw new Error("Method not implemented.");
     };
+    AppMvvm.prototype.$DecoratorStates = function () {
+        throw new Error("Method not implemented.");
+    };
     return AppMvvm;
 }(mvvm_1.Mvvm));
 exports.AppMvvm = AppMvvm;
@@ -12759,6 +12784,9 @@ var ComponentMvvm = /** @class */ (function (_super) {
     ComponentMvvm.prototype.$GetIns = function () {
         return this.$ins;
     };
+    ComponentMvvm.prototype.$DecoratorStates = function () {
+        throw new Error("Method not implemented.");
+    };
     return ComponentMvvm;
 }(mvvm_1.Mvvm));
 exports.ComponentMvvm = ComponentMvvm;
@@ -12788,6 +12816,7 @@ var DirectiveMVVM = /** @class */ (function () {
     DirectiveMVVM.prototype.$Initialize = function (vnode) {
         var _this = this;
         this.$vnode = vnode;
+        this.$mvvm = this.$vnode.mvvm;
         this.$InitFuncs.forEach(function (func) {
             _this[func].call(_this);
         });
@@ -12890,20 +12919,22 @@ exports.DirectiveMVVM = DirectiveMVVM;
 /***/ (function(module, exports, __webpack_require__) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var notice_center_1 = __webpack_require__(/*! ../observer/notice-center */ "./src/observer/notice-center.ts");
 var eval_1 = __webpack_require__(/*! ../eval */ "./src/eval.js");
+var notice_center_1 = __webpack_require__(/*! ../observer/notice-center */ "./src/observer/notice-center.ts");
 var observer_1 = __webpack_require__(/*! ../observer/observer */ "./src/observer/observer.ts");
 var watcher_1 = __webpack_require__(/*! ../observer/watcher */ "./src/observer/watcher.ts");
-var router_state_1 = __webpack_require__(/*! ../router/router-state */ "./src/router/router-state.ts");
-var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
 var router_manager_1 = __webpack_require__(/*! ../router/router-manager */ "./src/router/router-manager.ts");
+var router_state_1 = __webpack_require__(/*! ../router/router-state */ "./src/router/router-state.ts");
 var parser_1 = __webpack_require__(/*! ../vdom/parser */ "./src/vdom/parser.ts");
+var vdom_1 = __webpack_require__(/*! ../vdom/vdom */ "./src/vdom/vdom.ts");
+var root_mvvm_1 = __webpack_require__(/*! ./root-mvvm */ "./src/mvvm/root-mvvm.ts");
 var Mvvm = /** @class */ (function () {
     function Mvvm() {
         this.$namespace = "default";
         this.$dataItems = [];
         this.$computeItems = [];
         this.$isroot = false;
+        this.$states = [];
         this.nextTicksCbs = [];
     }
     Object.defineProperty(Mvvm.prototype, "$router", {
@@ -12915,6 +12946,7 @@ var Mvvm = /** @class */ (function () {
     });
     Mvvm.prototype.$initialize = function () {
         var _this = this;
+        this.$states = this.$DecoratorStates();
         this.$dataItems = this.$InitDataItems();
         this.$computeItems = this.$InitComputeItems();
         this.$treeRoot = this.$InitTreeroot();
@@ -12925,6 +12957,22 @@ var Mvvm = /** @class */ (function () {
         });
         this.$computeItems.forEach(function (item) {
             observer_1.ReactiveComputed(_this, _this.$treeRoot, item.name, item.get);
+        });
+        this.$states.forEach(function (prop) {
+            var state = root_mvvm_1.GetGlobalState(prop.name);
+            if (state == null) {
+                throw new Error(" need global state \'" + prop.name + "'");
+            }
+            Object.defineProperty(_this, prop.origin, {
+                get: function () {
+                    var newvalue = root_mvvm_1.GetGlobalState(prop.name);
+                    _this.$checkState(prop, newvalue);
+                    return newvalue;
+                },
+                set: function () {
+                    throw new Error("can not change value of global state in mvvm");
+                }
+            });
         });
     };
     Mvvm.prototype.$AttachChildren = function () {
@@ -13056,9 +13104,103 @@ var Mvvm = /** @class */ (function () {
     Mvvm.prototype.$OnNextTick = function (cb) {
         this.nextTicksCbs.push(cb);
     };
+    Mvvm.prototype.$checkState = function (prop, value) {
+        var error = function (prop, type) {
+            throw new Error("global state \'" + prop + "\' not receive " + type);
+        };
+        if (prop.type == "array" && toString.call(value) != "[object Array]") {
+            error(prop.name, prop.type);
+        }
+        if (prop.type == "object" && toString.call(value) != "[object Object]") {
+            error(prop.name, prop.type);
+        }
+        if (prop.type == "number" && toString.call(value) != "[object Number]") {
+            error(prop.name, prop.type);
+        }
+        if (prop.type == "boolean" && toString.call(value) != "[object Boolean]") {
+            error(prop.name, prop.type);
+        }
+        if (prop.type == "string" && toString.call(value) != "[object String]") {
+            error(prop.name, prop.type);
+        }
+    };
+    Mvvm.prototype.$GetTreeRoot = function () {
+        return this.$treeRoot;
+    };
     return Mvvm;
 }());
 exports.Mvvm = Mvvm;
+
+
+/***/ }),
+
+/***/ "./src/mvvm/root-mvvm.ts":
+/*!*******************************!*\
+  !*** ./src/mvvm/root-mvvm.ts ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var eval_1 = __webpack_require__(/*! ../eval */ "./src/eval.js");
+var observer_1 = __webpack_require__(/*! ../observer/observer */ "./src/observer/observer.ts");
+var watcher_1 = __webpack_require__(/*! ../observer/watcher */ "./src/observer/watcher.ts");
+var mvvm_1 = __webpack_require__(/*! ./mvvm */ "./src/mvvm/mvvm.ts");
+var custom_node_1 = __webpack_require__(/*! ../vnode/custom-node */ "./src/vnode/custom-node.ts");
+var RootMvvm = /** @class */ (function () {
+    function RootMvvm() {
+    }
+    RootMvvm.prototype.$GetExpOrFunValue = function (expOrFunc) {
+        var res;
+        if (typeof expOrFunc == "string") {
+            res = eval_1.EvalExp(this, expOrFunc);
+        }
+        if (typeof expOrFunc == "function") {
+            res = expOrFunc.call(this);
+        }
+        return res;
+    };
+    RootMvvm.prototype.$AddReactiveData = function (name, value) {
+        this[name] = value;
+        observer_1.ReactiveKey(this, name);
+        observer_1.ReactiveData(value);
+    };
+    RootMvvm.prototype.$CreateWatcher = function (vnode, exp, listener, watchingArrayItem) {
+        return new watcher_1.Watcher(this, vnode, exp, listener, watchingArrayItem);
+    };
+    return RootMvvm;
+}());
+var globalMvvm = new RootMvvm();
+function CreateState(property, data) {
+    globalMvvm.$AddReactiveData(property, data);
+    return {
+        send: function (data) {
+            globalMvvm[property] = data;
+        },
+        value: function () {
+            return globalMvvm[property];
+        },
+        subscribe: function (mvvm, exp, listener) {
+            var value = globalMvvm.$GetExpOrFunValue(exp);
+            var isarray = toString.call(value) == "[object Array]";
+            if (mvvm != null) {
+                if (mvvm instanceof mvvm_1.Mvvm)
+                    globalMvvm.$CreateWatcher(mvvm.$GetTreeRoot(), exp, listener, isarray);
+                else
+                    globalMvvm.$CreateWatcher(mvvm.$vnode, exp, listener, isarray);
+            }
+            else {
+                var custnode = new custom_node_1.CustomNode(null, null, null, null);
+                globalMvvm.$CreateWatcher(custnode, exp, listener, isarray);
+            }
+        }
+    };
+}
+exports.CreateState = CreateState;
+function GetGlobalState(property) {
+    return globalMvvm[property];
+}
+exports.GetGlobalState = GetGlobalState;
 
 
 /***/ }),
@@ -13277,11 +13419,11 @@ function reactiveArray(array, collecter) {
         }
     });
 }
-function ReactiveComputed(mvvm, vnode, key, func) {
+function ReactiveComputed(evalable, vnode, key, func) {
     var collecter = new watcher_collect_1.WatcherCollecter(key);
     var firstget = true;
     var value;
-    Object.defineProperty(mvvm, key, {
+    Object.defineProperty(evalable, key, {
         get: function () {
             if ($target != null) {
                 collecter.AddTarget($target);
@@ -13289,7 +13431,7 @@ function ReactiveComputed(mvvm, vnode, key, func) {
             if (firstget) {
                 var old = $target;
                 $target = null;
-                var watcher = new watcher_1.Watcher(mvvm, vnode, func, function (newval) {
+                var watcher = new watcher_1.Watcher(evalable, vnode, func, function (newval) {
                     value = newval;
                     collecter.Notify();
                 });
@@ -13360,8 +13502,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var const_1 = __webpack_require__(/*! ../const */ "./src/const.ts");
 var observer_1 = __webpack_require__(/*! ./observer */ "./src/observer/observer.ts");
 var Watcher = /** @class */ (function () {
-    function Watcher(mvvm, vnode, ExpOrFunc, cb, watchingArrayItem) {
-        this.mvvm = mvvm;
+    function Watcher(evalable, vnode, ExpOrFunc, cb, watchingArrayItem) {
+        this.evalable = evalable;
         this.vnode = vnode;
         this.ExpOrFunc = ExpOrFunc;
         this.cb = cb;
@@ -13376,7 +13518,7 @@ var Watcher = /** @class */ (function () {
     }
     Watcher.prototype.getValue = function () {
         observer_1.SetTarget(this);
-        var res = this.mvvm.$GetExpOrFunValue(this.ExpOrFunc);
+        var res = this.evalable.$GetExpOrFunValue(this.ExpOrFunc);
         observer_1.CleanTarget();
         return res;
     };
@@ -13623,13 +13765,15 @@ function MoveBack() {
 }
 exports.MoveBack = MoveBack;
 function NotifyUrlChange() {
-    matchcounter = 0;
-    var matched = StartMatchUrl();
-    if (!matched) {
-        throw new Error("no matched router");
-    }
-    firstVNode.OnRouterChange();
-    start_1.RefreshApp();
+    setTimeout(function () {
+        matchcounter = 0;
+        var matched = StartMatchUrl();
+        if (!matched) {
+            throw new Error("no matched router");
+        }
+        firstVNode.OnRouterChange();
+        start_1.RefreshApp();
+    }, 0);
 }
 exports.NotifyUrlChange = NotifyUrlChange;
 
@@ -14257,6 +14401,7 @@ var ForNode = /** @class */ (function (_super) {
                 var mvvm = this.$ExtendMvvm();
                 mvvm.$RevokeMethod.apply(mvvm, [method].concat(params));
             };
+            class_1.prototype.$DecoratorStates = function () { return []; };
             return class_1;
         }(mvvm_1.Mvvm)));
         var vnode = vdom_1.NewVNode(this.Vdom, mvvm, this, vdom_1.Priority.IF);

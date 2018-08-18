@@ -1,10 +1,11 @@
-import { ParamType, Prop } from './../models';
+import { ParamType, Prop, State } from './../models';
 let datas:string[]=[]
 let computes:{name:string,get:()=>any}[]=[]
-let props:Prop[]=[]
+let props:Prop[]=[];
+let states:State[]=[];
 let initFuncs:string[]=[];
 let mountFuncs:string[]=[];
-let destroyFuncs:string[]=[]
+let destroyFuncs:string[]=[];
 
 
 
@@ -19,6 +20,15 @@ export function Prop(name:string,required:boolean,type?:ParamType){
         props.push({
             name:name,
             required:required,
+            type:type,
+            origin:key
+        })
+    }
+}
+export function State(name:string,type?:ParamType){
+    return function(target:any,key:string){
+        states.push({
+            name:name,
             type:type,
             origin:key
         })
@@ -41,16 +51,18 @@ export function FetchProperty(){
     let res={
         computes:computes,
         props:props,
+        states:states,
         initFuncs:initFuncs,
         mountFuncs:mountFuncs,
         destroyFuncs:destroyFuncs,
         datas:datas
     }
-    computes=[]
-    props=[]
+    computes=[];
+    props=[];
+    states=[];
     initFuncs=[];
     mountFuncs=[];
-    destroyFuncs=[]
-    datas=[]
+    destroyFuncs=[];
+    datas=[];
     return res
 }

@@ -1,7 +1,7 @@
 import { VNode } from '../vnode/vnode';
 import { Watcher } from "./watcher";
-import { Mvvm } from '../mvvm/mvvm';
 import { WatcherCollecter } from './watcher-collect';
+import { IEvalable } from './IEvalable';
 
 let $target:Watcher
 
@@ -106,12 +106,12 @@ function reactiveArray(array:any[],collecter:WatcherCollecter){
     });
 }
     
-export function ReactiveComputed(mvvm:Mvvm,vnode:VNode,key:string,func:()=>any){
+export function ReactiveComputed(evalable:IEvalable,vnode:VNode,key:string,func:()=>any){
     let collecter=new WatcherCollecter(key)
     let firstget=true
     let value:any
     
-    Object.defineProperty(mvvm, key, {
+    Object.defineProperty(evalable, key, {
         get: ()=> {
             if($target!=null){
                 collecter.AddTarget($target)
@@ -119,7 +119,7 @@ export function ReactiveComputed(mvvm:Mvvm,vnode:VNode,key:string,func:()=>any){
             if(firstget){
                 let old=$target
                 $target=null
-                let watcher=new Watcher(mvvm,vnode,func,(newval)=>{
+                let watcher=new Watcher(evalable,vnode,func,(newval)=>{
                     value=newval
                     collecter.Notify()
                 })

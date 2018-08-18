@@ -31,6 +31,11 @@ export interface Prop{
     required:boolean
     type?:ParamType
 }
+export interface State{
+    name:string
+    origin:string
+    type?:ParamType
+}
 export interface Event{
     name:string,
     paramsType:ParamType[]

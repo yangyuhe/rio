@@ -3,6 +3,7 @@ import { OnDataChange, Prop } from "../models";
 import { NoticeCallback, RegisterNotice, RevokeNotice } from "../observer/notice-center";
 import { Watcher } from "../observer/watcher";
 import { VinallaNode } from './../vnode/vinalla-node';
+import { Mvvm } from "./mvvm";
 export class DirectiveMVVM{
     
     $Name:string
@@ -15,10 +16,12 @@ export class DirectiveMVVM{
     $MountFuncs:string[]=[]
     $DestroyFuncs:string[]=[]
     
-    private $vnode:VinallaNode;
+    $vnode:VinallaNode;
+    $mvvm:Mvvm
 
     $Initialize(vnode:VinallaNode){
         this.$vnode=vnode;
+        this.$mvvm=this.$vnode.mvvm;
         this.$InitFuncs.forEach(func=>{
             (this as any)[func].call(this)
         });

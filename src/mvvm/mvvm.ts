@@ -1,15 +1,17 @@
-import { NoticeCallback, RegisterNotice, RevokeNotice } from '../observer/notice-center';
 import { EvalExp } from "../eval";
+import { DomStatus, OnDataChange, RouterInfo, State } from '../models';
+import { IEvalable } from '../observer/IEvalable';
+import { NoticeCallback, RegisterNotice, RevokeNotice } from '../observer/notice-center';
 import { ReactiveComputed, ReactiveData, ReactiveKey } from "../observer/observer";
 import { Watcher } from "../observer/watcher";
-import { GetActiveRouter, WatchRouterChange } from "../router/router-state";
-import { NewVNode } from "../vdom/vdom";
-import { VNode } from "../vnode/vnode";
-import { DomStatus, OnDataChange, RouterInfo } from '../models';
-import { VinallaNode } from '../vnode/vinalla-node';
 import { NotifyUrlChange } from '../router/router-manager';
+import { GetActiveRouter, WatchRouterChange } from "../router/router-state";
 import { Parse } from '../vdom/parser';
-export abstract class Mvvm {
+import { NewVNode } from "../vdom/vdom";
+import { VinallaNode } from '../vnode/vinalla-node';
+import { VNode } from "../vnode/vnode";
+import { GetGlobalState } from './root-mvvm';
+export abstract class Mvvm implements IEvalable{
     public $namespace="default"
 
     protected $treeRoot:VNode
@@ -17,6 +19,7 @@ export abstract class Mvvm {
     protected $dataItems:{name:string,value:any}[]=[]
     protected $computeItems:{name:string,get:()=>any}[]=[]
     private $isroot=false
+    private $states:State[]=[]
 
     private nextTicksCbs:(()=>void)[]=[]
 
@@ -27,6 +30,7 @@ export abstract class Mvvm {
     constructor(){
     }
     $initialize(){
+        this.$states=this.$DecoratorStates();
         this.$dataItems=this.$InitDataItems()
         this.$computeItems=this.$InitComputeItems()
         this.$treeRoot=this.$InitTreeroot()
@@ -35,10 +39,26 @@ export abstract class Mvvm {
         this.$dataItems.forEach(item=>{
             ReactiveKey(this,item.name);
             ReactiveData(item.value);
-        })
+        });
 
         this.$computeItems.forEach(item=>{
             ReactiveComputed(this,this.$treeRoot,item.name,item.get)
+        });
+        this.$states.forEach(prop=>{
+            let state=GetGlobalState(prop.name);
+            if(state==null){
+                throw new Error(" need global state \'"+prop.name+"'");
+            }
+            Object.defineProperty(this,prop.origin,{
+                get:()=>{
+                    let newvalue=GetGlobalState(prop.name);
+                    this.$checkState(prop,newvalue);
+                    return newvalue;
+                },
+                set:()=>{
+                    throw new Error("can not change value of global state in mvvm");
+                }
+            });
         })
 
     }
@@ -167,6 +187,31 @@ export abstract class Mvvm {
         this.nextTicksCbs.push(cb);
     }
 
+    private $checkState(prop:State,value:any){
+        let error=(prop:string,type:string)=>{
+            throw new Error("global state \'"+prop+"\' not receive "+type)
+        }
+        if(prop.type=="array" && toString.call(value)!="[object Array]"){
+            error(prop.name,prop.type)
+        }
+        if(prop.type=="object" && toString.call(value)!="[object Object]"){
+            error(prop.name,prop.type)
+        }
+        if(prop.type=="number" && toString.call(value)!="[object Number]"){
+            error(prop.name,prop.type)
+        }
+        if(prop.type=="boolean" && toString.call(value)!="[object Boolean]"){
+            error(prop.name,prop.type)
+        }
+        if(prop.type=="string" && toString.call(value)!="[object String]"){
+            error(prop.name,prop.type)
+        }
+    }
+
+    $GetTreeRoot(){
+        return this.$treeRoot;
+    }
+
     abstract $InitDataItems():{name:string,value:any}[];
     abstract $InitComputeItems():{name:string,get:(()=>any)}[];
     abstract $InitNamespace():string;
@@ -174,6 +219,8 @@ export abstract class Mvvm {
     abstract $Render():DomStatus;
     
     abstract $InitTreeroot():VNode;
+
+    abstract $DecoratorStates():State[];
 
     
 }

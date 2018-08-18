@@ -1,5 +1,5 @@
 import { GetDomTree, RegisterComponent, InitComponent } from '../manager/components-manager';
-import { ComponentOption, Prop } from '../models';
+import { ComponentOption, Prop, State } from '../models';
 import { NewVNode } from '../vdom/vdom';
 import { VNode } from '../vnode/vnode';
 import { DomStatus, Event, IComponentMvvm } from '../models';
@@ -71,6 +71,9 @@ export function Component(option:ComponentOption){
             }
             $InitIns():Prop[]{
                 return res.props
+            }
+            $DecoratorStates():State[]{
+                return res.states;
             }
             $InitOuts():Event[]{
                 return option.events

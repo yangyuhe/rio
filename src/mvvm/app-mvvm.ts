@@ -1,4 +1,4 @@
-import { DomStatus } from '../models';
+import { DomStatus, State } from '../models';
 import { VNode } from '../vnode/vnode';
 import { Mvvm } from './mvvm';
 export class AppMvvm extends Mvvm{
@@ -25,5 +25,9 @@ export class AppMvvm extends Mvvm{
     }
     $InitEl():string{
         throw new Error("Method not implemented.");
+    }
+
+    $DecoratorStates():State[]{
+        throw new Error("Method not implemented.");   
     }
 }
