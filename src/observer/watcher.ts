@@ -1,16 +1,15 @@
-import { DirectiveMVVM } from './../mvvm/directive-mvvm';
 import { VNodeStatus } from '../const';
 import { OnDataChange } from './../models';
 import { VNode } from './../vnode/vnode';
-import { CleanTarget, SetTarget } from './observer';
 import { IEvalable } from './IEvalable';
+import { CleanTarget, SetTarget } from './observer';
 
 
 export class Watcher{
     private value:any
     private oldArray:any[]=[]
 
-    constructor(private evalable:IEvalable|DirectiveMVVM,private vnode:VNode,public ExpOrFunc:string|Function,private cb:OnDataChange,private watchingArrayItem?:boolean){
+    constructor(private evalable:IEvalable,private vnode:VNode,public ExpOrFunc:string|Function,private cb:OnDataChange,private watchingArrayItem?:boolean){
         this.value=this.getValue()
         if(this.watchingArrayItem && toString.call(this.value)=="[object Array]"){
             for(let i=0;i<this.value.length;i++){

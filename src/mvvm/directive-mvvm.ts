@@ -4,7 +4,8 @@ import { NoticeCallback, RegisterNotice, RevokeNotice } from "../observer/notice
 import { Watcher } from "../observer/watcher";
 import { VinallaNode } from './../vnode/vinalla-node';
 import { Mvvm } from "./mvvm";
-export class DirectiveMVVM{
+import { IEvalable } from "../observer/IEvalable";
+export class DirectiveMVVM implements IEvalable{
     
     $Name:string
     $element:HTMLElement
@@ -22,18 +23,7 @@ export class DirectiveMVVM{
     $Initialize(vnode:VinallaNode){
         this.$vnode=vnode;
         this.$mvvm=this.$vnode.mvvm;
-        this.$InitFuncs.forEach(func=>{
-            (this as any)[func].call(this)
-        });
-    }
-    
-    $OnDestroy(){
-        this.$DestroyFuncs.forEach(destroy=>{
-            (this as any)[destroy].call(this)
-        })
-    }
-    
-    $Render(){
+
         this.$Ins.forEach(prop=>{
             let inName=this.$vnode.GetIn(prop.name)
             if(inName==null && prop.required){
@@ -53,6 +43,20 @@ export class DirectiveMVVM{
                 }
             }
         })
+
+        this.$InitFuncs.forEach(func=>{
+            (this as any)[func].call(this)
+        });
+    }
+    
+    $OnDestroy(){
+        this.$DestroyFuncs.forEach(destroy=>{
+            (this as any)[destroy].call(this)
+        })
+    }
+    
+    $Render(){
+        
         this.$element=(this.$vnode.DomSet[0].dom as HTMLElement)
         this.$MountFuncs.forEach(func=>{
             (this as any)[func].call(this)

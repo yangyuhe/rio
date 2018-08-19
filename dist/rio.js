@@ -12808,18 +12808,6 @@ var DirectiveMVVM = /** @class */ (function () {
         var _this = this;
         this.$vnode = vnode;
         this.$mvvm = this.$vnode.mvvm;
-        this.$InitFuncs.forEach(function (func) {
-            _this[func].call(_this);
-        });
-    };
-    DirectiveMVVM.prototype.$OnDestroy = function () {
-        var _this = this;
-        this.$DestroyFuncs.forEach(function (destroy) {
-            _this[destroy].call(_this);
-        });
-    };
-    DirectiveMVVM.prototype.$Render = function () {
-        var _this = this;
         this.$Ins.forEach(function (prop) {
             var inName = _this.$vnode.GetIn(prop.name);
             if (inName == null && prop.required) {
@@ -12840,6 +12828,18 @@ var DirectiveMVVM = /** @class */ (function () {
                 }
             }
         });
+        this.$InitFuncs.forEach(function (func) {
+            _this[func].call(_this);
+        });
+    };
+    DirectiveMVVM.prototype.$OnDestroy = function () {
+        var _this = this;
+        this.$DestroyFuncs.forEach(function (destroy) {
+            _this[destroy].call(_this);
+        });
+    };
+    DirectiveMVVM.prototype.$Render = function () {
+        var _this = this;
         this.$element = this.$vnode.DomSet[0].dom;
         this.$MountFuncs.forEach(function (func) {
             _this[func].call(_this);
