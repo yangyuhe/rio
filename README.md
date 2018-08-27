@@ -16,7 +16,7 @@
 <a href="https://github.com/yangyuhe/riojs-start">https://github.com/yangyuhe/riojs-start.git</a>
 
 ### 开发指南
-请查阅wiki
+[请查阅wiki](https://github.com/yangyuhe/rio/wiki)
 
 
 
