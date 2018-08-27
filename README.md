@@ -1,5 +1,5 @@
 # ![rio.js](https://github.com/chaojihexiang/rio/blob/master/riojs.png?raw=true)
-<p>rio.js 是一个用于开发webapp的响应式javascript框架</p>
+<p>RIO.JS是一套响应式的前端框架，提供了使用mvvm方式编写前端工程的能力，其很多特性借鉴于现有的angular,react,vue等框架。 RIO.JS的使用核心是装饰器的使用，装饰器这一概念在es6中仅仅是一个提案，但是在typescript语言中已经得到了比较好的支持。 你可以自己配置webpack，配合webpack强大的打包和代码提取拆分能力，你可以自由的开发单页面和多页面web应用。</p>
 
 
 ***
