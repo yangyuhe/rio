@@ -6,7 +6,7 @@ import { OnDataChange } from "../models";
 import { Watcher } from "../observer/watcher";
 import { Mvvm } from "./mvvm";
 import { CustomNode } from "../vnode/custom-node";
-import { DirectiveMVVM } from "../../types";
+import { DirectiveMVVM } from "./directive-mvvm";
 
 class RootMvvm implements IEvalable{
     $GetExpOrFunValue(expOrFunc: string | Function) {
@@ -32,7 +32,7 @@ class RootMvvm implements IEvalable{
     }
 
 }
-interface StateManipulate<T>{
+export interface StateManipulate<T>{
     send(data:T):void;
     value():T;
     subscribe(mvvm:Mvvm|DirectiveMVVM,exp:string|Function,listener:OnDataChange):void;

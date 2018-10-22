@@ -2,6 +2,7 @@ import { ComponentMvvmFactoryOption, ComponentOption } from '../models';
 import { HttpGet, LogError } from "../util";
 import { Parse } from '../vdom/parser';
 import { IComponentMvvm } from './../models';
+import {CustDom} from "../vdom/parser"
 let cssom=require("cssom");
 
 let repository:{[id:string]:ComponentMvvmFactoryOption}={}
@@ -45,13 +46,13 @@ export function InitComponent(name: string, namespace: string): IComponentMvvm {
     }
     
 }
-export function GetDomTree(name: string, namespace: string){
+export function GetDomTree(name: string, namespace: string):CustDom{
     name = name.toLowerCase()
     namespace = namespace.toLowerCase()
     let factory = repository[Id(namespace,name)]
     if(factory==null)
-        return null
-    return factory.$domtree
+        return null;
+    return factory.$domtree;
 }
 export function IsComponentRegistered(name: string, namespace: string) {
     name = name.toLowerCase()

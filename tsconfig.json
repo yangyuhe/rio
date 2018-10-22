@@ -6,9 +6,11 @@
         "noUnusedLocals": true,
         "noImplicitUseStrict": true,
         "outDir": "./dist",
+        "declarationDir": "./types",
         "lib":["es2016","dom"],
         "strictNullChecks": false,
         "sourceMap": true,
         "experimentalDecorators": true,
+        "declaration": true
     }
 }

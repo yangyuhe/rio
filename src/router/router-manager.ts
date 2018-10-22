@@ -193,7 +193,7 @@ export interface Router{
     params?:{name:string,required:boolean}[],
     redirect?:string
 }
-interface InnerRouter extends Router{
+export interface InnerRouter extends Router{
     parent:InnerRouter
     children:InnerRouter[]
     fullUrl:string

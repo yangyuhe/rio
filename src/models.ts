@@ -4,7 +4,7 @@ import { ComponentMvvm } from './mvvm/component-mvvm';
 import { DirectiveMVVM } from './mvvm/directive-mvvm';
 import { CustDom } from './vdom/parser';
 
-interface BaseOption{
+export interface BaseOption{
     namespace?:string,
 }
 export interface ComponentOption extends BaseOption{

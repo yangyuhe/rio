@@ -63,7 +63,7 @@ interface SquareUnit{
     fromRow:number,
     fromColumn:number
 }
-interface Oper<T>{
+export interface Oper<T>{
     type:"add"|"remove"|"replace",
     newSetIndex?:number,
     oldSetIndex:number
