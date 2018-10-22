@@ -78,7 +78,7 @@ export class VinallaNode extends VNode{
         })
     }
     
-    
+    /**先渲染自己，再渲染孩子并把孩子返回的dom添加到自己的dom的孩子中 */
     Render() :DomStatus[]{
         if (this.nodeType == "element") {
             let dom = document.createElement(this.nodeName)
@@ -99,23 +99,23 @@ export class VinallaNode extends VNode{
                 
             })
             
-            this.DomSet = [{type:DomType.NEW,dom:dom}] 
+            this.statefulDom = [{type:DomType.NEW,dom:dom}] 
             
             this.Children.forEach(child => {
                 let childdomset=child.Render();
                 childdomset.forEach(childdom=>{
-                    this.DomSet[0].dom.appendChild(childdom.dom)
+                    this.statefulDom[0].dom.appendChild(childdom.dom)
                 });
                 childdomset.forEach(childom=>{
                     childom.type=DomType.CONSTANT
                 });
             })
             this.directiveBind()
-            return this.DomSet
+            return this.statefulDom
         }
         if (this.nodeType == "text") {
             let dom = document.createTextNode(this.nodeValue)
-            this.DomSet=[{type:DomType.NEW,dom:dom}]
+            this.statefulDom=[{type:DomType.NEW,dom:dom}]
             let evalexp=StrToEvalstr(this.nodeValue)
             if (!evalexp.isconst) {
                 let watcher=this.mvvm.$CreateWatcher(this,evalexp.exp,(newvalue, oldvalue)=>{
@@ -125,32 +125,33 @@ export class VinallaNode extends VNode{
             }else{
                 dom.textContent=evalexp.exp
             }
-            return this.DomSet
+            return this.statefulDom
         }
         if(this.nodeType=="comment"){
             let dom=document.createComment(this.nodeValue)
-            this.DomSet=[{type:DomType.NEW,dom: dom}]
-            return this.DomSet
+            this.statefulDom=[{type:DomType.NEW,dom: dom}]
+            return this.statefulDom
         }
     }
+    /**根据孩子节点的dom状态刷新自己的dom节点 */
     Refresh() {
-        this.DomSet.forEach(dom=>dom.type=DomType.CONSTANT);
+        this.statefulDom.forEach(dom=>dom.type=DomType.CONSTANT);
         if(this.nodeType=="element"){
-            let thedom=this.DomSet[0].dom
-            let childdom:Node=null
+            let parentDom=this.statefulDom[0].dom
+            let cursorDom:Node=null
             this.Children.forEach(child=>{
-                child.DomSet.forEach(domstate=>{
-                    if(domstate.type==DomType.CONSTANT){
-                        childdom=domstate.dom
+                child.statefulDom.forEach(statefulDom=>{
+                    if(statefulDom.type==DomType.CONSTANT){
+                        cursorDom=statefulDom.dom
                         return
                     }
-                    if(domstate.type==DomType.NEW){
-                        InsertDomChild(thedom,domstate.dom,childdom)
-                        childdom=domstate.dom
+                    if(statefulDom.type==DomType.NEW){
+                        InsertDomChild(parentDom,statefulDom.dom,cursorDom)
+                        cursorDom=statefulDom.dom
                         return
                     }
-                    if(domstate.type==DomType.DELETE){
-                        thedom.removeChild(domstate.dom)
+                    if(statefulDom.type==DomType.DELETE){
+                        parentDom.removeChild(statefulDom.dom)
                         return
                     }
                 })
@@ -174,9 +175,9 @@ export class VinallaNode extends VNode{
         if (this.nodeType == "text") {
             let evalexp=StrToEvalstr(this.nodeValue)
             if (!evalexp.isconst) {
-                this.DomSet[0].dom.textContent=this.mvvm.$GetExpOrFunValue(evalexp.exp)
+                this.statefulDom[0].dom.textContent=this.mvvm.$GetExpOrFunValue(evalexp.exp)
             }else{
-                this.DomSet[0].dom.textContent=evalexp.exp
+                this.statefulDom[0].dom.textContent=evalexp.exp
             }
         }
     }

@@ -120,13 +120,13 @@ export class ForNode extends VNode{
         childToDeleted.forEach(i=>{
             i.SetStatus(VNodeStatus.DEPRECATED);
             i.OnDestroy();
-            i.DomSet.forEach(dom=>{
+            i.statefulDom.forEach(dom=>{
                 dom.type=DomType.DELETE;
             });
         });
-        this.DomSet=[];
+        this.statefulDom=[];
         this.Children.forEach(child=>{
-            this.DomSet=this.DomSet.concat(child.DomSet);
+            this.statefulDom=this.statefulDom.concat(child.statefulDom);
         });
         this.Children=this.Children.filter(child=>{
             return !childToDeleted.includes(child);
@@ -163,9 +163,9 @@ export class ForNode extends VNode{
         this.arrayExpWatcher=this.mvvm.$CreateWatcher(this,this.forExp.arrayExp,this.implementForExp.bind(this),true);
 
         this.Children.forEach(child=>{
-            this.DomSet=this.DomSet.concat(child.Render())
+            this.statefulDom=this.statefulDom.concat(child.Render())
         })
-        return this.DomSet;
+        return this.statefulDom;
     }
     OnDestroy(){
         this.Children.forEach(vnode=>vnode.OnDestroy())

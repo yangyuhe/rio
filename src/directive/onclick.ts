@@ -6,7 +6,7 @@ export function OnClick(exp:string,vnode:VNode){
         let paramsStr = RegExp.$2
         if (paramsStr.length > 0) {
             let ps = paramsStr.split(",")
-            vnode.DomSet[0].dom.addEventListener("click", (event) => {
+            vnode.statefulDom[0].dom.addEventListener("click", (event) => {
                 let params: any[] = []
                 ps.forEach(p => {
                     if (!REG_STR.test(p)) {
@@ -36,7 +36,7 @@ export function OnClick(exp:string,vnode:VNode){
                 vnode.mvvm.$RevokeMethod(methodStr, ...params)
             })
         }else{
-            vnode.DomSet[0].dom.addEventListener("click", () => {
+            vnode.statefulDom[0].dom.addEventListener("click", () => {
                 vnode.mvvm.$RevokeMethod(methodStr)  
             })
         }

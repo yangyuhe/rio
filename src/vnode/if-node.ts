@@ -21,10 +21,10 @@ export class IfNode extends VNode {
     }
     Render():DomStatus[]{
         this.Children.forEach(child=>{
-            this.DomSet=this.DomSet.concat(child.Render())
+            this.statefulDom=this.statefulDom.concat(child.Render())
         })
         this.mvvm.$CreateWatcher(this,this.ifExp, newvalue=>this.reImpletement(newvalue))
-        return this.DomSet
+        return this.statefulDom
     }
     Update(){
         let attached = this.mvvm.$GetExpOrFunValue(this.ifExp)
@@ -37,7 +37,7 @@ export class IfNode extends VNode {
             vnode.AttachChildren()
             this.Children=[vnode]
             this.Children.forEach(child=>{
-                this.DomSet=this.DomSet.concat(child.Render())
+                this.statefulDom=this.statefulDom.concat(child.Render())
             })
             this.Parent.Reflow();
         }else{
@@ -46,7 +46,7 @@ export class IfNode extends VNode {
                 child.OnDestroy();
             });
             this.Children=[]
-            this.DomSet.forEach(dom=>{
+            this.statefulDom.forEach(dom=>{
                 dom.type=DomType.DELETE
             });
         }

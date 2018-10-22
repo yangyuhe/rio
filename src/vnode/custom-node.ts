@@ -48,7 +48,7 @@ export class CustomNode extends VNode{
     }
     Render(): DomStatus[] {
         let dom=this.SurroundMvvm.$Render();
-        this.DomSet=[dom];
+        this.statefulDom=[dom];
         
         if(this.styles['style']!=null){
             let exp=this.styles['style'];
@@ -72,7 +72,7 @@ export class CustomNode extends VNode{
             let exp=this.classes[PRE+'class'];
             classdir(exp,this);
         }
-        return this.DomSet
+        return this.statefulDom
     }
     
     AttachChildren(){

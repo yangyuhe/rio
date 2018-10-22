@@ -1,11 +1,18 @@
 import { Parser } from "htmlparser2";
 
+/**自定义dom对象，区别于js原生dom对象 */
 export class CustDom {
+    /**标签名 当type='element'时有意义*/
     Name: string=""
+    /**文本值 当type='text'时有意义 */
     Text: string=""
+    /**属性 */
     Attrs: { Name: string, Value: string }[]=[]
+    /**标签类型 目前支持元素，文本和备注三种类型 */
     Type: "element" | "text" | "comment"="element"
+    /**孩子dom */
     Children: CustDom[]=[]
+    /**父级dom 如果有的话 */
     parent:CustDom=null
     constructor(name:string,text:string,type:"element" | "text" | "comment",attr:{ Name: string, Value: string }[],children:CustDom[],parent:CustDom){
         this.Name=name;
@@ -31,8 +38,11 @@ export class CustDom {
         }
     }
 }
+/**当前正在生成的dom树 */
 let document:CustDom[]=[];
+/**作为正在遍历的节点的父级节点 */
 let cursor:CustDom=null;
+/**遍历visitor，实现自定义dom树的创建 */
 let parser = new Parser({
     onopentag: function (name, attr) {
         let attrs: { Name: string, Value: string }[] = [];
@@ -72,6 +82,7 @@ let parser = new Parser({
     decodeEntities:true
 });
 
+/**解析和生成一个自定义节点树 */
 export function Parse(html:string){
     html=html.trim();
     parser.reset();

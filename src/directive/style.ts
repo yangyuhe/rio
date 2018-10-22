@@ -6,7 +6,7 @@ export function Style(exp:string,vnode:VNode){
         throw new Error("exp format error:"+exp);
     }
     let styleJson=ParseStyle(exp);
-    let htmlElement=(vnode.DomSet[0].dom as HTMLElement);
+    let htmlElement=(vnode.statefulDom[0].dom as HTMLElement);
     for(let key in styleJson){
         let watcher=vnode.mvvm.$CreateWatcher(vnode,styleJson[key],(newvalue)=>{
             for(let key in styleJson){

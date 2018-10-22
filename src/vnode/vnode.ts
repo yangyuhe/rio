@@ -15,7 +15,7 @@ export abstract class VNode extends IONode{
     
     
     Children: VNode[] = []
-    DomSet: {type:DomType,dom:Node}[]=[]
+    statefulDom: {type:DomType,dom:Node}[]=[]
 
     
     protected status:VNodeStatus=VNodeStatus.ACTIVE
@@ -33,15 +33,15 @@ export abstract class VNode extends IONode{
     abstract Render():DomStatus[];
 
     Reflow(){
-        this.DomSet=[];
+        this.statefulDom=[];
         this.Children.forEach(child=>{
-            this.DomSet=this.DomSet.concat(child.DomSet)
+            this.statefulDom=this.statefulDom.concat(child.statefulDom)
         });
         if(this.Parent!=null)
             this.Parent.Reflow()
     }
     Refresh():void{
-        this.DomSet=this.DomSet.filter(dom=>dom.type!=DomType.DELETE)
+        this.statefulDom=this.statefulDom.filter(dom=>dom.type!=DomType.DELETE)
         this.Children.forEach(child=>child.Refresh())
     }
     

@@ -5,7 +5,7 @@ import { VNode } from "../vnode/vnode";
 export function Href(exp:string,vnode:VNode){
     let href:string="";
     let streval=StrToEvalstr(exp);
-    let dom=vnode.DomSet[0].dom as HTMLElement;
+    let dom=vnode.statefulDom[0].dom as HTMLElement;
     if(streval.isconst){
         href=streval.exp;
         setAttr(dom,href);

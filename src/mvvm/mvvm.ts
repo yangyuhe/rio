@@ -135,8 +135,8 @@ export abstract class Mvvm implements IEvalable{
     }
     GetRef(ref:string){
         let vnode= this.$treeRoot.GetAnchor(ref);
-        if(vnode!=null && vnode.DomSet.length>0)
-            return vnode.DomSet[0].dom as HTMLElement;
+        if(vnode!=null && vnode.statefulDom.length>0)
+            return vnode.statefulDom[0].dom as HTMLElement;
         else
             return null;
     }

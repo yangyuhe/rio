@@ -16,14 +16,14 @@ export function DirModel(exp: string, vnode: VNode) {
     }
     setValue(vnode, watcher.GetCurValue());
 
-    vnode.DomSet[0].dom.addEventListener("input", (event: any) => {
+    vnode.statefulDom[0].dom.addEventListener("input", (event: any) => {
         //select控件
         if (vnode.GetNodeName() == "select") {
             vnode.mvvm.$SetValue(exp, event.target.value)
             return
         }
         //text radio checkbox控件
-        let inputType = (vnode.DomSet[0].dom as HTMLElement).getAttribute("type")
+        let inputType = (vnode.statefulDom[0].dom as HTMLElement).getAttribute("type")
         if (inputType == null || inputType == "")
             inputType = "text"
         switch (inputType) {
@@ -48,7 +48,7 @@ export function DirModel(exp: string, vnode: VNode) {
 }
 
 function setValue(vnode: VNode, newvalue: any) {
-    let dom=vnode.DomSet[0].dom;
+    let dom=vnode.statefulDom[0].dom;
     //select控件
     if (vnode.GetNodeName()== "select") {
         (dom as HTMLSelectElement).value = newvalue;

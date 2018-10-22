@@ -8,7 +8,7 @@ export function OnEvent(exp:string,vnode:VNode,options:string[]){
         let paramsStr = RegExp.$2
         if (paramsStr.length > 0) {
             let ps = paramsStr.split(",")
-            vnode.DomSet[0].dom.addEventListener(options[0], (event) => {
+            vnode.statefulDom[0].dom.addEventListener(options[0], (event) => {
                 let params: any[] = []
                 ps.forEach(p => {
                     if (!REG_STR.test(p)) {
@@ -38,7 +38,7 @@ export function OnEvent(exp:string,vnode:VNode,options:string[]){
                 vnode.mvvm.$RevokeMethod(methodStr, ...params)
             })
         }else{
-            vnode.DomSet[0].dom.addEventListener(options[0], () => {
+            vnode.statefulDom[0].dom.addEventListener(options[0], () => {
                 vnode.mvvm.$RevokeMethod(methodStr)  
             })
         }

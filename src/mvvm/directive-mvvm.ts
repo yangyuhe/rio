@@ -57,7 +57,7 @@ export class DirectiveMVVM implements IEvalable{
     
     $Render(){
         
-        this.$element=(this.$vnode.DomSet[0].dom as HTMLElement)
+        this.$element=(this.$vnode.statefulDom[0].dom as HTMLElement)
         this.$MountFuncs.forEach(func=>{
             (this as any)[func].call(this)
         })

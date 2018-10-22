@@ -4,9 +4,9 @@ import { VNode } from "./vnode";
 export class TemplateNode extends VNode{
     Render():DomStatus[]{
         this.Children.forEach(child=>{
-            this.DomSet=this.DomSet.concat(child.Render())
+            this.statefulDom=this.statefulDom.concat(child.Render())
         })
-        return this.DomSet;
+        return this.statefulDom;
     }
     Update(){
 

@@ -19,10 +19,10 @@ export class RouterNode extends VNode{
         if(router!=null){
             let vnode=this.instance(router)
             this.Children=[vnode]
-            this.DomSet=vnode.Render()
+            this.statefulDom=vnode.Render()
             MoveBack()
         }
-        return this.DomSet
+        return this.statefulDom
         
     }
     OnRouterChange(){
@@ -38,13 +38,13 @@ export class RouterNode extends VNode{
             if(constructor!=null){
                 let vnode=this.instance(constructor)
                 this.Children=[vnode]
-                this.DomSet.forEach(dom=>dom.type=DomType.DELETE)
-                this.DomSet= this.DomSet.concat(vnode.Render())
+                this.statefulDom.forEach(dom=>dom.type=DomType.DELETE)
+                this.statefulDom= this.statefulDom.concat(vnode.Render())
                 this.Parent.Reflow();
                 MoveBack()
             }else{
                 this.Children=[]
-                this.DomSet.forEach(dom=>{
+                this.statefulDom.forEach(dom=>{
                     dom.type=DomType.DELETE
                 })
             }

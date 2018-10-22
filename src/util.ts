@@ -83,17 +83,17 @@ export function StrToEvalstr(str:string):{isconst:boolean,exp:string}{
     }
 }
 
-export function InsertDomChild(parent:Node,child:Node,after:Node){
+export function InsertDomChild(parent:Node,newChild:Node,after:Node){
     if(after==null){
         if(parent.firstChild!=null)
-            parent.insertBefore(child,parent.firstChild)
+            parent.insertBefore(newChild,parent.firstChild)
         else
-            parent.appendChild(child)
+            parent.appendChild(newChild)
     }else{
         if(after.nextSibling!=null)
-            parent.insertBefore(child,after.nextSibling)
+            parent.insertBefore(newChild,after.nextSibling)
         else
-            parent.appendChild(child)
+            parent.appendChild(newChild)
     }
 }
 

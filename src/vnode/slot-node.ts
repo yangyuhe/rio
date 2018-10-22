@@ -15,9 +15,9 @@ export class SlotNode extends VNode{
         if(template!=null){
             template.Parent=this;
             this.Children=[template];
-            this.DomSet=template.Render();
+            this.statefulDom=template.Render();
         }
-        return this.DomSet;
+        return this.statefulDom;
     }
     
     Update(){

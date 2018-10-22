@@ -11,9 +11,9 @@ export class PlugNode extends VNode{
     Render():DomStatus[]{
         this.Children.forEach(child=>{
             let doms=child.Render()
-            this.DomSet=this.DomSet.concat(doms)
+            this.statefulDom=this.statefulDom.concat(doms)
         })
-        return this.DomSet
+        return this.statefulDom
     }
     
     Update(){
